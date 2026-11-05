@@ -1,0 +1,115 @@
+{
+  "entities": {
+    "Listing": {
+      "title": "Listing",
+      "description": "Marketplace product or service listing item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "categoryId": { "type": "string", "maxLength": 64 },
+        "categoryName": { "type": "string", "maxLength": 128 },
+        "subcategory": { "type": "string", "maxLength": 128 },
+        "price": { "type": "number" },
+        "currency": { "type": "string", "maxLength": 16 },
+        "isNegotiable": { "type": "boolean" },
+        "location": { "type": "string", "maxLength": 256 },
+        "region": { "type": "string", "maxLength": 128 },
+        "condition": { "type": "string", "maxLength": 64 },
+        "description": { "type": "string", "maxLength": 5000 },
+        "images": { "type": "array" },
+        "seller": { "type": "object" },
+        "postedAt": { "type": "string", "maxLength": 64 },
+        "viewsCount": { "type": "number" },
+        "likesCount": { "type": "number" },
+        "status": { "type": "string", "maxLength": 32 },
+        "isSold": { "type": "boolean" },
+        "soldAt": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "categoryId", "price", "currency", "location", "condition", "seller"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile in the marketplace with doc id = user uid, fields: email, createdAt, role = 'customer' or 'vendor', displayName = email",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "maxLength": 256 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "role": { "type": "string", "enum": ["customer", "vendor"] },
+        "displayName": { "type": "string", "maxLength": 256 }
+      },
+      "required": ["email", "role", "displayName"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Fire safety product in the marketplace",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 256 },
+        "description": { "type": "string", "maxLength": 5000 },
+        "price": { "type": "number" },
+        "category": { "type": "string", "enum": ["Fire Extinguisher", "Smoke Detector", "Fire Blanket", "Alarm", "Hose"] },
+        "imageUrl": { "type": "string", "maxLength": 2048 },
+        "stock": { "type": "number" },
+        "vendorId": { "type": "string", "maxLength": 128 },
+        "vendorName": { "type": "string", "maxLength": 256 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "price", "category", "stock", "vendorId", "vendorName"]
+    },
+    "Vendor": {
+      "title": "Vendor",
+      "description": "Registered vendor shop in the marketplace",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "shopName": { "type": "string", "maxLength": 256 },
+        "phone": { "type": "string", "maxLength": 64 },
+        "location": { "type": "string", "maxLength": 256 },
+        "description": { "type": "string", "maxLength": 3000 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "shopName", "phone", "location"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer purchase order for fire safety products",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "items": { "type": "array" },
+        "total": { "type": "number" },
+        "deliveryAddress": { "type": "string", "maxLength": 500 },
+        "phone": { "type": "string", "maxLength": 64 },
+        "status": { "type": "string", "maxLength": 64 },
+        "paymentMethod": { "type": "string", "maxLength": 64 },
+        "momoNumber": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "items", "total", "deliveryAddress", "phone", "status", "paymentMethod"]
+    }
+  },
+  "firestore": {
+    "/listings/{listingId}": {
+      "schema": { "$ref": "#/entities/Listing" },
+      "description": "Collection of public marketplace listings posted by sellers"
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Collection of user profiles keyed by user uid with fields: email, createdAt, role = 'customer' or 'vendor', displayName = email"
+    },
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Collection of fire safety products offered by vendors"
+    },
+    "/vendors/{vendorId}": {
+      "schema": { "$ref": "#/entities/Vendor" },
+      "description": "Collection of registered vendor shops keyed by vendorId or ownerId"
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Collection of customer checkout orders"
+    }
+  }
+}

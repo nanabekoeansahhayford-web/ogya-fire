@@ -1,0 +1,8 @@
+{
+  "name": "OGYA ( FIRE )  DONE  15",
+  "description": "OGYA ( FIRE )  - Premier Classifieds \u0026 Marketplace for Vehicles, Property, Phones, Electronics, Jobs, Services \u0026 More.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
