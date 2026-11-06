@@ -13,7 +13,7 @@ export const CATEGORIES: CategoryInfo[] = [
     name: 'Phones & Tablets',
     iconName: 'Smartphone',
     shortDesc: 'iPhone, Samsung, Tecno, Infinix & Tablets',
-    subcategories: ['iPhone', 'Samsung Galaxy', 'Tecno', 'Infinix', 'Tablets & iPads', 'Smart Watches', 'Accessories']
+    subcategories: ['Phone Accessories', 'iPhone', 'Samsung Galaxy', 'Tecno', 'Infinix', 'Tablets & iPads', 'Smart Watches', 'Accessories']
   },
   {
     id: 'electronics',
