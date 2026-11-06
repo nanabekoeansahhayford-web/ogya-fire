@@ -32,6 +32,7 @@ import {
   MessageCircle,
   Maximize2,
   ZoomIn,
+  ShoppingCart,
 } from 'lucide-react';
 import { Listing, SellerInfo } from '../types/marketplace';
 import { formatPrice, getListingReport, AdReportRecord, getStoredListings } from '../utils/storage';
@@ -67,6 +68,7 @@ interface ListingDetailModalProps {
   onOrderCourier?: (listing: Listing) => void;
   allListings?: Listing[];
   onSelectListing?: (listing: Listing) => void;
+  onAddToCart?: (listing: Listing) => void;
 }
 
 export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
@@ -84,6 +86,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
   onOrderCourier,
   allListings,
   onSelectListing,
+  onAddToCart,
 }) => {
   const [showPhone, setShowPhone] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
@@ -106,6 +109,19 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
 
   const images = listing?.images && listing.images.length > 0 ? listing.images : [];
   const hasMultipleImages = images.length > 1;
+
+  const isBigItem = Boolean(
+    listing?.isBigItem === true ||
+    listing?.categoryId === 'vehicles' ||
+    listing?.categoryId === 'property'
+  );
+  const isHotDeal = Boolean(
+    listing?.isHotDeal || (listing?.originalPrice && listing.originalPrice > listing.price)
+  );
+  const discountPct = listing
+    ? listing.discountPercent ||
+      (listing.originalPrice ? Math.round(((listing.originalPrice - listing.price) / listing.originalPrice) * 100) : 0)
+    : 0;
 
   const handlePrevImage = (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -847,6 +863,18 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                     <span className={`text-2xl sm:text-3xl font-black tabular-nums ${isSold ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-950 dark:text-white'}`}>
                       {formatPrice(listing.price, listing.currency)}
                     </span>
+                    {listing.originalPrice && listing.originalPrice > listing.price && !isSold && (
+                      <span className="text-base text-slate-400 dark:text-slate-500 line-through tabular-nums font-mono">
+                        {formatPrice(listing.originalPrice, listing.currency)}
+                      </span>
+                    )}
+                    {isHotDeal && (
+                      <span className="bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 text-white font-black text-xs uppercase px-2.5 py-0.5 rounded shadow-sm flex items-center gap-1 animate-pulse">
+                        <span>🔥</span>
+                        <span>HOT DEAL</span>
+                        {discountPct > 0 && <span className="bg-black/20 px-1 rounded text-[10px]">-{discountPct}%</span>}
+                      </span>
+                    )}
                     {isSold && (
                       <span className="bg-red-600 text-white font-black text-xs uppercase px-2.5 py-0.5 rounded shadow-xs">
                         SOLD
@@ -1072,26 +1100,29 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
 
                 {/* Primary Action Buttons */}
                 <div className="space-y-2.5">
-                  {/* Ghana Door-to-Door Courier Dispatch Button */}
-                  {listing.categoryId !== 'seeking-work-cvs' && listing.categoryId !== 'jobs' && (
-                    <div className="space-y-1.5 pb-1">
-                      <button
-                        type="button"
-                        onClick={() => onOrderCourier?.(listing)}
-                        className="w-full py-3 px-4 bg-gradient-to-r from-red-600 via-amber-600 to-orange-500 hover:opacity-95 active:scale-98 text-white font-black text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer border border-amber-400/30"
-                      >
-                        <Truck size={18} className="animate-pulse" />
-                        <span>Order Door Delivery (Across Ghana)</span>
-                      </button>
-                      <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 px-1">
-                        <span className="flex items-center gap-1">
-                          <span className="text-emerald-500 font-bold">✓</span>
-                          <span>Strict Security OTP Protected</span>
-                        </span>
-                        <span className="text-amber-600 dark:text-amber-400 font-semibold">
-                          All 16 Regions
-                        </span>
+                  {/* Small items: Add to Cart & Pay with Paystack MoMo button */}
+                  {!isBigItem && listing.categoryId !== 'seeking-work-cvs' && listing.categoryId !== 'jobs' && !isSold && (
+                    <button
+                      type="button"
+                      onClick={() => onAddToCart?.(listing)}
+                      className="w-full py-3.5 px-4 bg-[#FF6600] hover:bg-[#e65c00] active:scale-98 text-white font-black text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2.5 cursor-pointer border border-orange-500 hover:shadow-lg group"
+                      title="Add to Cart and Pay with Paystack MoMo or Cash on Delivery"
+                    >
+                      <ShoppingCart size={19} className="shrink-0 group-hover:scale-110 transition-transform" />
+                      <span>Add to Cart (Pay with Paystack MoMo)</span>
+                    </button>
+                  )}
+
+                  {/* Big items: In-person inspection warning */}
+                  {isBigItem && (
+                    <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl text-xs text-amber-900 dark:text-amber-200 space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-amber-800 dark:text-amber-300">
+                        <ShieldAlert size={16} className="text-amber-600 shrink-0" />
+                        <span>🚫 No Online Payment for Vehicles & Property</span>
                       </div>
+                      <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
+                        To protect buyers, online payment is disabled for vehicles and properties. Always meet the seller in person in a safe, public location to inspect before making any financial transaction.
+                      </p>
                     </div>
                   )}
 
@@ -1103,8 +1134,22 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                     title={`Chat Seller on WhatsApp: wa.me/${(listing.seller.whatsapp || listing.seller.phone).replace(/[^0-9]/g, '')}`}
                   >
                     <MessageCircle size={19} className="fill-current text-white shrink-0 group-hover:scale-110 transition-transform" />
-                    <span>Chat Seller on WhatsApp</span>
+                    <span>{isBigItem ? 'Contact Seller on WhatsApp' : 'Chat Seller on WhatsApp'}</span>
                   </button>
+
+                  {/* Ghana Door-to-Door Courier Dispatch Button (for small/medium deliverable items) */}
+                  {!isBigItem && listing.categoryId !== 'seeking-work-cvs' && listing.categoryId !== 'jobs' && (
+                    <div className="space-y-1.5 pb-1">
+                      <button
+                        type="button"
+                        onClick={() => onOrderCourier?.(listing)}
+                        className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-900 dark:text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer border border-slate-200 dark:border-slate-700"
+                      >
+                        <Truck size={16} className="text-emerald-600 dark:text-emerald-400" />
+                        <span>Dispatch via Ghana Courier</span>
+                      </button>
+                    </div>
+                  )}
 
                   {/* Direct Call Button */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

@@ -17,6 +17,7 @@ import {
   ShieldAlert,
   Flag,
   ShieldCheck,
+  ShoppingCart,
 } from 'lucide-react';
 import { Listing, SellerInfo } from '../types/marketplace';
 import { formatPrice } from '../utils/storage';
@@ -39,6 +40,7 @@ interface ListingCardProps {
   onOpenSellerProfile?: (seller: SellerInfo, e: React.MouseEvent) => void;
   onOpenBoost?: (listing: Listing, e: React.MouseEvent) => void;
   onReportListing?: (listing: Listing, e: React.MouseEvent) => void;
+  onAddToCart?: (listing: Listing, e: React.MouseEvent) => void;
 }
 
 export const ListingCard: React.FC<ListingCardProps> = ({
@@ -51,6 +53,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   onOpenSellerProfile,
   onOpenBoost,
   onReportListing,
+  onAddToCart,
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [failedImages, setFailedImages] = useState<Record<number, boolean>>({});
@@ -66,6 +69,14 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   const isCV = listing.categoryId === 'seeking-work-cvs';
   const isJob = listing.categoryId === 'jobs';
   const isSold = listing.status === 'sold' || Boolean(listing.isSold);
+  const isBigItem =
+    listing.isBigItem === true ||
+    listing.categoryId === 'vehicles' ||
+    listing.categoryId === 'property';
+  const isHotDeal = Boolean(listing.isHotDeal || (listing.originalPrice && listing.originalPrice > listing.price));
+  const discountPct =
+    listing.discountPercent ||
+    (listing.originalPrice ? Math.round(((listing.originalPrice - listing.price) / listing.originalPrice) * 100) : 0);
   const reputation = getSellerReputation(listing.seller);
   const primaryBadge = reputation.badges[0];
 
@@ -243,13 +254,20 @@ export const ListingCard: React.FC<ListingCardProps> = ({
             </span>
           ) : (
             <>
-              {listing.isPromoted && (
+              {isHotDeal && (
+                <span className="bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 text-white font-black text-[10px] tracking-wider uppercase px-2 py-0.5 rounded shadow-sm flex items-center gap-1 animate-pulse">
+                  <span>🔥</span>
+                  <span>HOT DEAL</span>
+                  {discountPct > 0 && <span className="bg-black/20 px-1 rounded text-[9px]">-{discountPct}%</span>}
+                </span>
+              )}
+              {listing.isPromoted && !isHotDeal && (
                 <span className="bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 text-white font-extrabold text-[10px] tracking-wider uppercase px-2 py-0.5 rounded shadow-sm flex items-center gap-1">
                   <Zap size={10} fill="currentColor" />
                   <span>Promoted</span>
                 </span>
               )}
-              {listing.isFeatured && !listing.isPromoted && (
+              {listing.isFeatured && !listing.isPromoted && !isHotDeal && (
                 <span className="bg-amber-500 text-slate-950 font-bold text-[10px] tracking-wider uppercase px-2 py-0.5 rounded shadow-xs">
                   Featured
                 </span>
@@ -373,12 +391,17 @@ export const ListingCard: React.FC<ListingCardProps> = ({
         <div>
           {/* Price in GHS with ₵ symbol & Ratings Stars */}
           <div className="mt-2 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-baseline justify-between gap-2">
-            <div className="flex items-baseline gap-1 flex-wrap">
+            <div className="flex items-baseline gap-1.5 flex-wrap">
               <span className="text-xs font-black text-[#00875A] dark:text-emerald-400">₵</span>
               <span className={`text-lg sm:text-xl font-black tabular-nums tracking-tight ${isSold ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-950 dark:text-white'}`}>
                 {listing.price.toLocaleString('en-US')}
               </span>
               <span className="text-[10px] font-black uppercase text-slate-400 ml-0.5">GHS</span>
+              {listing.originalPrice && listing.originalPrice > listing.price && !isSold && (
+                <span className="text-xs text-slate-400 dark:text-slate-500 line-through tabular-nums font-mono">
+                  ₵{listing.originalPrice.toLocaleString('en-US')}
+                </span>
+              )}
               {isSold && (
                 <span className="ml-1 bg-red-100 dark:bg-red-950/80 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900 text-[10px] font-black uppercase px-1.5 py-0.2 rounded">
                   SOLD
@@ -441,7 +464,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
             </div>
 
             {/* Door delivery tag */}
-            {!isCV && !isJob && !isSold && (
+            {!isCV && !isJob && !isSold && !isBigItem && (
               <span className="text-[11px] font-bold text-[#FF6600] shrink-0 flex items-center gap-1" title="Fast door-to-door delivery available across Accra & Ghana">
                 <span>⚡</span>
                 <span>Fast Delivery</span>
@@ -455,7 +478,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
               <MapPin size={12} className="text-slate-400 shrink-0" />
               <span className="truncate">{listing.location}</span>
             </div>
-            {!isCV && !isJob && !isSold && (
+            {!isCV && !isJob && !isSold && !isBigItem && (
               <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0 ml-1.5 flex items-center gap-1" title="Door-to-door courier service across Accra & Ghana">
                 <span>🚚</span>
                 <span>Accra Courier</span>
@@ -463,20 +486,80 @@ export const ListingCard: React.FC<ListingCardProps> = ({
             )}
           </div>
 
-          {/* WhatsApp Button on every product - opens wa.me */}
-          <button
-            type="button"
-            onClick={handleWhatsAppChat}
-            className={`w-full mt-2.5 py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm group/wa ${
-              isSold
-                ? 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                : 'bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-white border border-[#20ba59] shadow-sm hover:shadow-md'
-            }`}
-            title={`Chat with ${listing.seller.name} on WhatsApp (wa.me/${(listing.seller?.whatsapp || listing.seller?.phone || '').replace(/\D/g, '')})`}
-          >
-            <MessageCircle size={16} className="fill-current text-white shrink-0 group-hover/wa:scale-110 transition-transform" />
-            <span>{isSold ? 'Item Sold · Inquire Seller' : 'WhatsApp Seller'}</span>
-          </button>
+          {/* Jiji/Tonaton/Jumia Small items vs Big items distinction */}
+          {isBigItem ? (
+            <div className="mt-2.5 space-y-1.5">
+              {/* Big items (Cars, Property): Contact on WhatsApp + Call, NO online payment */}
+              <button
+                type="button"
+                onClick={handleWhatsAppChat}
+                className="w-full py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-white border border-[#20ba59] group/wa"
+                title={`Contact ${listing.seller.name} on WhatsApp`}
+              >
+                <MessageCircle size={16} className="fill-current text-white shrink-0 group-hover/wa:scale-110 transition-transform" />
+                <span>Contact Seller on WhatsApp</span>
+              </button>
+
+              <div className="px-2 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/50 rounded-lg text-[10px] text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-1.5">
+                <ShieldAlert size={12} className="text-amber-600 shrink-0" />
+                <span className="truncate">🚫 Inspect in Person · No Online Payment</span>
+              </div>
+            </div>
+          ) : !isCV && !isJob && !isSold ? (
+            /* Small items: Add to Cart (Pay with Paystack MoMo) + WhatsApp */
+            <div className="mt-2.5 space-y-1.5">
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onAddToCart) {
+                      onAddToCart(listing, e);
+                    } else {
+                      onOpenDetails(listing);
+                    }
+                  }}
+                  className="py-2.5 px-2 bg-[#FF6600] hover:bg-[#e65c00] active:scale-98 text-white rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm border border-orange-500 hover:shadow-md"
+                  title="Add to Cart & Pay with Paystack MoMo or Cash on Delivery"
+                >
+                  <ShoppingCart size={14} className="shrink-0" />
+                  <span className="truncate">Add to Cart</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleWhatsAppChat}
+                  className="py-2.5 px-2 bg-[#25D366] hover:bg-[#20ba59] active:scale-98 text-white rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm border border-[#20ba59] hover:shadow-md"
+                  title={`Chat with ${listing.seller.name} on WhatsApp`}
+                >
+                  <MessageCircle size={14} className="fill-current text-white shrink-0" />
+                  <span className="truncate">WhatsApp</span>
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 px-1 font-medium">
+                <span className="flex items-center gap-1 text-[#00875A] dark:text-emerald-400 font-bold">
+                  <span>✓</span>
+                  <span>Paystack MoMo / COD</span>
+                </span>
+                <span>Fast Door Delivery</span>
+              </div>
+            </div>
+          ) : (
+            /* Jobs, CVs or Sold items */
+            <button
+              type="button"
+              onClick={handleWhatsAppChat}
+              className={`w-full mt-2.5 py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm group/wa ${
+                isSold
+                  ? 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                  : 'bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-white border border-[#20ba59] shadow-sm hover:shadow-md'
+              }`}
+            >
+              <MessageCircle size={16} className="fill-current text-white shrink-0 group-hover/wa:scale-110 transition-transform" />
+              <span>{isSold ? 'Item Sold · Inquire Seller' : isJob || isCV ? 'Contact on WhatsApp' : 'WhatsApp Seller'}</span>
+            </button>
+          )}
 
           {/* Quick Action Row: Boost Ad (50 GHS via Paystack) + Call + Report */}
           <div className="mt-1.5 grid grid-cols-3 gap-1">

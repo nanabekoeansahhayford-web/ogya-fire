@@ -17,7 +17,8 @@ import {
   BriefcaseBusiness,
   FileText,
   Factory,
-  Grid
+  Grid,
+  Utensils
 } from 'lucide-react';
 import { CategoryId } from '../types/marketplace';
 
@@ -43,6 +44,10 @@ export const CategoryIcon: React.FC<Props> = ({ categoryId, className = 'w-5 h-5
       return <Shirt className={className} size={size} />;
     case 'beauty-care':
       return <Sparkles className={className} size={size} />;
+    case 'food':
+      return <Utensils className={className} size={size} />;
+    case 'jobs-services':
+      return <Briefcase className={className} size={size} />;
     case 'services':
       return <Briefcase className={className} size={size} />;
     case 'repair-construction':

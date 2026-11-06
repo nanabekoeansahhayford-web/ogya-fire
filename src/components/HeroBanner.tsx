@@ -41,13 +41,15 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   const recognitionRef = useRef<any>(null);
 
   const quickTags = [
-    'East Legon',
-    'Osu',
-    'Spintex Road',
-    'Airport City',
-    'iPhone 16 Pro',
-    'Toyota Camry',
-    'Fire Extinguisher',
+    'iPhone 15',
+    'Toyota Prado',
+    'Trotro Kumasi',
+    'Apartments Tema',
+    'Kente Cloth',
+    'Jollof Rice',
+    'Waakye Special',
+    'Master Plumber',
+    'Electrician',
   ];
 
   // Close recent searches dropdown when clicking outside

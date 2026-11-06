@@ -5,122 +5,149 @@ export const CATEGORIES: CategoryInfo[] = [
     id: 'vehicles',
     name: 'Vehicles',
     iconName: 'Car',
-    shortDesc: 'Cars, SUVs, Motorcycles, Trucks, Auto Parts & Accessories',
-    subcategories: ['Cars', 'SUVs & 4x4s', 'Motorcycles & Scooters', 'Trucks & Trailers', 'Auto Parts & Tires', 'Buses & Vans', 'Watercraft & Boats']
-  },
-  {
-    id: 'property',
-    name: 'Property',
-    iconName: 'Building2',
-    shortDesc: 'Houses, Apartments, Land & Commercial Spaces for Sale/Rent',
-    subcategories: ['Houses & Apartments for Rent', 'Houses & Apartments for Sale', 'Land & Plots', 'Commercial Property', 'Short Let & Holiday Rentals']
+    shortDesc: 'Cars, Motorbikes, Trotro, SUVs & Trucks in Ghana',
+    subcategories: ['Cars', 'Motorbikes & Scooters', 'Trotro & Buses', 'SUVs & 4x4s', 'Auto Parts & Tires', 'Trucks & Trailers']
   },
   {
     id: 'phones-tablets',
     name: 'Phones & Tablets',
     iconName: 'Smartphone',
-    shortDesc: 'Smartphones, Tablets, Smartwatches & Accessories',
-    subcategories: ['Mobile Phones', 'Tablets', 'Smart Watches & Bands', 'Headphones & Earbuds', 'Phone Accessories & Cases']
+    shortDesc: 'iPhone, Samsung, Tecno, Infinix & Tablets',
+    subcategories: ['iPhone', 'Samsung Galaxy', 'Tecno', 'Infinix', 'Tablets & iPads', 'Smart Watches', 'Accessories']
   },
   {
     id: 'electronics',
     name: 'Electronics',
     iconName: 'Laptop',
-    shortDesc: 'Laptops, TVs, Audio Systems, Cameras & Gaming Consoles',
-    subcategories: ['Laptops & Computers', 'TVs & Home Audio', 'Gaming Consoles & Games', 'Cameras & Video Gear', 'Computer Accessories', 'Generators & Inverters']
+    shortDesc: 'Laptops, TVs, Fridges, Fans & Audio Systems',
+    subcategories: ['Laptops & Computers', 'TVs & Home Audio', 'Fridges & Freezers', 'Fans & Air Conditioners', 'Gaming & Consoles']
   },
   {
-    id: 'home-furniture',
-    name: 'Home, Furniture & Appliances',
-    iconName: 'Armchair',
-    shortDesc: 'Living Room, Bedroom, Kitchen, Appliances & Interior Decor',
-    subcategories: ['Living Room Furniture', 'Kitchen Appliances', 'Bedroom Furniture', 'Refrigerators & Freezers', 'Washing Machines', 'Home Decor & Lighting']
+    id: 'property',
+    name: 'Property',
+    iconName: 'Building2',
+    shortDesc: 'Rooms, Apartments, Houses for rent in Accra, Kumasi, Tema',
+    subcategories: ['Rooms for Rent', 'Apartments for Rent', 'Houses for Rent', 'Houses for Sale', 'Plots & Land', 'Commercial Property']
   },
   {
     id: 'fashion',
     name: 'Fashion',
     iconName: 'Shirt',
-    shortDesc: 'Clothing, Shoes, African Traditional Wear, Watches & Jewelry',
-    subcategories: ['Women\'s Clothing', 'Men\'s Clothing', 'Shoes & Footwear', 'Bags & Luggage', 'Jewelry & Watches', 'Traditional & African Print']
+    shortDesc: 'Clothes, Shoes, Wigs, Bags, Watches & Kente',
+    subcategories: ['Wigs & Hair', 'Shoes & Sneakers', 'Men\'s Clothing', 'Women\'s Clothing', 'Bags & Purses', 'Watches & Jewelry', 'African Wear & Kente']
+  },
+  {
+    id: 'home-furniture',
+    name: 'Home & Furniture',
+    iconName: 'Armchair',
+    shortDesc: 'Beds, Sofas, Tables, Kitchen & Living Room Decor',
+    subcategories: ['Beds & Mattresses', 'Sofas & Couches', 'Dining Tables & Chairs', 'Wardrobes & Cabinets', 'Kitchen Appliances', 'Home Decor']
   },
   {
     id: 'beauty-care',
-    name: 'Beauty & Personal Care',
+    name: 'Beauty & Health',
     iconName: 'Sparkles',
-    shortDesc: 'Skincare, Hair Care, Perfumes, Cosmetics & Wellness',
-    subcategories: ['Fragrances & Perfumes', 'Skincare & Organic Creams', 'Hair Care & Extensions', 'Makeup & Cosmetics', 'Oral & Body Care']
+    shortDesc: 'Skincare, Hair Products, Shea Butter & Fragrances',
+    subcategories: ['Skincare & Glow', 'Hair Care & Oils', 'Fragrances & Perfumes', 'Makeup & Cosmetics', 'Natural Shea & Cocoa Butter']
   },
+  {
+    id: 'food',
+    name: 'Food',
+    iconName: 'Utensils',
+    shortDesc: 'Jollof, Waakye, Pizza, Tilapia, Kelewele, Juice & Grills',
+    subcategories: ['Jollof & Fried Rice', 'Waakye Specials', 'Grilled Tilapia & Banku', 'Pizza & Fast Food', 'Kelewele & Street Food', 'Fresh Juices & Smoothies']
+  },
+  {
+    id: 'jobs-services',
+    name: 'Jobs & Services',
+    iconName: 'Briefcase',
+    shortDesc: 'Plumber, Electrician, Driver, Cleaning & Professional Services',
+    subcategories: ['Plumber & Pipe Fitting', 'Electrician & Wiring', 'Driver & Chauffeur', 'Deep Cleaning & Fumigation', 'Carpentry & Masonry', 'IT & Graphic Design']
+  },
+  // Legacy category IDs preserved for full system backwards compatibility
   {
     id: 'services',
-    name: 'Services',
+    name: 'Other Services',
     iconName: 'Briefcase',
-    shortDesc: 'IT, Event Planning, Transport & Logistics, Cleaning & Tuition',
-    subcategories: ['IT & Web Development', 'Logistics & Haulage', 'Cleaning & Fumigation', 'Events & Catering', 'Legal & Financial Services', 'Classes & Tutoring']
-  },
-  {
-    id: 'repair-construction',
-    name: 'Repair & Construction',
-    iconName: 'Hammer',
-    shortDesc: 'Building Materials, Plumbing, Electrical, Masonry & Roofing',
-    subcategories: ['Building Materials & Cement', 'Electrical Works', 'Plumbing & Drainage', 'Roofing & Steel', 'Carpentry & Joinery', 'Painting & Tiles']
-  },
-  {
-    id: 'commercial-equipment',
-    name: 'Commercial Equipment & Tools',
-    iconName: 'Wrench',
-    shortDesc: 'Industrial Machinery, Medical Equipment, Printing & Store Fixtures',
-    subcategories: ['Heavy Machinery & Excavators', 'Manufacturing Equipment', 'Store Fixtures & Shelving', 'Printing & Graphics Equipment', 'Medical & Lab Equipment']
-  },
-  {
-    id: 'leisure-activities',
-    name: 'Leisure & Activities',
-    iconName: 'Compass',
-    shortDesc: 'Sports Gear, Musical Instruments, Hobbies, Travel & Books',
-    subcategories: ['Gym & Fitness Gear', 'Musical Instruments', 'Books & Magazines', 'Outdoor & Camping', 'Bicycles & Skate', 'Art & Collectibles']
-  },
-  {
-    id: 'babies-kids',
-    name: 'Babies & Kids',
-    iconName: 'Baby',
-    shortDesc: 'Children\'s Clothes, Strollers, Toys, Nursery & Educational Gear',
-    subcategories: ['Baby & Children\'s Clothes', 'Prams, Strollers & Car Seats', 'Toys & Board Games', 'Nursery Furniture', 'Feeding & Baby Essentials']
+    shortDesc: 'Logistics, Tuition, Event Planning',
+    subcategories: ['Logistics & Moving', 'Tuition & Lessons', 'Events & Catering']
   },
   {
     id: 'food-agriculture',
-    name: 'Food, Agriculture & Farming',
+    name: 'Agriculture & Farm Produce',
     iconName: 'Wheat',
-    shortDesc: 'Farm Produce, Grains, Livestock, Poultry, Farm Machinery & Feed',
-    subcategories: ['Farm Crops & Fresh Produce', 'Poultry & Birds', 'Livestock & Cattle', 'Farm Feeds & Supplements', 'Farm Implements & Tractors', 'Seeds & Seedlings']
+    shortDesc: 'Farm Crops, Livestock, Poultry & Feeds',
+    subcategories: ['Farm Crops & Fresh Produce', 'Poultry & Birds', 'Livestock & Cattle']
   },
   {
     id: 'animals-pets',
     name: 'Animals & Pets',
     iconName: 'Dog',
-    shortDesc: 'Dogs, Puppies, Cats, Aquariums, Birds & Pet Accessories',
-    subcategories: ['Dogs & Puppies', 'Cats & Kittens', 'Pet Accessories & Cages', 'Fish & Aquariums', 'Veterinary & Pet Care']
+    shortDesc: 'Dogs, Puppies, Cats & Pet Accessories',
+    subcategories: ['Dogs & Puppies', 'Cats & Kittens', 'Pet Accessories']
+  },
+  {
+    id: 'babies-kids',
+    name: 'Babies & Kids',
+    iconName: 'Baby',
+    shortDesc: 'Children Clothes, Toys & Baby Gear',
+    subcategories: ['Baby Clothes', 'Toys & Games', 'Strollers & Car Seats']
   },
   {
     id: 'jobs',
-    name: 'Jobs',
+    name: 'Corporate Jobs',
     iconName: 'BriefcaseBusiness',
-    shortDesc: 'Full-time, Part-time, Remote, Tech, Sales, Healthcare & Hospitality',
-    subcategories: ['Software & IT Jobs', 'Sales & Marketing', 'Accounting & Finance', 'Hospitality & Restaurants', 'Drivers & Logistics', 'Healthcare & Nursing', 'Customer Support']
+    shortDesc: 'Full-time, Part-time & Remote Tech Jobs',
+    subcategories: ['Software & IT Jobs', 'Sales & Marketing', 'Accounting & Finance']
   },
   {
     id: 'seeking-work-cvs',
     name: 'Seeking Work - CVs',
     iconName: 'FileText',
-    shortDesc: 'Verified Candidate Profiles, CV Summaries, Available Immediately',
-    subcategories: ['Software Engineers & Tech', 'Accountants & Auditors', 'Experienced Drivers', 'Executive Assistants & Admin', 'Electricians & Technicians', 'Chefs & Caterers']
+    shortDesc: 'Verified Candidate Profiles & CV Summaries',
+    subcategories: ['Software Engineers', 'Accountants', 'Experienced Drivers']
+  },
+  {
+    id: 'repair-construction',
+    name: 'Repair & Construction',
+    iconName: 'Hammer',
+    shortDesc: 'Building Materials, Cement, Roofing & Tiles',
+    subcategories: ['Building Materials', 'Cement & Steel', 'Roofing & Tiles']
+  },
+  {
+    id: 'commercial-equipment',
+    name: 'Commercial Equipment',
+    iconName: 'Wrench',
+    shortDesc: 'Industrial Machinery & Store Fixtures',
+    subcategories: ['Store Fixtures', 'Manufacturing Equipment']
+  },
+  {
+    id: 'leisure-activities',
+    name: 'Leisure & Activities',
+    iconName: 'Compass',
+    shortDesc: 'Sports Gear, Musical Instruments & Books',
+    subcategories: ['Gym & Fitness', 'Musical Instruments', 'Books']
   },
   {
     id: 'business-industry',
-    name: 'Business & Industry',
+    name: 'Business & Wholesale',
     iconName: 'Factory',
-    shortDesc: 'Wholesale Lots, Businesses for Sale, Raw Materials & Contracts',
-    subcategories: ['Wholesale & Bulk Lots', 'Businesses For Sale', 'Industrial Raw Materials', 'Packaging Materials', 'Office Equipment & Supplies']
+    shortDesc: 'Wholesale Lots & Businesses For Sale',
+    subcategories: ['Wholesale & Bulk Lots', 'Businesses For Sale']
   }
 ];
+
+export const GHANA_CITIES = [
+  'All Ghana',
+  'Accra',
+  'Kumasi',
+  'Tema',
+  'Takoradi',
+  'Tamale',
+  'Cape Coast'
+] as const;
+
+export type GhanaCity = typeof GHANA_CITIES[number];
 
 export const REGIONS = [
   'Greater Accra (Accra, Tema, Madina, Legon)',

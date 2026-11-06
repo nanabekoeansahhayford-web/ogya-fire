@@ -3,14 +3,25 @@ export type ProductCategory =
   | 'Smoke Detector'
   | 'Fire Blanket'
   | 'Alarm'
-  | 'Hose';
+  | 'Hose'
+  | 'Ghanaian Food'
+  | 'Local Delicacies'
+  | 'Grill & BBQ'
+  | 'Pizza & Fast Food'
+  | 'Drinks & Smoothies'
+  | (string & {});
 
-export const PRODUCT_CATEGORIES: ProductCategory[] = [
+export const PRODUCT_CATEGORIES: string[] = [
   'Fire Extinguisher',
   'Smoke Detector',
   'Fire Blanket',
   'Alarm',
   'Hose',
+  'Ghanaian Food',
+  'Local Delicacies',
+  'Grill & BBQ',
+  'Pizza & Fast Food',
+  'Drinks & Smoothies',
 ];
 
 export interface Product {

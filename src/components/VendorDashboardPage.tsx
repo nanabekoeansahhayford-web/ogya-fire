@@ -343,7 +343,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
       return;
     }
 
-    const defaultImages: Record<ProductCategory, string> = {
+    const defaultImages: Record<string, string> = {
       'Fire Extinguisher': 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=600&auto=format&fit=crop&q=80',
       'Smoke Detector': 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&auto=format&fit=crop&q=80',
       'Fire Blanket': 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&auto=format&fit=crop&q=80',
@@ -351,7 +351,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
       'Hose': 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&auto=format&fit=crop&q=80',
     };
 
-    const finalImage = image.trim() || defaultImages[category];
+    const finalImage = image.trim() || defaultImages[category] || 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=600&auto=format&fit=crop&q=80';
     const newProductId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
     const newProduct: Product = {

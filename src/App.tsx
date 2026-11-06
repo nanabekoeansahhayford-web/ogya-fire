@@ -30,6 +30,8 @@ import { MyOrdersModal } from './components/MyOrdersModal';
 import { BecomeVendorModal } from './components/BecomeVendorModal';
 import { VendorDashboardModal } from './components/VendorDashboardModal';
 import { VendorDashboardPage } from './components/VendorDashboardPage';
+import { FoodVendorsSection } from './components/FoodVendorsSection';
+import { FoodVendor, FoodMenuItem } from './data/foodVendors';
 import { Product, Vendor, Order, CartItem } from './types/store';
 import { SEED_PRODUCTS } from './data/seedProducts';
 import {
@@ -177,8 +179,14 @@ export default function App() {
   const [authMode, setAuthMode] = useState<'register' | 'signin'>('register');
   const [authDefaultRole, setAuthDefaultRole] = useState<'buyer' | 'seller'>('buyer');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [profileInitialTab, setProfileInitialTab] = useState<'profile' | 'my-ads' | 'orders' | 'reputation' | 'security'>('profile');
   const [isVerifiedModalOpen, setIsVerifiedModalOpen] = useState(false);
   const [isVercelGuideOpen, setIsVercelGuideOpen] = useState(false);
+
+  const handleOpenProfile = (tab: 'profile' | 'my-ads' | 'orders' | 'reputation' | 'security' = 'profile') => {
+    setProfileInitialTab(tab);
+    setIsProfileOpen(true);
+  };
 
   // Products, Cart, Vendors & Orders State (Fire Safety Store)
   const [products, setProducts] = useState<Product[]>(() => SEED_PRODUCTS);
@@ -226,7 +234,45 @@ export default function App() {
   const handleAddToCart = (product: Product, quantity = 1) => {
     const updated = addToCart(product, quantity);
     setCart(updated);
-    showToast(`🛒 Added ${quantity > 1 ? `${quantity}x ` : ''}"${product.name.slice(0, 30)}..." to your Fire Safety Cart!`);
+    showToast(`🛒 Added ${quantity > 1 ? `${quantity}x ` : ''}"${product.name.slice(0, 30)}..." to your Cart!`);
+  };
+
+  const handleAddFoodToCart = (item: FoodMenuItem, vendor: FoodVendor) => {
+    const foodProduct: Product = {
+      id: item.id,
+      name: `${item.name} (${vendor.name})`,
+      description: item.description,
+      price: item.price,
+      category: 'Ghanaian Food',
+      imageUrl: item.imageUrl,
+      stock: 99,
+      vendorId: vendor.id,
+      vendorName: vendor.name,
+    };
+    const updated = addToCart(foodProduct, 1);
+    setCart(updated);
+    showToast(`🍲 Added "${item.name}" from ${vendor.name} to cart (₵ ${item.price.toFixed(2)})!`);
+  };
+
+  const handleAddToCartFromListing = (listing: Listing, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const storeProduct: Product = {
+      id: listing.id,
+      name: listing.title,
+      description: listing.description,
+      price: listing.price,
+      category: listing.categoryName,
+      imageUrl: listing.images?.[0] || '',
+      stock: 50,
+      vendorId: listing.userId || 'vnd-verified-ghana',
+      vendorName: listing.seller?.name || 'OGYA Verified Vendor',
+    };
+    handleAddToCart(storeProduct, 1);
+  };
+
+  const getItemQuantityInCart = (itemId: string) => {
+    const match = cart.find((c) => c.id === itemId);
+    return match ? match.quantity : 0;
   };
 
   const handleUpdateCartQuantity = (productId: string, quantity: number) => {
@@ -616,13 +662,17 @@ export default function App() {
           return false;
         }
 
-        // Region filter for all 16 Ghana regions
-        if (filters.region && filters.region !== 'all' && filters.region !== 'All Regions') {
-          const mainRegionKey = filters.region.split('(')[0].trim().toLowerCase();
+        // Location filter: supports Accra, Kumasi, Tema, Takoradi, Tamale, Cape Coast & all 16 Ghana regions
+        if (filters.region && filters.region !== 'all' && filters.region !== 'All Regions' && filters.region !== 'All Ghana') {
+          const selectedLoc = filters.region.trim().toLowerCase();
           const itemRegion = item.region.toLowerCase();
           const itemLocation = item.location.toLowerCase();
 
+          // Direct city check
+          const directCityMatch = itemLocation.includes(selectedLoc) || itemRegion.includes(selectedLoc);
+
           // 1. Direct region name match
+          const mainRegionKey = filters.region.split('(')[0].trim().toLowerCase();
           const matchRegion = itemRegion.includes(mainRegionKey) || mainRegionKey.includes(itemRegion.split('(')[0].trim());
           const matchLocation = itemLocation.includes(mainRegionKey);
 
@@ -639,19 +689,15 @@ export default function App() {
 
           // 3. Known Ghana town & municipality synonyms
           const aliasMatch = (
-            (mainRegionKey.includes('greater accra') && ['accra', 'tema', 'legon', 'madina', 'osu', 'spintex', 'cantonments', 'east legon', 'dansoman', 'circle', 'afienya', 'dawhenya'].some(k => itemLocation.includes(k))) ||
-            (mainRegionKey.includes('ashanti') && ['kumasi', 'obuasi', 'ejisu', 'bonwire', 'adum', 'asante'].some(k => itemLocation.includes(k))) ||
-            (mainRegionKey.includes('western') && !mainRegionKey.includes('north') && ['takoradi', 'sekondi', 'tarkwa'].some(k => itemLocation.includes(k))) ||
-            (mainRegionKey.includes('central') && ['cape coast', 'kasoa', 'winneba', 'mankessim', 'elmina'].some(k => itemLocation.includes(k))) ||
-            (mainRegionKey.includes('eastern') && ['koforidua', 'akuapem', 'aburi', 'nkawkaw'].some(k => itemLocation.includes(k))) ||
-            (mainRegionKey.includes('northern') && ['tamale', 'yendi', 'savelugu'].some(k => itemLocation.includes(k))) ||
-            (mainRegionKey.includes('volta') && ['ho', 'keta', 'hohoe', 'amedzofe'].some(k => itemLocation.includes(k))) ||
-            (mainRegionKey.includes('bono') && ['sunyani', 'techiman', 'berekum', 'kintampo'].some(k => itemLocation.includes(k))) ||
-            (mainRegionKey.includes('upper east') && ['bolgatanga', 'bawku', 'navrongo'].some(k => itemLocation.includes(k))) ||
-            (mainRegionKey.includes('upper west') && ['wa', 'lawra', 'tumu'].some(k => itemLocation.includes(k)))
+            (selectedLoc.includes('accra') && ['accra', 'legon', 'madina', 'osu', 'spintex', 'cantonments', 'east legon', 'dansoman', 'circle'].some(k => itemLocation.includes(k))) ||
+            (selectedLoc.includes('tema') && ['tema', 'afienya', 'dawhenya'].some(k => itemLocation.includes(k))) ||
+            (selectedLoc.includes('kumasi') && ['kumasi', 'kejetia', 'bantama', 'ahodwo', 'anloga', 'knust', 'adum', 'bonwire', 'obuasi'].some(k => itemLocation.includes(k))) ||
+            (selectedLoc.includes('takoradi') && ['takoradi', 'sekondi', 'tarkwa', 'harbor'].some(k => itemLocation.includes(k))) ||
+            (selectedLoc.includes('tamale') && ['tamale', 'aboabo', 'savelugu', 'yendi'].some(k => itemLocation.includes(k))) ||
+            (selectedLoc.includes('cape coast') && ['cape coast', 'kotokuraba', 'elmina', 'kasoa'].some(k => itemLocation.includes(k)))
           );
 
-          if (!matchRegion && !matchLocation && !matchTown && !aliasMatch) {
+          if (!directCityMatch && !matchRegion && !matchLocation && !matchTown && !aliasMatch) {
             return false;
           }
         }
@@ -758,7 +804,7 @@ export default function App() {
         onToggleTheme={toggleTheme}
         currentUser={currentUser}
         onOpenAuth={handleOpenAuth}
-        onOpenProfile={() => setIsProfileOpen(true)}
+        onOpenProfile={() => handleOpenProfile('profile')}
         onOpenSellerDashboard={() => {
           if (!currentUser) {
             handleOpenAuth('signin', 'seller');
@@ -771,7 +817,7 @@ export default function App() {
         onLogout={handleLogout}
         cartCount={getCartItemCount(cart)}
         onOpenCart={() => setIsCartOpen(true)}
-        onOpenMyOrders={() => setIsMyOrdersOpen(true)}
+        onOpenMyOrders={() => handleOpenProfile('orders')}
         onOpenBecomeVendor={() => setIsBecomeVendorOpen(true)}
         onOpenVendorDashboard={navigateToVendor}
         onScrollToStore={handleScrollToStore}
@@ -834,6 +880,13 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {/* Featured Food Vendors in Accra (6 Demo Ghanaian Vendors with Jumia/Bolt Food design) */}
+      <FoodVendorsSection
+        onAddToCart={handleAddFoodToCart}
+        cartItemCount={getCartItemCount(cart)}
+        getItemQuantityInCart={getItemQuantityInCart}
+      />
 
       {/* Fire Protection & Safety Equipment Grid (Firestore collection 'products') */}
       <ProductGrid
@@ -921,16 +974,19 @@ export default function App() {
             {/* Sector Heading & Result Metadata */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
               <div>
-                <h2 className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white">
-                  {currentCategoryInfo ? currentCategoryInfo.name : 'All Verified Listings'}
+                <h2 className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white flex items-center gap-2">
+                  <span>{currentCategoryInfo ? currentCategoryInfo.name : '🔥 Top Marketplace Listings'}</span>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/60 text-[#FF6600] border border-orange-200 dark:border-orange-900/50">
+                    {filteredListings.length}
+                  </span>
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  {currentCategoryInfo ? currentCategoryInfo.shortDesc : 'Showing top items, vehicles, real estate, jobs, and CVs across all 17 sectors'}
+                  {currentCategoryInfo ? currentCategoryInfo.shortDesc : 'Jiji + Tonaton + Jumia style marketplace for Vehicles, Phones, Electronics, Property, Food, Jobs & Services across Ghana.'}
                 </p>
               </div>
 
               {/* Active Filter Pills (Interactive button elements to clear) */}
-              {(filters.category !== 'all' || filters.searchQuery || filters.condition !== 'all' || (filters.region !== 'all' && filters.region !== 'All Regions') || (filters.badgeFilter && filters.badgeFilter !== 'all')) && (
+              {(filters.category !== 'all' || filters.searchQuery || filters.condition !== 'all' || (filters.region !== 'all' && filters.region !== 'All Regions' && filters.region !== 'All Ghana') || (filters.badgeFilter && filters.badgeFilter !== 'all')) && (
                 <div className="flex items-center gap-2 flex-wrap">
                   {filters.category !== 'all' && (
                     <button
@@ -960,7 +1016,7 @@ export default function App() {
                       <span className="font-bold">×</span>
                     </button>
                   )}
-                  {filters.region !== 'all' && filters.region !== 'All Regions' && (
+                  {filters.region !== 'all' && filters.region !== 'All Regions' && filters.region !== 'All Ghana' && (
                     <button
                       onClick={() => handleFilterUpdate({ region: 'all' })}
                       className="text-xs bg-amber-100 dark:bg-amber-950/70 hover:bg-amber-200 dark:hover:bg-amber-900/70 text-amber-900 dark:text-amber-200 px-2.5 py-1 rounded-md transition-colors cursor-pointer flex items-center gap-1 border border-amber-300/70 dark:border-amber-800"
@@ -979,6 +1035,79 @@ export default function App() {
               )}
             </div>
 
+            {/* Jiji/Tonaton Quick Location & Price Sort Bar */}
+            <div className="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+              {/* Location Row: Accra, Kumasi, Tema, Takoradi, Tamale, Cape Coast */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0 flex items-center gap-1">
+                  <span>📍</span>
+                  <span>Filter Location:</span>
+                </span>
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none no-scrollbar">
+                  {[
+                    { label: 'All Ghana', value: 'all' },
+                    { label: 'Accra', value: 'Accra' },
+                    { label: 'Kumasi', value: 'Kumasi' },
+                    { label: 'Tema', value: 'Tema' },
+                    { label: 'Takoradi', value: 'Takoradi' },
+                    { label: 'Tamale', value: 'Tamale' },
+                    { label: 'Cape Coast', value: 'Cape Coast' },
+                  ].map((loc) => {
+                    const isSelected =
+                      filters.region === loc.value ||
+                      (loc.value === 'all' && (filters.region === 'all' || filters.region === 'All Regions' || filters.region === 'All Ghana'));
+                    return (
+                      <button
+                        key={loc.label}
+                        type="button"
+                        onClick={() => handleFilterUpdate({ region: loc.value })}
+                        className={`text-xs px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#FF6600] text-white shadow-xs font-black'
+                            : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        {loc.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Price & Deals Sort Row */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0 flex items-center gap-1">
+                  <span>⚡</span>
+                  <span>Sort By:</span>
+                </span>
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none no-scrollbar">
+                  {[
+                    { label: 'Newest First', value: 'newest' },
+                    { label: 'Price: Low to High', value: 'price-low' },
+                    { label: 'Price: High to Low', value: 'price-high' },
+                    { label: '⭐ Top Rated', value: 'top-rated' },
+                    { label: 'Most Popular', value: 'popular' },
+                  ].map((s) => {
+                    const isSelected = filters.sortBy === s.value;
+                    return (
+                      <button
+                        key={s.label}
+                        type="button"
+                        onClick={() => handleFilterUpdate({ sortBy: s.value as any })}
+                        className={`text-xs px-2.5 py-1 rounded-lg font-bold whitespace-nowrap transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 font-black shadow-xs'
+                            : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60'
+                        }`}
+                      >
+                        {s.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
             {/* Grid of Listings */}
             {filteredListings.length === 0 ? (
               <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center shadow-xs">
@@ -987,7 +1116,7 @@ export default function App() {
                   No Listings Match Your Selected Criteria
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6 leading-relaxed">
-                  Try broadening your price range, searching for a different keyword, or resetting your category filter.
+                  Try broadening your price range, searching for a different keyword, or resetting your location/category filter.
                 </p>
                 <div className="flex items-center justify-center gap-3">
                   <button
@@ -998,7 +1127,7 @@ export default function App() {
                   </button>
                   <button
                     onClick={() => setIsPostAdOpen(true)}
-                    className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
+                    className="px-4 py-2 bg-[#FF6600] hover:bg-orange-600 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
                   >
                     <Plus size={15} />
                     <span>Post This Item For Sale</span>
@@ -1022,6 +1151,7 @@ export default function App() {
                       setBoostListing(item);
                     }}
                     onReportListing={(item) => setFraudReportingListing(item)}
+                    onAddToCart={handleAddToCartFromListing}
                   />
                 ))}
               </div>
@@ -1078,6 +1208,10 @@ export default function App() {
         }}
         allListings={listings}
         onSelectListing={handleOpenListing}
+        onAddToCart={(listing) => {
+          handleAddToCartFromListing(listing);
+          setIsCartOpen(true);
+        }}
       />
 
       {/* Boost Ad Modal */}
@@ -1165,6 +1299,21 @@ export default function App() {
         onOpenBoost={(item) => setBoostListing(item)}
         onProfileUpdated={handleProfileUpdated}
         onListingUpdated={handleListingUpdated}
+        initialTab={profileInitialTab}
+        onOpenStore={() => {
+          setIsProfileOpen(false);
+          const el = document.getElementById('browse-listings') || document.querySelector('main');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
+        onOpenFoodVendors={() => {
+          setIsProfileOpen(false);
+          const el = document.getElementById('accra-food-vendors');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
+        onOpenCart={() => {
+          setIsProfileOpen(false);
+          setIsCartOpen(true);
+        }}
       />
 
       {/* AF Seller Dashboard Modal (My Products, Views, Chats, Ghana Card Verification) */}

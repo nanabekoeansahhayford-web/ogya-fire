@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   X,
   User,
@@ -21,14 +21,175 @@ import {
   Check,
   HelpCircle,
   RotateCcw,
+  ShoppingBag,
+  Package,
+  Truck,
+  Clock,
+  AlertCircle,
+  Banknote,
+  ChevronDown,
+  ChevronUp,
+  ArrowRight,
+  Search,
+  ShoppingCart,
+  UtensilsCrossed,
+  Flame,
+  RefreshCw,
+  Bike,
 } from 'lucide-react';
 import { UserProfile, Listing, SellerInfo } from '../types/marketplace';
 import { updateUserProfile } from '../utils/auth';
 import { formatPrice, markListingAsSold } from '../utils/storage';
-import { updateListingStatusInFirestore } from '../utils/firebase';
+import { updateListingStatusInFirestore, fetchOrdersByUserId, subscribeToOrdersByUserId } from '../utils/firebase';
 import { REGIONS } from '../data/categories';
 import { getSellerReputation, BADGE_DEFINITIONS } from '../utils/reputation';
 import { ReputationBadge } from './ReputationBadge';
+import { Order, CartItem, OrderStatus } from '../types/store';
+import { getLocalPlacedOrders, addToCart } from '../utils/cartStorage';
+import mamaEfuaImg from '../assets/images/food_mama_efua_jollof_1793886043512.jpg';
+import accraGrillImg from '../assets/images/food_accra_grill_tilapia_1793886043887.jpg';
+import auntieMuniImg from '../assets/images/food_auntie_muni_waakye_1793886045717.jpg';
+import freshJuiceImg from '../assets/images/food_fresh_juice_bar_1793886046929.jpg';
+
+// Pre-seeded demo orders representing authentic Ghanaian food and safety equipment
+const DEMO_PAST_ORDERS: Order[] = [
+  {
+    id: 'ord-gh-9841',
+    userId: 'demo-user',
+    buyerName: 'Customer',
+    vendorId: 'vendor-mama-efua',
+    items: [
+      {
+        id: 'efua-1',
+        name: 'Jollof Rice + Grilled Chicken',
+        price: 45,
+        category: 'Ghanaian Food',
+        imageUrl: mamaEfuaImg,
+        quantity: 2,
+        stock: 50,
+        vendorId: 'vendor-mama-efua',
+        vendorName: "Mama Efua's Kitchen (Osu)",
+      },
+      {
+        id: 'efua-2',
+        name: 'Waakye + Egg',
+        price: 35,
+        category: 'Ghanaian Food',
+        imageUrl: auntieMuniImg,
+        quantity: 1,
+        stock: 50,
+        vendorId: 'vendor-mama-efua',
+        vendorName: "Mama Efua's Kitchen (Osu)",
+      },
+    ],
+    total: 135,
+    deliveryAddress: 'House 14, Oxford Street, Osu, Accra',
+    phone: '+233 24 555 0192',
+    status: 'delivered',
+    paymentMethod: 'MTN MoMo',
+    momoNumber: '0245550192',
+    createdAt: '2026-11-04T13:20:00Z',
+  },
+  {
+    id: 'ord-gh-9842',
+    userId: 'demo-user',
+    buyerName: 'Customer',
+    vendorId: 'vendor-accra-grill',
+    items: [
+      {
+        id: 'grill-1',
+        name: 'Grilled Tilapia + Banku',
+        price: 60,
+        category: 'Ghanaian Food',
+        imageUrl: accraGrillImg,
+        quantity: 1,
+        stock: 30,
+        vendorId: 'vendor-accra-grill',
+        vendorName: 'Accra Grill House (East Legon)',
+      },
+      {
+        id: 'grill-3',
+        name: 'Beef Shawarma',
+        price: 38,
+        category: 'Ghanaian Food',
+        imageUrl: accraGrillImg,
+        quantity: 1,
+        stock: 40,
+        vendorId: 'vendor-accra-grill',
+        vendorName: 'Accra Grill House (East Legon)',
+      },
+    ],
+    total: 108,
+    deliveryAddress: 'Lagos Avenue, Near A&C Mall, East Legon, Accra',
+    phone: '+233 20 123 9876',
+    status: 'pending',
+    paymentMethod: 'Cash on Delivery',
+    createdAt: '2026-11-06T11:45:00Z',
+  },
+  {
+    id: 'ord-gh-9843',
+    userId: 'demo-user',
+    buyerName: 'Customer',
+    vendorId: 'vnd-ogya-central',
+    items: [
+      {
+        id: 'prod-fe-6kg-abc',
+        name: '6KG ABC Dry Powder Fire Extinguisher (ISO & GNFS Approved)',
+        price: 450,
+        category: 'Fire Extinguisher',
+        imageUrl: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=600&auto=format&fit=crop&q=80',
+        quantity: 1,
+        stock: 24,
+        vendorId: 'vnd-ogya-central',
+        vendorName: 'OGYA Fire Direct Ltd (Accra)',
+      },
+    ],
+    total: 450,
+    deliveryAddress: 'Plot 18, Ring Road Central, Kokomlemle, Accra',
+    phone: '+233 24 412 3456',
+    status: 'delivered',
+    paymentMethod: 'MTN MoMo',
+    momoNumber: '0244123456',
+    createdAt: '2026-10-30T09:15:00Z',
+  },
+  {
+    id: 'ord-gh-9844',
+    userId: 'demo-user',
+    buyerName: 'Customer',
+    vendorId: 'vendor-fresh-juice',
+    items: [
+      {
+        id: 'juice-1',
+        name: 'Mango Smoothie',
+        price: 25,
+        category: 'Drinks & Smoothies',
+        imageUrl: freshJuiceImg,
+        quantity: 2,
+        stock: 50,
+        vendorId: 'vendor-fresh-juice',
+        vendorName: 'Fresh Juice & Smoothie Bar (Cantonments)',
+      },
+      {
+        id: 'juice-2',
+        name: 'Pineapple Ginger Juice',
+        price: 18,
+        category: 'Drinks & Smoothies',
+        imageUrl: freshJuiceImg,
+        quantity: 1,
+        stock: 50,
+        vendorId: 'vendor-fresh-juice',
+        vendorName: 'Fresh Juice & Smoothie Bar (Cantonments)',
+      },
+    ],
+    total: 78,
+    deliveryAddress: 'House 8, Cantonments Road, Cantonments, Accra',
+    phone: '+233 27 777 8899',
+    status: 'shipped',
+    paymentMethod: 'Telecel Cash',
+    momoNumber: '0277778899',
+    createdAt: '2026-11-05T15:30:00Z',
+  },
+];
 
 interface UserProfileModalProps {
   user: UserProfile | null;
@@ -41,6 +202,10 @@ interface UserProfileModalProps {
   onOpenBoost?: (listing: Listing) => void;
   onProfileUpdated: (updated: UserProfile) => void;
   onListingUpdated?: (updated: Listing) => void;
+  initialTab?: 'profile' | 'my-ads' | 'orders' | 'reputation' | 'security';
+  onOpenStore?: () => void;
+  onOpenFoodVendors?: () => void;
+  onOpenCart?: () => void;
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({
@@ -54,9 +219,22 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   onOpenBoost,
   onProfileUpdated,
   onListingUpdated,
+  initialTab = 'profile',
+  onOpenStore,
+  onOpenFoodVendors,
+  onOpenCart,
 }) => {
-  const [activeTab, setActiveTab] = useState<'profile' | 'my-ads' | 'reputation' | 'security'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'my-ads' | 'orders' | 'reputation' | 'security'>(
+    initialTab || 'profile'
+  );
   const [isEditing, setIsEditing] = useState(false);
+
+  // Sync activeTab when initialTab or isOpen changes
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab, isOpen]);
 
   // Edit states
   const [name, setName] = useState(user?.name || '');
@@ -68,6 +246,97 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [toast, setToast] = useState<string | null>(null);
   const [updatingListingId, setUpdatingListingId] = useState<string | null>(null);
   const [adsFilter, setAdsFilter] = useState<'all' | 'active' | 'sold'>('all');
+
+  // Orders State
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isOrdersLoading, setIsOrdersLoading] = useState(false);
+  const [ordersFilter, setOrdersFilter] = useState<'all' | 'food' | 'products' | 'pending' | 'delivered'>('all');
+  const [orderSearchQuery, setOrderSearchQuery] = useState('');
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+
+  // Fetch and listen to user orders
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setIsOrdersLoading(true);
+    const localOrders: Order[] = getLocalPlacedOrders();
+
+    if (user?.id) {
+      // 1. Fetch from Firestore
+      fetchOrdersByUserId(user.id)
+        .then((remoteOrders) => {
+          const orderMap = new Map<string, Order>();
+          remoteOrders.forEach((o) => orderMap.set(o.id, o));
+          localOrders.forEach((o) => {
+            if (!orderMap.has(o.id)) orderMap.set(o.id, o);
+          });
+
+          // If user has placed no live orders yet, include demo orders so history is immediately rich
+          if (orderMap.size === 0) {
+            DEMO_PAST_ORDERS.forEach((o) => orderMap.set(o.id, o));
+          }
+
+          setOrders(Array.from(orderMap.values()));
+          setIsOrdersLoading(false);
+        })
+        .catch(() => {
+          const orderMap = new Map<string, Order>();
+          localOrders.forEach((o) => orderMap.set(o.id, o));
+          if (orderMap.size === 0) {
+            DEMO_PAST_ORDERS.forEach((o) => orderMap.set(o.id, o));
+          }
+          setOrders(Array.from(orderMap.values()));
+          setIsOrdersLoading(false);
+        });
+
+      // 2. Real-time Firestore subscription
+      const unsubscribe = subscribeToOrdersByUserId(user.id, (remoteOrders) => {
+        const orderMap = new Map<string, Order>();
+        remoteOrders.forEach((o) => orderMap.set(o.id, o));
+        localOrders.forEach((o) => {
+          if (!orderMap.has(o.id)) orderMap.set(o.id, o);
+        });
+        if (orderMap.size === 0) {
+          DEMO_PAST_ORDERS.forEach((o) => orderMap.set(o.id, o));
+        }
+        setOrders(Array.from(orderMap.values()));
+        setIsOrdersLoading(false);
+      });
+
+      return () => {
+        unsubscribe();
+      };
+    } else {
+      const orderMap = new Map<string, Order>();
+      localOrders.forEach((o) => orderMap.set(o.id, o));
+      if (orderMap.size === 0) {
+        DEMO_PAST_ORDERS.forEach((o) => orderMap.set(o.id, o));
+      }
+      setOrders(Array.from(orderMap.values()));
+      setIsOrdersLoading(false);
+    }
+  }, [isOpen, user?.id]);
+
+  const handleReorder = (order: Order) => {
+    order.items.forEach((item) => {
+      addToCart(
+        {
+          id: item.id,
+          name: item.name,
+          description: item.name,
+          price: item.price,
+          category: item.category,
+          imageUrl: item.imageUrl,
+          stock: item.stock || 50,
+          vendorId: item.vendorId || order.vendorId || 'vnd-ogya',
+          vendorName: item.vendorName || order.buyerName || 'OGYA Merchant',
+        },
+        item.quantity || 1
+      );
+    });
+    setToast(`🛒 Re-added ${order.items.length} item${order.items.length > 1 ? 's' : ''} to your Cart!`);
+    setTimeout(() => setToast(null), 3500);
+  };
 
   if (!isOpen || !user) return null;
 
@@ -175,6 +444,150 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       setTimeout(() => setToast(null), 3500);
     }
   };
+
+  const formatOrderDate = (dateVal: any): string => {
+    if (!dateVal) return 'Recently';
+    try {
+      if (typeof dateVal === 'object' && dateVal.seconds) {
+        const d = new Date(dateVal.seconds * 1000);
+        return d.toLocaleDateString('en-GB', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      }
+      const d = new Date(dateVal);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString('en-GB', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      }
+    } catch {
+      // fallback
+    }
+    return String(dateVal);
+  };
+
+  const isFoodOrder = (order: Order): boolean => {
+    return order.items.some((item) => {
+      const cat = String(item.category || '').toLowerCase();
+      const name = String(item.name || '').toLowerCase();
+      return (
+        cat.includes('food') ||
+        cat.includes('rice') ||
+        cat.includes('grill') ||
+        cat.includes('drink') ||
+        cat.includes('smoothie') ||
+        cat.includes('delicac') ||
+        cat.includes('pizza') ||
+        name.includes('jollof') ||
+        name.includes('waakye') ||
+        name.includes('tilapia') ||
+        name.includes('banku') ||
+        name.includes('pizza') ||
+        name.includes('kelewele') ||
+        name.includes('smoothie') ||
+        name.includes('juice') ||
+        name.includes('shawarma') ||
+        name.includes('koko') ||
+        name.includes('koose') ||
+        name.includes('chichinga')
+      );
+    });
+  };
+
+  const renderOrderStatusBadge = (status: OrderStatus | string) => {
+    const norm = String(status).toLowerCase();
+
+    if (norm === 'delivered') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 shadow-2xs">
+          <CheckCircle2 size={12} className="text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
+          <span>Delivered</span>
+        </span>
+      );
+    }
+
+    if (norm === 'shipped') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-300 dark:border-blue-800 shadow-2xs">
+          <Truck size={12} className="text-blue-600 dark:text-blue-400" />
+          <span>In Transit</span>
+        </span>
+      );
+    }
+
+    if (norm === 'paid') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 shadow-2xs">
+          <CheckCircle2 size={12} className="text-emerald-600 dark:text-emerald-400" />
+          <span>Paid</span>
+        </span>
+      );
+    }
+
+    if (norm === 'pending_payment') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-800 shadow-2xs">
+          <Clock size={12} className="text-amber-600 animate-spin" />
+          <span>Pending Payment</span>
+        </span>
+      );
+    }
+
+    if (norm === 'pending') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-800 shadow-2xs">
+          <Clock size={12} className="text-amber-600" />
+          <span>Pending Delivery</span>
+        </span>
+      );
+    }
+
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700 shadow-2xs">
+        <Clock size={12} />
+        <span className="capitalize">{status}</span>
+      </span>
+    );
+  };
+
+  // Filtered orders
+  const filteredOrders = useMemo(() => {
+    return orders.filter((o) => {
+      // Category filter
+      const isFood = isFoodOrder(o);
+      if (ordersFilter === 'food' && !isFood) return false;
+      if (ordersFilter === 'products' && isFood) return false;
+      if (ordersFilter === 'pending' && o.status !== 'pending' && o.status !== 'pending_payment') return false;
+      if (ordersFilter === 'delivered' && o.status !== 'delivered' && o.status !== 'paid') return false;
+
+      // Search query
+      if (orderSearchQuery.trim()) {
+        const q = orderSearchQuery.toLowerCase();
+        const matchId = o.id.toLowerCase().includes(q);
+        const matchVendor = (o.buyerName || '').toLowerCase().includes(q) || (o.vendorId || '').toLowerCase().includes(q);
+        const matchAddress = o.deliveryAddress.toLowerCase().includes(q);
+        const matchItems = o.items.some(
+          (it) => it.name.toLowerCase().includes(q) || it.category.toLowerCase().includes(q)
+        );
+        return matchId || matchVendor || matchAddress || matchItems;
+      }
+
+      return true;
+    });
+  }, [orders, ordersFilter, orderSearchQuery]);
+
+  const foodOrdersCount = orders.filter(isFoodOrder).length;
+  const productOrdersCount = orders.filter((o) => !isFoodOrder(o)).length;
+  const deliveredOrdersCount = orders.filter((o) => o.status === 'delivered' || o.status === 'paid').length;
+  const pendingOrdersCount = orders.filter((o) => o.status === 'pending' || o.status === 'pending_payment').length;
 
   return (
     <div
@@ -308,6 +721,22 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               }`}
             >
               My Account Details
+            </button>
+            <button
+              onClick={() => setActiveTab('orders')}
+              className={`px-3 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                activeTab === 'orders'
+                  ? 'border-white text-white font-extrabold'
+                  : 'border-transparent text-white/70 hover:text-white'
+              }`}
+            >
+              <ShoppingBag size={13} />
+              <span>My Order History</span>
+              {orders.length > 0 && (
+                <span className="bg-white/20 text-white text-[10px] px-1.5 py-0.2 rounded-full tabular-nums font-black">
+                  {orders.length}
+                </span>
+              )}
             </button>
             <button
               onClick={() => setActiveTab('my-ads')}
@@ -521,6 +950,363 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       <span>Post a New Ad with Your Profile</span>
                     </button>
                   </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Tab: My Order History (Past Food & Product Orders) */}
+          {activeTab === 'orders' && (
+            <div className="space-y-4">
+              {/* Header with Search and Summary */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                  <h4 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                    <ShoppingBag size={16} className="text-[#00875A]" />
+                    <span>My Order History</span>
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Track past Ghanaian food deliveries and verified equipment orders
+                  </p>
+                </div>
+
+                {/* Sub-filter chips */}
+                <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl text-xs font-bold overflow-x-auto scrollbar-none">
+                  <button
+                    type="button"
+                    onClick={() => setOrdersFilter('all')}
+                    className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                      ordersFilter === 'all'
+                        ? 'bg-white dark:bg-slate-900 text-slate-950 dark:text-white shadow-2xs font-black'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    All ({orders.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOrdersFilter('food')}
+                    className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+                      ordersFilter === 'food'
+                        ? 'bg-white dark:bg-slate-900 text-[#00875A] dark:text-emerald-400 shadow-2xs font-black'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <span>🍲 Food</span>
+                    <span className="text-[10px] opacity-75">({foodOrdersCount})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOrdersFilter('products')}
+                    className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+                      ordersFilter === 'products'
+                        ? 'bg-white dark:bg-slate-900 text-[#FF6600] shadow-2xs font-black'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <span>📦 Products</span>
+                    <span className="text-[10px] opacity-75">({productOrdersCount})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOrdersFilter('delivered')}
+                    className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                      ordersFilter === 'delivered'
+                        ? 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 shadow-2xs font-black'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    Delivered ({deliveredOrdersCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOrdersFilter('pending')}
+                    className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                      ordersFilter === 'pending'
+                        ? 'bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-400 shadow-2xs font-black'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    Pending ({pendingOrdersCount})
+                  </button>
+                </div>
+              </div>
+
+              {/* Order Search bar */}
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search orders by item, dish, or vendor name..."
+                  value={orderSearchQuery}
+                  onChange={(e) => setOrderSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#00875A]"
+                />
+                {orderSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setOrderSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+
+              {/* Orders List Container */}
+              {isOrdersLoading ? (
+                <div className="py-12 text-center text-slate-400 text-xs">
+                  <div className="w-6 h-6 border-2 border-[#00875A] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                  <span>Loading your order history...</span>
+                </div>
+              ) : filteredOrders.length === 0 ? (
+                <div className="py-10 px-4 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto text-slate-400">
+                    <ShoppingBag size={24} />
+                  </div>
+                  <div>
+                    <h5 className="text-sm font-extrabold text-slate-900 dark:text-white">
+                      No matching orders found
+                    </h5>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-1">
+                      {orderSearchQuery
+                        ? `No orders matching "${orderSearchQuery}". Try clearing your search.`
+                        : 'Explore popular Ghanaian kitchens or fire safety equipment and enjoy fast doorstep delivery.'}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
+                    {onOpenFoodVendors && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onClose();
+                          onOpenFoodVendors();
+                        }}
+                        className="px-3.5 py-2 bg-[#00875A] hover:bg-[#00704a] text-white text-xs font-extrabold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+                      >
+                        <UtensilsCrossed size={13} />
+                        <span>Browse Accra Food Vendors 🍲</span>
+                      </button>
+                    )}
+                    {onOpenStore && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onClose();
+                          onOpenStore();
+                        }}
+                        className="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 border border-slate-200 dark:border-slate-700"
+                      >
+                        <Flame size={13} className="text-[#FF6600]" />
+                        <span>Safety Equipment Store</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredOrders.map((order) => {
+                    const isFood = isFoodOrder(order);
+                    const isExpanded = expandedOrderId === order.id;
+                    const totalItemsCount = order.items.reduce((s, it) => s + (it.quantity || 1), 0);
+
+                    return (
+                      <div
+                        key={order.id}
+                        className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/80 overflow-hidden shadow-2xs hover:shadow-md transition-all duration-200"
+                      >
+                        {/* Top Card Header */}
+                        <div className="p-3.5 sm:p-4 bg-slate-50/70 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-700/60 flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex items-center gap-2.5">
+                            <div
+                              className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-2xs ${
+                                isFood
+                                  ? 'bg-[#00875A]/15 text-[#00875A] dark:text-emerald-400'
+                                  : 'bg-[#FF6600]/15 text-[#FF6600]'
+                              }`}
+                            >
+                              {isFood ? <UtensilsCrossed size={17} /> : <Package size={17} />}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-black text-slate-900 dark:text-white font-mono tracking-tight">
+                                  #{order.id.slice(0, 16)}
+                                </span>
+                                <span
+                                  className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
+                                    isFood
+                                      ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/70 dark:text-emerald-300'
+                                      : 'bg-orange-100 text-orange-900 dark:bg-orange-950/70 dark:text-orange-300'
+                                  }`}
+                                >
+                                  {isFood ? '🍲 Food Delivery' : '📦 Safety Gear'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                <span className="flex items-center gap-1 font-medium">
+                                  <Clock size={11} />
+                                  <span>{formatOrderDate(order.createdAt)}</span>
+                                </span>
+                                <span>•</span>
+                                <span>{totalItemsCount} {totalItemsCount === 1 ? 'item' : 'items'}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Status Badge */}
+                          <div className="flex items-center gap-2">
+                            {renderOrderStatusBadge(order.status)}
+                          </div>
+                        </div>
+
+                        {/* Items Purchased List */}
+                        <div className="p-3.5 sm:p-4 space-y-3">
+                          <div className="space-y-2.5">
+                            {order.items.map((item, idx) => (
+                              <div
+                                key={`${item.id}-${idx}`}
+                                className="flex items-center justify-between gap-3 group"
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700/60 overflow-hidden shrink-0 border border-slate-200/70 dark:border-slate-700">
+                                    {item.imageUrl ? (
+                                      <img
+                                        src={item.imageUrl}
+                                        alt={item.name}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                        {isFood ? <UtensilsCrossed size={16} /> : <Package size={16} />}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <h6 className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                                        {item.name}
+                                      </h6>
+                                      <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700/80 px-1.5 py-0.2 rounded">
+                                        {item.quantity}x
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                                      <span className="text-[#00875A] dark:text-emerald-400 font-bold">
+                                        {item.category}
+                                      </span>
+                                      {item.vendorName && (
+                                        <>
+                                          <span>•</span>
+                                          <span className="truncate">{item.vendorName}</span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="text-right shrink-0">
+                                  <span className="text-xs font-black text-slate-900 dark:text-white tabular-nums block">
+                                    ₵ {((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 block">
+                                    ₵{item.price?.toFixed(2)} each
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Expanded Full Order Details: Address, Contact, Payment */}
+                          {isExpanded && (
+                            <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-700/60 bg-slate-50/60 dark:bg-slate-800/40 -mx-3.5 sm:-mx-4 px-3.5 sm:px-4 py-3 space-y-2 text-xs">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-600 dark:text-slate-300">
+                                <div>
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                                    Delivery Address
+                                  </span>
+                                  <span className="font-semibold text-slate-900 dark:text-white flex items-center gap-1 mt-0.5">
+                                    <MapPin size={12} className="text-amber-500 shrink-0" />
+                                    <span>{order.deliveryAddress || 'Standard Accra Delivery'}</span>
+                                  </span>
+                                </div>
+
+                                <div>
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                                    Recipient Contact
+                                  </span>
+                                  <span className="font-semibold text-slate-900 dark:text-white flex items-center gap-1 mt-0.5">
+                                    <Phone size={12} className="text-emerald-500 shrink-0" />
+                                    <span>{order.phone || user.phone}</span>
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/40 text-slate-600 dark:text-slate-300">
+                                <div>
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                                    Payment Method
+                                  </span>
+                                  <span className="font-semibold text-slate-900 dark:text-white flex items-center gap-1 mt-0.5">
+                                    <Banknote size={12} className="text-[#00875A] shrink-0" />
+                                    <span>{order.paymentMethod || 'Mobile Money'}</span>
+                                    {order.momoNumber && (
+                                      <span className="text-slate-400 text-[11px]">({order.momoNumber})</span>
+                                    )}
+                                  </span>
+                                </div>
+
+                                <div>
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                                    Courier Delivery Fee
+                                  </span>
+                                  <span className="font-semibold text-[#00875A] dark:text-emerald-400 flex items-center gap-1 mt-0.5">
+                                    <Bike size={12} />
+                                    <span>₵10.00 Flat Express Courier Included</span>
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Order Footer & Total Amount & Action Buttons */}
+                          <div className="pt-3 border-t border-slate-100 dark:border-slate-700/60 flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                Total:
+                              </span>
+                              <span className="text-base sm:text-lg font-black text-[#00875A] dark:text-emerald-400 tabular-nums">
+                                ₵ {order.total.toFixed(2)}
+                              </span>
+                              <span className="text-[11px] text-slate-400">
+                                ({order.total} GHS)
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
+                                className="px-2.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                              >
+                                <span>{isExpanded ? 'Hide Details' : 'View Details'}</span>
+                                {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleReorder(order)}
+                                className="px-3.5 py-1.5 text-xs font-bold bg-[#FF6600] hover:bg-[#e65c00] text-white rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-xs active:scale-95"
+                                title="Add these items to your cart again"
+                              >
+                                <ShoppingCart size={13} />
+                                <span>Order Again</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

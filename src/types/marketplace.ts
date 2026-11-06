@@ -1,19 +1,21 @@
 export type CategoryId =
   | 'vehicles'
-  | 'property'
   | 'phones-tablets'
   | 'electronics'
-  | 'home-furniture'
+  | 'property'
   | 'fashion'
+  | 'home-furniture'
   | 'beauty-care'
+  | 'food'
+  | 'jobs-services'
   | 'services'
+  | 'jobs'
+  | 'food-agriculture'
   | 'repair-construction'
   | 'commercial-equipment'
   | 'leisure-activities'
   | 'babies-kids'
-  | 'food-agriculture'
   | 'animals-pets'
-  | 'jobs'
   | 'seeking-work-cvs'
   | 'business-industry';
 
@@ -147,6 +149,10 @@ export interface Listing {
   status?: 'active' | 'sold' | 'expired';
   isSold?: boolean;
   soldAt?: string;
+  isHotDeal?: boolean;
+  originalPrice?: number;
+  discountPercent?: number;
+  isBigItem?: boolean;
   attributes?: Record<string, string>;
   // For Seeking Work - CVs
   cvDetails?: {

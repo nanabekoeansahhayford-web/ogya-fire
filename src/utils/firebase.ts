@@ -31,9 +31,13 @@ import { SEED_PRODUCTS } from '../data/seedProducts';
 
 // Initialize Firebase App & Services
 const app = initializeApp(firebaseConfig);
-export const db = initializeFirestore(app, {
-  experimentalAutoDetectLongPolling: true,
-}, firebaseConfig.firestoreDatabaseId);
+export const db = initializeFirestore(
+  app,
+  {
+    experimentalForceLongPolling: true,
+  },
+  firebaseConfig.firestoreDatabaseId
+);
 export const auth = getAuth(app);
 
 /**
@@ -222,14 +226,20 @@ export async function sendFirebasePasswordReset(email: string): Promise<{
   }
 }
 
-// Test connection on boot
+// Test connection on boot with timeout safety
 export async function testConnection(): Promise<boolean> {
   try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), 3000)
+    );
+    await Promise.race([
+      getDocFromServer(doc(db, 'test', 'connection')),
+      timeoutPromise,
+    ]);
     return true;
   } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.warn('Firestore offline: please check your Firebase network connection.');
+    if (error instanceof Error && (error.message.includes('the client is offline') || error.message.includes('timeout'))) {
+      console.warn('Firestore: operating with local data and cache.');
     }
     return false;
   }

@@ -109,7 +109,7 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
       return;
     }
 
-    const defaultImages: Record<ProductCategory, string> = {
+    const defaultImages: Record<string, string> = {
       'Fire Extinguisher': 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=600&auto=format&fit=crop&q=80',
       'Smoke Detector': 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&auto=format&fit=crop&q=80',
       'Fire Blanket': 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&auto=format&fit=crop&q=80',
@@ -117,7 +117,7 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
       'Hose': 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&auto=format&fit=crop&q=80',
     };
 
-    const finalImage = imageUrl.trim() || defaultImages[category];
+    const finalImage = imageUrl.trim() || defaultImages[category] || 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=600&auto=format&fit=crop&q=80';
     const vendorId = currentUser?.id || vendor?.id || 'vnd-custom';
     const vendorName = vendor?.shopName || currentUser?.name || 'Verified OGYA Vendor';
 

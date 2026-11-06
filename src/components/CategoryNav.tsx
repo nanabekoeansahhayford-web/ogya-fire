@@ -14,47 +14,54 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
   onSelectCategory,
   categoryCounts,
 }) => {
+  // Focus on the 9 primary super-app categories requested
+  const primaryCategories = CATEGORIES.slice(0, 9);
+
   return (
-    <div className="bg-white dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 py-3 shadow-xs transition-colors duration-200">
+    <div className="bg-white dark:bg-slate-900 border-b border-slate-200/90 dark:border-slate-800 py-3 shadow-xs sticky top-16 z-30 transition-colors duration-200 backdrop-blur-md bg-white/95 dark:bg-slate-900/95">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-800/80">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">
-              17 Verified Categories
+            <span className="text-[11px] font-black text-[#FF6600] uppercase tracking-wider flex items-center gap-1.5">
+              <span>🔥</span>
+              <span>Shop Ghana By Category</span>
             </span>
           </div>
           {selectedCategory !== 'all' && (
             <button
               onClick={() => onSelectCategory('all')}
-              className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors cursor-pointer"
+              className="text-xs font-bold text-[#FF6600] hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 transition-colors cursor-pointer flex items-center gap-1"
             >
-              Clear Category Filter
+              <span>✕</span>
+              <span>Show All Items</span>
             </button>
           )}
         </div>
 
-        {/* Scrollable category list */}
+        {/* Scrollable Category Buttons with Icons */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none no-scrollbar">
           <button
             onClick={() => onSelectCategory('all')}
-            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap shrink-0 cursor-pointer ${
               selectedCategory === 'all'
-                ? 'bg-slate-950 dark:bg-amber-500 text-white dark:text-slate-950 font-bold shadow-sm'
-                : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 hover:text-slate-900 dark:hover:text-white border border-slate-200/60 dark:border-slate-700/60'
+                ? 'bg-[#FF6600] text-white shadow-md shadow-orange-500/20'
+                : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white border border-slate-200/70 dark:border-slate-700/70'
             }`}
           >
-            <CategoryIcon categoryId="all" size={15} />
+            <CategoryIcon categoryId="all" size={16} />
             <span>All Categories</span>
             <span
-              className={`text-[11px] tabular-nums font-mono ${
-                selectedCategory === 'all' ? 'text-slate-300 dark:text-slate-800 font-bold' : 'text-slate-400 dark:text-slate-400'
+              className={`text-[11px] tabular-nums font-mono px-1.5 py-0.2 rounded-md ${
+                selectedCategory === 'all'
+                  ? 'bg-black/20 text-white font-bold'
+                  : 'bg-slate-200/70 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300'
               }`}
             >
-              ({categoryCounts['all'] || 0})
+              {categoryCounts['all'] || 0}
             </span>
           </button>
 
-          {CATEGORIES.map((cat) => {
+          {primaryCategories.map((cat) => {
             const count = categoryCounts[cat.id] || 0;
             const isSelected = selectedCategory === cat.id;
 
@@ -62,26 +69,28 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
               <button
                 key={cat.id}
                 onClick={() => onSelectCategory(cat.id)}
-                className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                   isSelected
-                    ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
-                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 hover:text-slate-900 dark:hover:text-white border border-slate-200/60 dark:border-slate-700/60'
+                    ? 'bg-[#FF6600] text-white shadow-md shadow-orange-500/20'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white border border-slate-200/70 dark:border-slate-700/70'
                 }`}
                 title={cat.shortDesc}
               >
                 <CategoryIcon
                   categoryId={cat.id}
-                  size={15}
-                  className={isSelected ? 'text-slate-950' : 'text-slate-600 dark:text-slate-300'}
+                  size={16}
+                  className={isSelected ? 'text-white' : 'text-[#FF6600] dark:text-orange-400'}
                 />
                 <span>{cat.name}</span>
                 {count > 0 && (
                   <span
-                    className={`text-[11px] tabular-nums font-mono ${
-                      isSelected ? 'text-slate-900 font-bold' : 'text-slate-400 dark:text-slate-400'
+                    className={`text-[11px] tabular-nums font-mono px-1.5 py-0.2 rounded-md ${
+                      isSelected
+                        ? 'bg-black/20 text-white font-bold'
+                        : 'bg-slate-200/70 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300'
                     }`}
                   >
-                    ({count})
+                    {count}
                   </span>
                 )}
               </button>

@@ -10,10 +10,11 @@ export const getStoredListings = (): Listing[] => {
   try {
     const custom = localStorage.getItem(STORAGE_KEY_LISTINGS);
     const parsedCustom: Listing[] = custom ? JSON.parse(custom) : [];
-    const customIds = new Set(parsedCustom.map((item) => item.id));
-    const filteredSeed = SEED_LISTINGS.filter((item) => !customIds.has(item.id));
+    // User created items: items whose IDs are not in SEED_LISTINGS
+    const seedIdSet = new Set(SEED_LISTINGS.map((s) => s.id));
+    const userCreated = parsedCustom.filter((item) => !seedIdSet.has(item.id));
     const boostedIds = getBoostedListingIds();
-    const combined = [...parsedCustom, ...filteredSeed];
+    const combined = [...userCreated, ...SEED_LISTINGS];
     return combined.map((item) => {
       if (boostedIds.includes(item.id)) {
         return { ...item, isPromoted: true };

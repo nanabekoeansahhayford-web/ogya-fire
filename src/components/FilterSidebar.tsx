@@ -157,19 +157,20 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
           </button>
         </div>
 
-        {/* Quick Region Pills */}
+        {/* Quick Location Pills: Accra, Kumasi, Tema, Takoradi, Tamale, Cape Coast */}
         <div className="flex items-center gap-1.5 flex-wrap mb-2">
           {[
-            { label: 'All', value: 'all' },
-            { label: 'Accra', value: 'Greater Accra (Accra, Tema, Madina, Legon)' },
-            { label: 'Kumasi', value: 'Ashanti (Kumasi, Obuasi, Ejisu)' },
-            { label: 'Takoradi', value: 'Western (Takoradi, Sekondi, Tarkwa)' },
-            { label: 'Cape Coast', value: 'Central (Cape Coast, Kasoa, Winneba, Mankessim)' },
-            { label: 'Tamale', value: 'Northern (Tamale, Yendi, Savelugu)' },
-            { label: 'Koforidua', value: 'Eastern (Koforidua, Akuapem, Nkawkaw)' },
-            { label: 'Ho', value: 'Volta (Ho, Keta, Hohoe)' },
+            { label: 'All Ghana', value: 'all' },
+            { label: 'Accra', value: 'Accra' },
+            { label: 'Kumasi', value: 'Kumasi' },
+            { label: 'Tema', value: 'Tema' },
+            { label: 'Takoradi', value: 'Takoradi' },
+            { label: 'Tamale', value: 'Tamale' },
+            { label: 'Cape Coast', value: 'Cape Coast' },
           ].map((pill) => {
-            const isSelected = filters.region === pill.value || (pill.value === 'all' && (filters.region === 'all' || filters.region === 'All Regions'));
+            const isSelected =
+              filters.region === pill.value ||
+              (pill.value === 'all' && (filters.region === 'all' || filters.region === 'All Regions' || filters.region === 'All Ghana'));
             return (
               <button
                 key={pill.label}
@@ -178,9 +179,9 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   onFilterChange({ region: pill.value });
                   setLocationError(null);
                 }}
-                className={`text-[10px] px-2 py-0.5 rounded-md font-bold transition-all cursor-pointer ${
+                className={`text-[11px] px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-amber-500 text-slate-950 shadow-2xs font-black'
+                    ? 'bg-[#FF6600] text-white shadow-xs font-black'
                     : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
                 }`}
               >

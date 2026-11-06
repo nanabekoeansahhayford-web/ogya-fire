@@ -59,7 +59,7 @@ export const CartModal: React.FC<CartModalProps> = ({
         aria-label="Shopping Cart"
       >
         {/* Header */}
-        <div className="shrink-0 p-4 sm:p-5 bg-gradient-to-r from-red-600 via-orange-600 to-amber-600 text-white flex items-center justify-between shadow-sm">
+        <div className="shrink-0 p-4 sm:p-5 bg-gradient-to-r from-[#00875A] via-emerald-600 to-[#FF6600] text-white flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-inner">
               <ShoppingCart size={20} className="text-white" />
@@ -67,14 +67,14 @@ export const CartModal: React.FC<CartModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-black tracking-tight leading-tight">
-                  Fire Safety Cart
+                  OGYA Cart
                 </h3>
                 <span className="px-2 py-0.5 rounded-full bg-white/25 text-[11px] font-black uppercase tracking-wider">
                   {totalItemCount} {totalItemCount === 1 ? 'item' : 'items'}
                 </span>
               </div>
               <p className="text-[11px] text-white/90">
-                GNFS Certified Fire Equipment & Safety Supplies
+                Verified Accra Food Vendors & Marketplace Items
               </p>
             </div>
           </div>
@@ -105,7 +105,7 @@ export const CartModal: React.FC<CartModalProps> = ({
         <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3 min-h-0 bg-slate-50/60 dark:bg-slate-900/60">
           {cart.length === 0 ? (
             <div className="text-center py-12 px-4 space-y-4">
-              <div className="w-16 h-16 rounded-2xl bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto shadow-sm">
+              <div className="w-16 h-16 rounded-2xl bg-[#00875A]/15 text-[#00875A] dark:text-emerald-400 flex items-center justify-center mx-auto shadow-sm">
                 <ShoppingCart size={30} />
               </div>
               <div>
@@ -113,7 +113,7 @@ export const CartModal: React.FC<CartModalProps> = ({
                   Your cart is currently empty
                 </h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-1 leading-relaxed">
-                  Browse certified fire extinguishers, smoke alarms, fire blankets, and hoses to safeguard your home or workspace.
+                  Browse delicious Ghanaian dishes from Mama Efua, Auntie Muni, Accra Grill House, and verified products across Accra.
                 </p>
               </div>
               <button
@@ -183,7 +183,7 @@ export const CartModal: React.FC<CartModalProps> = ({
 
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-black text-slate-950 dark:text-white">
-                      GHS {(item.price * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ₵ {(item.price * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                     <button
                       type="button"
@@ -206,23 +206,23 @@ export const CartModal: React.FC<CartModalProps> = ({
           {/* Subtotal & Delivery note */}
           <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
             <div className="flex items-center justify-between text-[11px] font-semibold">
-              <span>Delivery Dispatch (Ghana 16 Regions)</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+              <span>Fast Courier Delivery Across Accra</span>
+              <span className="text-[#00875A] dark:text-emerald-400 font-bold">
                 MoMo / Telecel / COD Ready
               </span>
             </div>
 
-            {/* Total Display in GHS */}
+            {/* Total Display in GHS with ₵ */}
             <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-baseline justify-between">
               <div>
                 <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white block">
                   Total in GHS
                 </span>
-                <span className="text-[10px] text-slate-400">All prices in Ghana Cedis</span>
+                <span className="text-[10px] text-slate-400">Ghana Cedis</span>
               </div>
               <div className="text-right">
-                <span className="text-2xl sm:text-3xl font-black text-red-600 dark:text-red-400 tabular-nums">
-                  GHS {total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <span className="text-2xl sm:text-3xl font-black text-[#00875A] dark:text-emerald-400 tabular-nums">
+                  ₵ {total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
@@ -233,7 +233,7 @@ export const CartModal: React.FC<CartModalProps> = ({
             type="button"
             onClick={handleProceedClick}
             disabled={cart.length === 0}
-            className="w-full py-4 px-6 bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 hover:opacity-95 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-base sm:text-lg rounded-2xl shadow-xl shadow-red-500/25 flex items-center justify-center gap-2.5 cursor-pointer transition-all"
+            className="w-full py-4 px-6 bg-[#00875A] hover:bg-[#00704a] active:bg-[#005a3c] disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-base sm:text-lg rounded-2xl shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2.5 cursor-pointer transition-all"
             aria-label="Proceed to Checkout"
           >
             <span>Proceed to Checkout</span>

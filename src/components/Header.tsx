@@ -95,8 +95,8 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
           <span className="tracking-tight flex items-center gap-1.5">
             <span className="text-slate-950 dark:text-white">OGYA</span>
-            <span className="text-[#00875A] dark:text-emerald-400 text-xs sm:text-sm font-black tracking-wider uppercase">
-              ACCRA
+            <span className="text-[#FF6600] text-xs sm:text-sm font-black tracking-wider uppercase">
+              FIRE
             </span>
             <span aria-hidden="true" className="text-xl">
               🔥
@@ -106,6 +106,16 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Zone 2: Navigation Links */}
         <nav className="hidden lg:flex items-center gap-4 xl:gap-5 text-sm font-semibold text-slate-600 dark:text-slate-300">
+          <button
+            onClick={() => {
+              const el = document.getElementById('accra-food-vendors');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="hover:text-[#00875A] dark:hover:text-emerald-400 text-slate-800 dark:text-slate-200 transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 py-1 cursor-pointer font-bold"
+            title="Popular Food Vendors in Accra"
+          >
+            <span>🍲 Food Vendors</span>
+          </button>
           <button
             onClick={onScrollToStore || onGoHome}
             className="hover:text-[#FF6600] dark:hover:text-[#FF6600] transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 py-1 cursor-pointer font-bold text-[#FF6600]"
