@@ -54,6 +54,13 @@ service cloud.firestore {
         && (!('momoNumber' in data) || (data.momoNumber is string && data.momoNumber.size() <= 64));
     }
 
+    function isValidWantedItem(data) {
+      return data.item is string && data.item.size() > 0 && data.item.size() <= 256
+        && data.budget is number && data.budget >= 0
+        && data.location is string && data.location.size() > 0 && data.location.size() <= 256
+        && data.whatsapp is string && data.whatsapp.size() > 0 && data.whatsapp.size() <= 64;
+    }
+
     // Health check endpoint
     match /test/connection {
       allow read: if true;
@@ -97,6 +104,14 @@ service cloud.firestore {
       allow create: if isValidId(orderId) && isValidOrder(request.resource.data);
       allow update: if isValidId(orderId);
       allow delete: if isValidId(orderId);
+    }
+
+    // Buyers wanted items collection ("I WANT THIS" feature - no login required)
+    match /wanted_items/{wantedItemId} {
+      allow read: if true;
+      allow create: if isValidId(wantedItemId) && isValidWantedItem(request.resource.data);
+      allow update: if isValidId(wantedItemId);
+      allow delete: if isValidId(wantedItemId);
     }
   }
 }

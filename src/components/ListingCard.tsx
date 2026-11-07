@@ -100,12 +100,15 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   const handleWhatsAppChat = (e: React.MouseEvent) => {
     e.stopPropagation();
     recordWhatsAppClick(listing.id);
-    const targetUrl = generateGhanaWhatsAppUrl(
-      listing.seller?.whatsapp || listing.seller?.phone,
-      listing.title,
-      listing.price,
-      listing.seller.name
-    );
+    const isDaniel = listing.seller?.name?.includes('Daniel Arnan Aboagye') || listing.id?.startsWith('daniel-');
+    const targetUrl = isDaniel
+      ? 'https://wa.me/233549769720?text=Hello%20Daniel%20I%20saw%20your%20accessories%20on%20OGYA%20FIRE'
+      : generateGhanaWhatsAppUrl(
+          listing.seller?.whatsapp || listing.seller?.phone,
+          listing.title,
+          listing.price,
+          listing.seller.name
+        );
     window.open(targetUrl, '_blank', 'noopener,noreferrer');
   };
 
@@ -523,7 +526,9 @@ export const ListingCard: React.FC<ListingCardProps> = ({
                   title="Add to Cart & Pay with Paystack MoMo or Cash on Delivery"
                 >
                   <ShoppingCart size={14} className="shrink-0" />
-                  <span className="truncate">Add to Cart</span>
+                  <span className="truncate">
+                    {listing.seller?.name?.includes('Daniel') ? 'Add to Cart - MoMo' : 'Add to Cart'}
+                  </span>
                 </button>
 
                 <button
@@ -533,7 +538,9 @@ export const ListingCard: React.FC<ListingCardProps> = ({
                   title={`Chat with ${listing.seller.name} on WhatsApp`}
                 >
                   <MessageCircle size={14} className="fill-current text-white shrink-0" />
-                  <span className="truncate">WhatsApp</span>
+                  <span className="truncate">
+                    {listing.seller?.name?.includes('Daniel') ? 'Chat Daniel' : 'WhatsApp'}
+                  </span>
                 </button>
               </div>
 

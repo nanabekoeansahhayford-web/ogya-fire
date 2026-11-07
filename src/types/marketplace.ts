@@ -196,3 +196,15 @@ export interface FilterState {
   badgeFilter?: SellerBadgeId | 'all';
   sortBy: 'newest' | 'price-low' | 'price-high' | 'popular' | 'top-rated';
 }
+
+export interface WantedItem {
+  id: string;
+  item: string;
+  budget: number;
+  location: string;
+  whatsapp: string;
+  notes?: string;
+  createdAt?: string;
+  createdAtFormatted?: string;
+  status?: 'active' | 'fulfilled';
+}

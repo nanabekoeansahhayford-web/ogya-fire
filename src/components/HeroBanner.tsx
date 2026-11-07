@@ -18,6 +18,7 @@ interface HeroBannerProps {
   onRegionChange: (region: string) => void;
   onQuickTagClick: (tag: string) => void;
   onOpenCourierHub?: () => void;
+  onOpenIWantThis?: () => void;
 }
 
 export const HeroBanner: React.FC<HeroBannerProps> = ({
@@ -29,6 +30,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   onRegionChange,
   onQuickTagClick,
   onOpenCourierHub,
+  onOpenIWantThis,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>(() => getRecentSearches());
@@ -516,9 +518,40 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             ))}
           </div>
 
+          {/* Big Orange "I WANT THIS - Post What You Want" Action Card */}
+          {onOpenIWantThis && (
+            <div className="mt-5 p-3 sm:p-4 rounded-2xl bg-gradient-to-r from-orange-600/90 via-amber-600/90 to-orange-500/90 border border-orange-400/40 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-white">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl p-2 rounded-xl bg-white/20 shrink-0">
+                  🔥
+                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black uppercase tracking-wider bg-white/30 px-2 py-0.5 rounded text-white">
+                      BUYERS DIRECT
+                    </span>
+                    <span className="text-xs font-bold text-orange-100">Can't find what you need?</span>
+                  </div>
+                  <p className="text-xs text-white font-medium mt-0.5">
+                    Tell Ghana sellers your budget and location. Verified merchants will message you with offers!
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={onOpenIWantThis}
+                className="shrink-0 px-5 py-3 rounded-xl bg-white hover:bg-orange-50 text-orange-600 hover:text-orange-700 font-black text-xs uppercase tracking-wider shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>I WANT THIS - Post What You Want</span>
+                <ArrowRight size={15} />
+              </button>
+            </div>
+          )}
+
           {/* End-to-End Door-to-Door Courier Access Strip */}
           {onOpenCourierHub && (
-            <div className="mt-5 pt-3.5 border-t border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+            <div className="mt-4 pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-2 text-slate-300 font-medium">
                 <span className="bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded font-black text-[10px] uppercase tracking-wide border border-amber-500/30">
                   NEW

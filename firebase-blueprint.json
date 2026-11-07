@@ -88,6 +88,22 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "items", "total", "deliveryAddress", "phone", "status", "paymentMethod"]
+    },
+    "WantedItem": {
+      "title": "WantedItem",
+      "description": "Buyer item request posted via I WANT THIS feature",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "item": { "type": "string", "maxLength": 256 },
+        "budget": { "type": "number" },
+        "location": { "type": "string", "maxLength": 256 },
+        "whatsapp": { "type": "string", "maxLength": 64 },
+        "notes": { "type": "string", "maxLength": 1000 },
+        "status": { "type": "string", "enum": ["active", "fulfilled"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "item", "budget", "location", "whatsapp"]
     }
   },
   "firestore": {
@@ -110,6 +126,10 @@
     "/orders/{orderId}": {
       "schema": { "$ref": "#/entities/Order" },
       "description": "Collection of customer checkout orders"
+    },
+    "/wanted_items/{wantedItemId}": {
+      "schema": { "$ref": "#/entities/WantedItem" },
+      "description": "Collection of buyer requested items for sellers to respond to"
     }
   }
 }

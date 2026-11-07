@@ -31,6 +31,8 @@ import { BecomeVendorModal } from './components/BecomeVendorModal';
 import { VendorDashboardModal } from './components/VendorDashboardModal';
 import { VendorDashboardPage } from './components/VendorDashboardPage';
 import { FoodVendorsSection } from './components/FoodVendorsSection';
+import { IWantThisModal } from './components/IWantThisModal';
+import { BuyersWantFeed } from './components/BuyersWantFeed';
 import { FoodVendor, FoodMenuItem } from './data/foodVendors';
 import { Product, Vendor, Order, CartItem } from './types/store';
 import { SEED_PRODUCTS } from './data/seedProducts';
@@ -43,7 +45,7 @@ import {
   getCartItemCount,
 } from './utils/cartStorage';
 import { CourierOrder } from './types/courier';
-import { CategoryId, FilterState, Listing, SellerInfo, UserProfile } from './types/marketplace';
+import { CategoryId, FilterState, Listing, SellerInfo, UserProfile, WantedItem } from './types/marketplace';
 import { CATEGORIES } from './data/categories';
 import {
   getStoredListings,
@@ -63,6 +65,8 @@ import {
   fetchProductsFromFirestore,
   subscribeToProductsFromFirestore,
   fetchVendorByOwnerId,
+  subscribeToWantedItemsFromFirestore,
+  getLocalWantedItems,
 } from './utils/firebase';
 import { SlidersHorizontal, CheckCircle2, ShieldCheck, Sparkles, Plus, AlertCircle, BellRing, Zap, UserPlus, Award, Home, Store, ShoppingCart, Flame } from 'lucide-react';
 
@@ -71,6 +75,10 @@ export default function App() {
   const [listings, setListings] = useState<Listing[]>(() => getStoredListings());
   const [savedIds, setSavedIds] = useState<string[]>(() => getSavedListingIds());
   const [priceAlerts, setPriceAlerts] = useState<string[]>(() => getPriceAlertIds());
+
+  // "I WANT THIS" Buyer requests state
+  const [wantedItems, setWantedItems] = useState<WantedItem[]>(() => getLocalWantedItems());
+  const [isIWantThisOpen, setIsIWantThisOpen] = useState(false);
 
   // Real-time Firestore sync & verification
   useEffect(() => {
@@ -95,8 +103,16 @@ export default function App() {
       }
     });
 
+    // Real-time listener for buyer requests
+    const unsubscribeWanted = subscribeToWantedItemsFromFirestore((items) => {
+      if (items && items.length > 0) {
+        setWantedItems(items);
+      }
+    });
+
     return () => {
       unsubscribe();
+      unsubscribeWanted();
     };
   }, []);
 
@@ -822,6 +838,7 @@ export default function App() {
         onOpenVendorDashboard={navigateToVendor}
         onScrollToStore={handleScrollToStore}
         isVendor={isVendor}
+        onOpenIWantThis={() => setIsIWantThisOpen(true)}
       />
 
       {/* Category Navigation Bar for 17 Sectors */}
@@ -831,7 +848,7 @@ export default function App() {
         categoryCounts={categoryCounts}
       />
 
-      {/* Hero Showcase with Unified Search */}
+      {/* Hero Showcase with Unified Search & Big Orange I WANT THIS CTA */}
       <HeroBanner
         searchQuery={filters.searchQuery}
         onSearchChange={(q) => handleFilterUpdate({ searchQuery: q })}
@@ -841,6 +858,7 @@ export default function App() {
         onRegionChange={(r) => handleFilterUpdate({ region: r })}
         onQuickTagClick={handleQuickTagClick}
         onOpenCourierHub={handleOpenCourierHub}
+        onOpenIWantThis={() => setIsIWantThisOpen(true)}
       />
 
       {/* Trust & Safe Verification Strip */}
@@ -865,6 +883,13 @@ export default function App() {
 
           <div className="flex items-center gap-4">
             <button
+              onClick={() => setIsIWantThisOpen(true)}
+              className="text-orange-600 dark:text-orange-400 hover:text-orange-700 font-black flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              <span>🔥 Post What You Want</span>
+              <span className="text-slate-300 dark:text-slate-700">·</span>
+            </button>
+            <button
               onClick={handleOpenCourierHub}
               className="text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer transition-colors"
             >
@@ -880,6 +905,12 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {/* "Buyers Want" Feed on Homepage (Live Buyer Demands & WhatsApp Connections) */}
+      <BuyersWantFeed
+        wantedItems={wantedItems}
+        onOpenIWantThis={() => setIsIWantThisOpen(true)}
+      />
 
       {/* Featured Food Vendors in Accra (6 Demo Ghanaian Vendors with Jumia/Bolt Food design) */}
       <FoodVendorsSection
@@ -1107,6 +1138,49 @@ export default function App() {
                 </div>
               </div>
             </div>
+
+            {/* Vendor card at top of Phone Accessories: Daniel Arnan Aboagye */}
+            {(filters.category === 'phones-tablets' ||
+              filters.subcategory === 'Phone Accessories' ||
+              filters.searchQuery.toLowerCase().includes('daniel') ||
+              filters.searchQuery.toLowerCase().includes('accessories')) && (
+              <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-800 via-teal-900 to-slate-900 text-white shadow-lg border border-emerald-500/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-start sm:items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center font-black text-xl text-amber-400 shrink-0 shadow-inner">
+                    📱
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-base sm:text-lg font-black tracking-tight text-white">
+                        Daniel Arnan Aboagye
+                      </h3>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider shadow-xs">
+                        <CheckCircle2 size={12} />
+                        VERIFIED SELLER - Amasaman Taxi Rank
+                      </span>
+                    </div>
+                    <p className="text-xs text-emerald-100 font-semibold mt-1">
+                      📍 Amasaman Taxi Rank, Accra · Prices <strong>GH₵ 50 to GH₵ 150</strong> — <em>"One can get anything from him"</em>
+                    </p>
+                    <p className="text-[11px] text-slate-300 mt-0.5">
+                      Earbuds, JBL Headphones, Fancy Cases with Beads, 120W Fast Chargers, EarPods, Tempered Glass Bundles.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5 shrink-0">
+                  <a
+                    href="https://wa.me/233549769720?text=Hello%20Daniel%20I%20saw%20your%20accessories%20on%20OGYA%20FIRE"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] active:scale-98 text-white font-black text-xs uppercase tracking-wider shadow-md transition-all cursor-pointer"
+                  >
+                    <span>💬</span>
+                    <span>Chat Daniel on WhatsApp</span>
+                  </a>
+                </div>
+              </div>
+            )}
 
             {/* Grid of Listings */}
             {filteredListings.length === 0 ? (
@@ -1463,6 +1537,16 @@ export default function App() {
         vendor={currentVendor}
         products={products}
         onProductUpdated={() => fetchProductsFromFirestore().then(setProducts)}
+      />
+
+      {/* "I WANT THIS" Buyer Request Modal (No login required, saves to Firestore 'wanted_items') */}
+      <IWantThisModal
+        isOpen={isIWantThisOpen}
+        onClose={() => setIsIWantThisOpen(false)}
+        onItemPosted={(item) => {
+          setWantedItems((prev) => [item, ...prev.filter((w) => w.id !== item.id)]);
+          showToast(`🔥 Request for "${item.item}" posted live to Ghana sellers!`);
+        }}
       />
 
       {/* Fixed Mobile Bottom Navigation Bar (Mobile-first Thumb Ergonomics) */}

@@ -25,7 +25,7 @@ import {
   sendPasswordResetEmail,
 } from 'firebase/auth';
 import firebaseConfig from '../../firebase-applet-config.json';
-import { Listing } from '../types/marketplace';
+import { Listing, WantedItem } from '../types/marketplace';
 import { Product, Vendor, Order, OrderStatus } from '../types/store';
 import { SEED_PRODUCTS } from '../data/seedProducts';
 
@@ -870,6 +870,220 @@ export function subscribeToOrdersByUserId(
     );
   } catch (error) {
     console.warn('Error setting up onSnapshot for orders:', error);
+    return () => {};
+  }
+}
+
+/* =========================================================================
+   "I WANT THIS" - BUYERS WANTED ITEMS
+   ========================================================================= */
+
+const STORAGE_KEY_WANTED_ITEMS = 'ogya_fire_wanted_items';
+
+export const SEED_WANTED_ITEMS: WantedItem[] = [
+  {
+    id: 'wanted-101',
+    item: 'iPhone 12 128GB (Factory Unlocked / Clean Condition)',
+    budget: 2200,
+    location: 'Madina, Accra',
+    whatsapp: '+233549769720',
+    notes: 'Urgent buyer. Prefer Blue or Black with charger. Cash or MoMo ready today.',
+    createdAtFormatted: '12 mins ago',
+    status: 'active',
+  },
+  {
+    id: 'wanted-102',
+    item: 'Toyota Corolla 2014 (Registered / Clean Engine)',
+    budget: 52000,
+    location: 'Spintex Road, Accra',
+    whatsapp: '+233244123456',
+    notes: 'Looking for a clean home-used automatic sedan. Serious buyer ready to inspect.',
+    createdAtFormatted: '25 mins ago',
+    status: 'active',
+  },
+  {
+    id: 'wanted-103',
+    item: 'Self-Contained Chamber & Hall Apartment',
+    budget: 800,
+    location: 'Kumasi, Ahodwo / Bantama',
+    whatsapp: '+233208901234',
+    notes: 'Looking for 1 or 2 years advance with separate ECG prepaid meter and running water.',
+    createdAtFormatted: '45 mins ago',
+    status: 'active',
+  },
+  {
+    id: 'wanted-104',
+    item: 'Sony PlayStation 5 (Disc Edition + 2 Controllers)',
+    budget: 4500,
+    location: 'Tema Community 1, Tema',
+    whatsapp: '+233501234567',
+    notes: 'Must be in pristine working condition with FIFA 24 / FC 24 or GTA V.',
+    createdAtFormatted: '1 hour ago',
+    status: 'active',
+  },
+  {
+    id: 'wanted-105',
+    item: 'HP Pavilion or Dell Core i7 Laptop (16GB RAM / 512GB SSD)',
+    budget: 3500,
+    location: 'East Legon, Accra',
+    whatsapp: '+233559876543',
+    notes: 'For coding and graphic design. Battery should last at least 3 hours.',
+    createdAtFormatted: '2 hours ago',
+    status: 'active',
+  },
+  {
+    id: 'wanted-106',
+    item: 'Tecno Camon 20 Pro 5G',
+    budget: 1400,
+    location: 'Takoradi Market Circle',
+    whatsapp: '+233271234567',
+    notes: 'Full box with original receipt. No cracked screen please.',
+    createdAtFormatted: '3 hours ago',
+    status: 'active',
+  },
+];
+
+export const getLocalWantedItems = (): WantedItem[] => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_WANTED_ITEMS);
+    if (!raw) return SEED_WANTED_ITEMS;
+    const parsed: WantedItem[] = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return SEED_WANTED_ITEMS;
+    // Merge user created items with seed items
+    const customIds = new Set(parsed.map((item) => item.id));
+    const seedsToAdd = SEED_WANTED_ITEMS.filter((seed) => !customIds.has(seed.id));
+    return [...parsed, ...seedsToAdd];
+  } catch {
+    return SEED_WANTED_ITEMS;
+  }
+};
+
+export const saveLocalWantedItem = (item: WantedItem) => {
+  try {
+    const current = getLocalWantedItems();
+    const updated = [item, ...current.filter((w) => w.id !== item.id)];
+    localStorage.setItem(STORAGE_KEY_WANTED_ITEMS, JSON.stringify(updated));
+  } catch (e) {
+    console.warn('Could not cache wanted item locally:', e);
+  }
+};
+
+/**
+ * Save a wanted item request to Firestore collection 'wanted_items'
+ */
+export async function saveWantedItemToFirestore(item: WantedItem): Promise<boolean> {
+  const path = `wanted_items/${item.id}`;
+  // Always update local storage first so UI updates immediately and works offline
+  saveLocalWantedItem(item);
+
+  try {
+    const docRef = doc(db, 'wanted_items', item.id);
+    const data: Record<string, any> = {
+      id: item.id,
+      item: item.item.trim(),
+      budget: Number(item.budget),
+      location: item.location.trim(),
+      whatsapp: item.whatsapp.trim(),
+      status: item.status || 'active',
+      createdAt: serverTimestamp(),
+    };
+    if (item.notes) {
+      data.notes = item.notes.trim();
+    }
+    await setDoc(docRef, data, { merge: true });
+    console.log(`Wanted item ${item.id} successfully saved to Firestore wanted_items.`);
+    return true;
+  } catch (error) {
+    console.warn(`Could not save wanted item ${item.id} to Firestore (saved locally):`, error);
+    try {
+      handleFirestoreError(error, OperationType.WRITE, path);
+    } catch {
+      // logged
+    }
+    return false;
+  }
+}
+
+/**
+ * Fetch all wanted items from Firestore, falling back to local storage
+ */
+export async function fetchWantedItemsFromFirestore(): Promise<WantedItem[]> {
+  const path = 'wanted_items';
+  try {
+    const snap = await getDocs(collection(db, path));
+    if (snap.empty) {
+      // Seed initial sample wanted items in background
+      for (const item of SEED_WANTED_ITEMS) {
+        saveWantedItemToFirestore(item).catch(() => {});
+      }
+      return getLocalWantedItems();
+    }
+    const list: WantedItem[] = [];
+    snap.forEach((d) => {
+      const data = d.data();
+      list.push({
+        id: data.id || d.id,
+        item: data.item,
+        budget: Number(data.budget) || 0,
+        location: data.location || 'Accra, Ghana',
+        whatsapp: data.whatsapp || '+233549769720',
+        notes: data.notes || '',
+        createdAtFormatted: data.createdAt?.toDate ? 'Recently' : 'Just now',
+        status: data.status || 'active',
+      });
+    });
+    // Merge with any offline-saved local items
+    const local = getLocalWantedItems();
+    const firestoreIds = new Set(list.map((w) => w.id));
+    const localOnly = local.filter((w) => !firestoreIds.has(w.id));
+    return [...localOnly, ...list];
+  } catch (error) {
+    console.warn('Could not fetch wanted items from Firestore, using local storage:', error);
+    return getLocalWantedItems();
+  }
+}
+
+/**
+ * Subscribe in real-time to wanted items collection in Firestore
+ */
+export function subscribeToWantedItemsFromFirestore(
+  onUpdate: (items: WantedItem[]) => void
+): () => void {
+  const path = 'wanted_items';
+  try {
+    return onSnapshot(
+      collection(db, path),
+      (snapshot) => {
+        if (snapshot.empty) {
+          onUpdate(getLocalWantedItems());
+          return;
+        }
+        const list: WantedItem[] = [];
+        snapshot.forEach((d) => {
+          const data = d.data();
+          list.push({
+            id: data.id || d.id,
+            item: data.item,
+            budget: Number(data.budget) || 0,
+            location: data.location || 'Accra, Ghana',
+            whatsapp: data.whatsapp || '+233549769720',
+            notes: data.notes || '',
+            createdAtFormatted: data.createdAt?.toDate ? 'Recently' : 'Just now',
+            status: data.status || 'active',
+          });
+        });
+        const local = getLocalWantedItems();
+        const firestoreIds = new Set(list.map((w) => w.id));
+        const localOnly = local.filter((w) => !firestoreIds.has(w.id));
+        onUpdate([...localOnly, ...list]);
+      },
+      (error) => {
+        console.warn('Firestore wanted_items listener warning:', error);
+        onUpdate(getLocalWantedItems());
+      }
+    );
+  } catch (error) {
+    console.warn('Error setting up onSnapshot for wanted_items:', error);
     return () => {};
   }
 }

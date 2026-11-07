@@ -370,12 +370,15 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
 
   const handleWhatsApp = () => {
     recordWhatsAppClick(listing.id);
-    const targetUrl = generateGhanaWhatsAppUrl(
-      listing.seller?.whatsapp || listing.seller?.phone,
-      listing.title,
-      listing.price,
-      listing.seller.name
-    );
+    const isDaniel = listing.seller?.name?.includes('Daniel Arnan Aboagye') || listing.id?.startsWith('daniel-');
+    const targetUrl = isDaniel
+      ? 'https://wa.me/233549769720?text=Hello%20Daniel%20I%20saw%20your%20accessories%20on%20OGYA%20FIRE'
+      : generateGhanaWhatsAppUrl(
+          listing.seller?.whatsapp || listing.seller?.phone,
+          listing.title,
+          listing.price,
+          listing.seller.name
+        );
     window.open(targetUrl, '_blank', 'noopener,noreferrer');
   };
 

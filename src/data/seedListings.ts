@@ -222,7 +222,7 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Stereo Earphone True Wireless Earbuds with Noise Reduction, Wireless 6.0 Bluetooth, and fast charging case. 100% genuine accessory from Daniel Arnan Aboagye at Amasaman Taxi Rank. Fast doorstep delivery across Accra.',
     images: [
-      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.07_2fbc910b.jpeg'
+      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.08_de1a57b7.jpeg'
     ],
     seller: {
       name: 'Daniel Arnan Aboagye',
@@ -270,7 +270,7 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'JBL Dare To Listen over-ear wireless headphones with dynamic RGB glow lighting, deep bass sound, comfortable ear cushions, and built-in microphone for calls. Sold by Daniel Arnan Aboagye at Amasaman Taxi Rank.',
     images: [
-      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.07__1__66c5fd97.jpeg'
+      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.07_2fbc910b.jpeg'
     ],
     seller: {
       name: 'Daniel Arnan Aboagye',
@@ -315,10 +315,10 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Austin Zion New Series fancy luxury phone case with designer decorative beads wristlet strap. Crystal transparent floral design available for Samsung Galaxy A17 4G, Tecno POP series, and Apple iPhone models. Available at Amasaman Taxi Rank from Daniel Arnan Aboagye.',
     images: [
-      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.08_de1a57b7.jpeg',
+      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.07__1__66c5fd97.jpeg',
       '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.09_c7309b52.jpeg',
-      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.10__1__744ac20c.jpeg',
-      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.09__1__bc913b1a.jpeg'
+      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.10_abf4bd8f.jpeg',
+      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.11_b5ac1cc4.jpeg'
     ],
     seller: {
       name: 'Daniel Arnan Aboagye',
@@ -409,7 +409,7 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Original EarPods with Lightning Uconnector for iPhone 14 Pro Max, 14, 13, 12, 11, and all Lightning devices. Features crisp call microphone, volume inline controller, and stereo bass. Boxed pack direct from Daniel Arnan Aboagye at Amasaman Taxi Rank.',
     images: [
-      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.10_abf4bd8f.jpeg'
+      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.09__1__bc913b1a.jpeg'
     ],
     seller: {
       name: 'Daniel Arnan Aboagye',
@@ -454,7 +454,7 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Cheapest Deal in Amasaman! Complete combo including 9D full cover tempered glass screen protector with wipes + premium silicone/fashion protective phone case. Fits Samsung, iPhone, Tecno, Infinix. Direct from Daniel Arnan Aboagye at Amasaman Taxi Rank.',
     images: [
-      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.11_b5ac1cc4.jpeg'
+      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.10__1__744ac20c.jpeg'
     ],
     seller: {
       name: 'Daniel Arnan Aboagye',

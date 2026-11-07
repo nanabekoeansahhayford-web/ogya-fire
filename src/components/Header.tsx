@@ -28,6 +28,7 @@ interface HeaderProps {
   onSelectCategory: (categoryId: string) => void;
   onOpenCourierHub?: () => void;
   onOpenVerifiedSubscription?: () => void;
+  onOpenIWantThis?: () => void;
   savedCount: number;
   isDark?: boolean;
   onToggleTheme?: () => void;
@@ -53,6 +54,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectCategory,
   onOpenCourierHub,
   onOpenVerifiedSubscription,
+  onOpenIWantThis,
   savedCount,
   isDark = false,
   onToggleTheme,
@@ -130,6 +132,15 @@ export const Header: React.FC<HeaderProps> = ({
           >
             Marketplace
           </button>
+          {onOpenIWantThis && (
+            <button
+              onClick={onOpenIWantThis}
+              className="text-[#FF6600] hover:text-orange-600 transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 py-1 cursor-pointer font-extrabold"
+              title="Post What You Want or View Buyer Requests"
+            >
+              <span>🔥 I Want This</span>
+            </button>
+          )}
           <button
             onClick={onOpenCourierHub}
             className="hover:text-[#00875A] dark:hover:text-emerald-400 transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 py-1 cursor-pointer text-[#00875A] dark:text-emerald-400 font-bold"
@@ -331,6 +342,19 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="xs:hidden">Sign Up</span>
               </button>
             </div>
+          )}
+
+          {/* I WANT THIS CTA */}
+          {onOpenIWantThis && (
+            <button
+              onClick={onOpenIWantThis}
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-2 sm:py-2.5 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs sm:text-sm rounded-xl shadow-md hover:shadow-lg transition-all whitespace-nowrap shrink-0 cursor-pointer active:scale-98"
+              title="Post what you want to buy - Tell Ghana sellers"
+            >
+              <span>🔥</span>
+              <span className="hidden xs:inline">I WANT THIS</span>
+              <span className="xs:hidden">Want</span>
+            </button>
           )}
 
           {/* Primary Sell Product CTA */}
