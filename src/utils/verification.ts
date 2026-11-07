@@ -426,3 +426,268 @@ export function subscribeSellerVerified(payload: {
   return record;
 }
 
+/* =========================================================================
+   MOMO VERIFICATION & TRUSTED SELLER BADGE (GHANA ANTI-SCAM TRUST)
+   ========================================================================= */
+
+export interface MoMoVerificationRequest {
+  id: string;
+  userId: string;
+  sellerName: string;
+  momoName: string;
+  momoNumber: string;
+  network: 'MTN' | 'Telecel' | 'AirtelTigo' | 'AT';
+  momoNetwork?: 'MTN' | 'Telecel' | 'AirtelTigo' | 'AT';
+  submittedAt: string;
+  status: 'none' | 'pending' | 'verified' | 'rejected';
+  reviewedAt?: string;
+  notes?: string;
+}
+
+const STORAGE_KEY_MOMO_VERIFICATIONS = 'ogya_momo_verifications';
+
+const INITIAL_DEMO_MOMO_REQUESTS: MoMoVerificationRequest[] = [
+  {
+    id: 'momo-req-daniel',
+    userId: 'usr-daniel-aboagye',
+    sellerName: 'Daniel Arnan Aboagye',
+    momoName: 'Daniel Arnan Aboagye',
+    momoNumber: '0549769720',
+    network: 'MTN',
+    submittedAt: 'Nov 6, 2026, 09:30 AM',
+    status: 'verified',
+    reviewedAt: 'Nov 6, 2026, 09:35 AM',
+    notes: 'Official MTN Mobile Money KYC Verified against Ghana Card.',
+  },
+  {
+    id: 'momo-req-ansah',
+    userId: 'usr-ansah-ford',
+    sellerName: 'Ansah Ford',
+    momoName: 'Nana Bekoe Ansah Ford',
+    momoNumber: '0244123456',
+    network: 'MTN',
+    submittedAt: 'Nov 7, 2026, 08:00 AM',
+    status: 'pending',
+    notes: 'Submitted for MoMo verification. Awaiting admin review.',
+  },
+];
+
+export function getMoMoVerificationRequests(): MoMoVerificationRequest[] {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const raw = localStorage.getItem(STORAGE_KEY_MOMO_VERIFICATIONS);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Error reading MoMo verification requests', e);
+  }
+  return INITIAL_DEMO_MOMO_REQUESTS;
+}
+
+export function saveMoMoVerificationRequests(requests: MoMoVerificationRequest[]) {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(STORAGE_KEY_MOMO_VERIFICATIONS, JSON.stringify(requests));
+    }
+  } catch (e) {
+    console.error('Error saving MoMo verification requests', e);
+  }
+}
+
+export function getMoMoVerificationRequestByUserId(userId: string): MoMoVerificationRequest | undefined {
+  const all = getMoMoVerificationRequests();
+  return all.find((r) => r.userId === userId);
+}
+
+/**
+ * Submit MoMo account details for verification
+ */
+export function submitMoMoVerification(payload: {
+  userId: string;
+  sellerName: string;
+  momoName: string;
+  momoNumber: string;
+  network: 'MTN' | 'Telecel' | 'AirtelTigo' | 'AT';
+}): MoMoVerificationRequest {
+  const all = getMoMoVerificationRequests();
+  const existingIdx = all.findIndex((r) => r.userId === payload.userId);
+
+  const formattedDate = new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const newReq: MoMoVerificationRequest = {
+    id: existingIdx !== -1 ? all[existingIdx].id : `momo-req-${Date.now()}`,
+    userId: payload.userId,
+    sellerName: payload.sellerName,
+    momoName: payload.momoName.trim(),
+    momoNumber: payload.momoNumber.trim(),
+    network: payload.network,
+    momoNetwork: payload.network,
+    submittedAt: formattedDate,
+    status: 'pending',
+    notes: 'Submitted for verification. Awaiting administrator approval.',
+  };
+
+  if (existingIdx !== -1) {
+    all[existingIdx] = newReq;
+  } else {
+    all.unshift(newReq);
+  }
+  saveMoMoVerificationRequests(all);
+
+  // Update user profile status
+  updateUserProfile(payload.userId, {
+    momoName: newReq.momoName,
+    momoNumber: newReq.momoNumber,
+    momoNetwork: newReq.network,
+    momoStatus: 'pending',
+    momoSubmittedAt: formattedDate,
+  });
+
+  return newReq;
+}
+
+/**
+ * Admin approves MoMo Verification
+ */
+export function approveMoMoVerification(
+  requestId: string,
+  notes = 'MoMo Account Name & Registered Phone authenticated against Ghana Mobile Money network.'
+): MoMoVerificationRequest | null {
+  const all = getMoMoVerificationRequests();
+  const index = all.findIndex((r) => r.id === requestId);
+  if (index === -1) return null;
+
+  const req = all[index];
+  const now = new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const updatedReq: MoMoVerificationRequest = {
+    ...req,
+    status: 'verified',
+    reviewedAt: now,
+    notes,
+  };
+  all[index] = updatedReq;
+  saveMoMoVerificationRequests(all);
+
+  // 1. Update user profile to verified
+  updateUserProfile(req.userId, {
+    momoVerified: true,
+    momoStatus: 'verified',
+    momoVerifiedAt: now,
+    momoName: req.momoName,
+    momoNumber: req.momoNumber,
+    momoNetwork: req.network || req.momoNetwork || 'MTN',
+  });
+
+  // 2. Update all listings in localStorage belonging to this seller
+  try {
+    const listings = getStoredListings();
+    listings.forEach((listing) => {
+      if (
+        listing.userId === req.userId ||
+        listing.seller.name.toLowerCase().trim() === req.sellerName.toLowerCase().trim()
+      ) {
+        updateStoredListing(listing.id, {
+          seller: {
+            ...listing.seller,
+            momoVerified: true,
+            momoStatus: 'verified',
+            momoName: req.momoName,
+            momoNumber: req.momoNumber,
+          },
+        });
+      }
+    });
+  } catch (e) {
+    console.error('Error updating listings for MoMo verified seller', e);
+  }
+
+  return updatedReq;
+}
+
+/**
+ * Admin rejects MoMo Verification
+ */
+export function rejectMoMoVerification(requestId: string, reason = 'MoMo name did not match registered Ghana Card name'): MoMoVerificationRequest | null {
+  const all = getMoMoVerificationRequests();
+  const index = all.findIndex((r) => r.id === requestId);
+  if (index === -1) return null;
+
+  const req = all[index];
+  const now = new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
+  const updatedReq: MoMoVerificationRequest = {
+    ...req,
+    status: 'rejected',
+    reviewedAt: now,
+    notes: reason,
+  };
+  all[index] = updatedReq;
+  saveMoMoVerificationRequests(all);
+
+  updateUserProfile(req.userId, {
+    momoVerified: false,
+    momoStatus: 'rejected',
+  });
+
+  return updatedReq;
+}
+
+/**
+ * Helper to record successful sale and update Trusted Seller badge status
+ */
+export function recordSuccessfulSale(userId: string, sellerName: string): number {
+  let newCount = 1;
+  try {
+    const users = getAllRegisteredUsers();
+    const user = users.find((u) => u.id === userId || u.name.toLowerCase().trim() === sellerName.toLowerCase().trim());
+    if (user) {
+      newCount = (user.salesCount || 0) + 1;
+      updateUserProfile(user.id, {
+        salesCount: newCount,
+      });
+    }
+
+    const listings = getStoredListings();
+    listings.forEach((listing) => {
+      if (
+        listing.userId === userId ||
+        listing.seller.name.toLowerCase().trim() === sellerName.toLowerCase().trim()
+      ) {
+        updateStoredListing(listing.id, {
+          seller: {
+            ...listing.seller,
+            salesCount: newCount,
+            isTrustedSeller: newCount >= 3,
+          },
+        });
+      }
+    });
+  } catch (e) {
+    console.error('Error recording successful sale', e);
+  }
+  return newCount;
+}
+
+

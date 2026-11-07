@@ -44,6 +44,13 @@ import {
   validateGhanaCardNumber,
   GhanaCardVerificationRequest,
   SAMPLE_GHANA_CARD_FRONT,
+  getMoMoVerificationRequests,
+  getMoMoVerificationRequestByUserId,
+  submitMoMoVerification,
+  approveMoMoVerification,
+  rejectMoMoVerification,
+  recordSuccessfulSale,
+  MoMoVerificationRequest,
 } from '../utils/verification';
 import { getAllWhatsAppClicks, generateGhanaWhatsAppUrl } from '../utils/whatsapp';
 
@@ -89,6 +96,15 @@ export const SellerDashboardModal: React.FC<SellerDashboardModalProps> = ({
   const [adminMode, setAdminMode] = useState(false);
   const [adminInspectionId, setAdminInspectionId] = useState<string | null>(null);
   const [adminInspectionUnblur, setAdminInspectionUnblur] = useState(false);
+
+  // MoMo Verification Form State
+  const [momoName, setMomoName] = useState(currentUser.momoName || currentUser.name || 'Ansah Ford');
+  const [momoNumber, setMomoNumber] = useState(currentUser.momoNumber || currentUser.phone || '0245558899');
+  const [momoNetwork, setMomoNetwork] = useState<'MTN' | 'Telecel' | 'AT'>(
+    (currentUser.momoNetwork as 'MTN' | 'Telecel' | 'AT') || 'MTN'
+  );
+  const [momoRequests, setMomoRequests] = useState<MoMoVerificationRequest[]>(getMoMoVerificationRequests());
+  const [isSubmittingMoMo, setIsSubmittingMoMo] = useState(false);
 
   // In-Dashboard Chat reply state
   const [activeChatId, setActiveChatId] = useState<string>('chat-1');
@@ -183,6 +199,20 @@ export const SellerDashboardModal: React.FC<SellerDashboardModalProps> = ({
   const currentVerificationReq = getVerificationRequestByUserId(currentUser.id);
   const isVerifiedSeller = currentUser.isVerified || currentVerificationReq?.status === 'verified';
   const verificationRequests = getVerificationRequests();
+
+  // MoMo verification status
+  const currentMoMoReq = getMoMoVerificationRequestByUserId(currentUser.id);
+  const isMoMoVerified = Boolean(
+    currentUser.momoVerified ||
+    currentUser.momoStatus === 'verified' ||
+    currentMoMoReq?.status === 'verified'
+  );
+  const isMoMoPending = (!isMoMoVerified) && Boolean(
+    currentUser.momoStatus === 'pending' ||
+    currentMoMoReq?.status === 'pending'
+  );
+  const salesCount = currentUser.salesCount || 0;
+  const isTrusted = Boolean(currentUser.isTrustedSeller || salesCount >= 3);
 
   // Handlers
   const handleToggleSold = async (listing: Listing, e: React.MouseEvent) => {
@@ -297,6 +327,115 @@ export const SellerDashboardModal: React.FC<SellerDashboardModalProps> = ({
     }
   };
 
+  const handleSubmitMoMoVerification = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!momoName.trim()) {
+      onToast('⚠️ Please enter the registered account name on your MoMo SIM.');
+      return;
+    }
+    const cleanNumber = momoNumber.replace(/[^0-9]/g, '');
+    if (cleanNumber.length < 9) {
+      onToast('⚠️ Please enter a valid 10-digit Ghana Mobile Money phone number.');
+      return;
+    }
+
+    setIsSubmittingMoMo(true);
+    setTimeout(() => {
+      submitMoMoVerification({
+        userId: currentUser.id,
+        sellerName: currentUser.name,
+        momoName: momoName.trim(),
+        momoNumber: momoNumber.trim(),
+        network: momoNetwork,
+      });
+
+      const updatedUser: UserProfile = {
+        ...currentUser,
+        momoName: momoName.trim(),
+        momoNumber: momoNumber.trim(),
+        momoNetwork: momoNetwork,
+        momoStatus: 'pending',
+      };
+      onProfileUpdated(updatedUser);
+      setMomoRequests(getMoMoVerificationRequests());
+      setIsSubmittingMoMo(false);
+      onToast('✅ MoMo verification submitted! Shown as "Pending Verification" until admin approval.');
+    }, 500);
+  };
+
+  const handleAdminApproveMoMo = (reqId: string) => {
+    const updated = approveMoMoVerification(reqId);
+    if (updated) {
+      setMomoRequests(getMoMoVerificationRequests());
+      if (updated.userId === currentUser.id) {
+        const verifiedUser: UserProfile = {
+          ...currentUser,
+          momoVerified: true,
+          momoStatus: 'verified',
+          momoName: updated.momoName,
+          momoNumber: updated.momoNumber,
+          momoNetwork: updated.network || updated.momoNetwork || 'MTN',
+        };
+        onProfileUpdated(verifiedUser);
+      }
+      sellerListings.forEach((item) => {
+        onListingUpdated({
+          ...item,
+          seller: {
+            ...item.seller,
+            momoVerified: true,
+            momoStatus: 'verified',
+            momoName: updated.momoName,
+            momoNumber: updated.momoNumber,
+          },
+        });
+      });
+      onToast(`✅ MoMo Verified badge granted to ${updated.momoName}! Badge is now visible everywhere.`);
+    }
+  };
+
+  const handleAdminRejectMoMo = (reqId: string) => {
+    const reason = prompt('Please enter rejection reason:', 'Account name does not match SIM KYC registration.');
+    if (!reason) return;
+    const updated = rejectMoMoVerification(reqId, reason);
+    if (updated) {
+      setMomoRequests(getMoMoVerificationRequests());
+      if (updated.userId === currentUser.id) {
+        onProfileUpdated({
+          ...currentUser,
+          momoVerified: false,
+          momoStatus: 'rejected',
+        });
+      }
+      onToast('MoMo request marked as rejected.');
+    }
+  };
+
+  const handleSimulateSale = () => {
+    const newCount = recordSuccessfulSale(currentUser.id, currentUser.name);
+    const updatedUser: UserProfile = {
+      ...currentUser,
+      salesCount: newCount,
+      isTrustedSeller: newCount >= 3,
+    };
+    onProfileUpdated(updatedUser);
+    sellerListings.forEach((item) => {
+      onListingUpdated({
+        ...item,
+        seller: {
+          ...item.seller,
+          salesCount: newCount,
+          isTrustedSeller: newCount >= 3,
+        },
+      });
+    });
+    onToast(
+      newCount >= 3
+        ? `🎉 Sale recorded! (${newCount} completed sales). ⭐ "Trusted Seller" badge UNLOCKED and active everywhere!`
+        : `Sale recorded! (${newCount} completed sales). Reach 3 sales to unlock ⭐ Trusted Seller badge.`
+    );
+  };
+
   const handleSampleCardSelect = () => {
     setCardPhoto(SAMPLE_GHANA_CARD_FRONT);
     onToast('Standard Biometric Ghana Card loaded.');
@@ -339,14 +478,36 @@ export const SellerDashboardModal: React.FC<SellerDashboardModalProps> = ({
                     Seller Dashboard
                   </span>
                 </h2>
-                {isVerifiedSeller ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 shadow-2xs">
-                    <ShieldCheck size={12} className="text-emerald-600 dark:text-emerald-400" />
-                    <span>🇬🇭 Ghana Card Verified</span>
+                {isMoMoVerified ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shadow-2xs">
+                    <span>✅</span>
+                    <span>MoMo Verified</span>
+                  </span>
+                ) : isMoMoPending ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
+                    <span>⏳</span>
+                    <span>Pending Verification</span>
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900/60">
-                    <span>⏳ Verification Pending</span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('verification')}
+                    className="inline-flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-2xs transition-colors"
+                    title="Click to verify your Mobile Money number and stop buyer fraud"
+                  >
+                    <span>✅</span>
+                    <span>Verify My MoMo</span>
+                  </button>
+                )}
+
+                {isTrusted ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 shadow-2xs">
+                    <span>⭐</span>
+                    <span>Trusted Seller ({salesCount} sales)</span>
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {salesCount} / 3 sales to ⭐ Trusted
                   </span>
                 )}
               </div>
@@ -448,15 +609,21 @@ export const SellerDashboardModal: React.FC<SellerDashboardModalProps> = ({
                   : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white'
               }`}
             >
-              <ShieldCheck size={16} className={isVerifiedSeller ? 'text-emerald-500' : 'text-amber-500'} />
-              <span>Ghana Card Verification</span>
-              {isVerifiedSeller ? (
-                <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500 text-white font-black">
-                  VERIFIED
+              <ShieldCheck size={16} className={isMoMoVerified ? 'text-emerald-500' : 'text-amber-500'} />
+              <span>Trust & MoMo Verification</span>
+              {isMoMoVerified ? (
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-600 text-white font-black flex items-center gap-0.5">
+                  <span>✅</span>
+                  <span>MOMO</span>
+                </span>
+              ) : isMoMoPending ? (
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500 text-slate-950 font-black flex items-center gap-0.5">
+                  <span>⏳</span>
+                  <span>PENDING</span>
                 </span>
               ) : (
-                <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500 text-slate-950 font-black">
-                  REQUIRED
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 font-black">
+                  VERIFY NOW
                 </span>
               )}
             </button>
@@ -468,6 +635,38 @@ export const SellerDashboardModal: React.FC<SellerDashboardModalProps> = ({
           {/* TAB 1: MY PRODUCTS */}
           {activeTab === 'products' && (
             <div className="space-y-4">
+              {/* Trust & MoMo Verification Quick Callout */}
+              {!isMoMoVerified && (
+                <div className={`p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                  isMoMoPending
+                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200'
+                    : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
+                }`}>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl shrink-0">{isMoMoPending ? '⏳' : '🛡️'}</span>
+                    <div className="text-xs">
+                      <p className="font-extrabold">
+                        {isMoMoPending
+                          ? 'MoMo Verification Pending Review'
+                          : 'Stop Scams & Build Trust: Add the ✅ MoMo Verified Badge to Your Products!'}
+                      </p>
+                      <p className="text-[11px] opacity-90 mt-0.5">
+                        {isMoMoPending
+                          ? 'Your Mobile Money details are being reviewed by OGYA administrators. Once approved, the green ✅ MoMo badge will show on every ad.'
+                          : 'Buyers in Ghana trust sellers whose MoMo SIM registration is confirmed. Takes 30 seconds to verify.'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('verification')}
+                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition-colors shrink-0 cursor-pointer self-start sm:self-auto"
+                  >
+                    {isMoMoPending ? 'Check Status' : 'Verify My MoMo →'}
+                  </button>
+                </div>
+              )}
+
               {/* Filter and Search Bar */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 flex-1 max-w-sm shadow-2xs">
@@ -967,16 +1166,100 @@ export const SellerDashboardModal: React.FC<SellerDashboardModalProps> = ({
 
               {/* ADMIN VERIFICATION QUEUE */}
               {adminMode ? (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                      <FileCheck size={16} className="text-purple-600 dark:text-purple-400" />
-                      <span>Admin Verification Queue (Manual Inspection)</span>
-                    </h4>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">
-                      {verificationRequests.filter((r) => r.status === 'pending').length} pending applications
-                    </span>
+                <div className="space-y-6">
+                  {/* MoMo Verification Applications Queue */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                        <ShieldCheck size={16} className="text-emerald-600 dark:text-emerald-400" />
+                        <span>MoMo Verification Queue (Instant KYC Anti-Scam)</span>
+                      </h4>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        {momoRequests.filter((r) => r.status === 'pending').length} pending MoMo requests
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3">
+                      {momoRequests.map((mReq) => (
+                        <div
+                          key={mReq.id}
+                          className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">
+                              MoMo
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+                                  {mReq.sellerName}
+                                </span>
+                                {mReq.status === 'verified' && (
+                                  <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded-full font-bold flex items-center gap-0.5">
+                                    <span>✅</span>
+                                    <span>Approved</span>
+                                  </span>
+                                )}
+                                {mReq.status === 'pending' && (
+                                  <span className="text-[10px] bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-full font-bold">
+                                    Pending Review
+                                  </span>
+                                )}
+                                {mReq.status === 'rejected' && (
+                                  <span className="text-[10px] bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 px-2 py-0.5 rounded-full font-bold">
+                                    Rejected
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-0.5 flex-wrap">
+                                <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                                  SIM Name: {mReq.momoName}
+                                </span>
+                                <span>·</span>
+                                <span className="font-mono">{mReq.momoNumber} ({mReq.network || mReq.momoNetwork || 'MTN'})</span>
+                                <span>·</span>
+                                <span>Submitted {mReq.submittedAt}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {mReq.status !== 'verified' && (
+                              <button
+                                type="button"
+                                onClick={() => handleAdminApproveMoMo(mReq.id)}
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1"
+                              >
+                                <Check size={13} />
+                                <span>Approve MoMo & Grant Badge</span>
+                              </button>
+                            )}
+                            {mReq.status === 'pending' && (
+                              <button
+                                type="button"
+                                onClick={() => handleAdminRejectMoMo(mReq.id)}
+                                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400 text-xs font-bold rounded-xl border border-rose-200 dark:border-rose-900 transition-colors cursor-pointer"
+                              >
+                                Reject
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
+
+                  {/* Ghana Card Queue */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                        <FileCheck size={16} className="text-purple-600 dark:text-purple-400" />
+                        <span>Ghana National Card Queue (Manual Inspection)</span>
+                      </h4>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        {verificationRequests.filter((r) => r.status === 'pending').length} pending applications
+                      </span>
+                    </div>
 
                   <div className="grid grid-cols-1 gap-4">
                     {verificationRequests.map((req) => {
@@ -1106,9 +1389,217 @@ export const SellerDashboardModal: React.FC<SellerDashboardModalProps> = ({
                     })}
                   </div>
                 </div>
-              ) : (
-                /* SELLER VERIFICATION SUBMISSION FORM */
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              </div>
+            ) : (
+              /* SELLER VERIFICATION SUBMISSION FORM */
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  {/* FEATURE 1: VERIFY MY MOMO (Anti-Scam Verification for Ghana) */}
+                  <div className="lg:col-span-12">
+                    {isMoMoVerified ? (
+                      /* Approved MoMo Verified Card */
+                      <div className="p-5 bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-emerald-500/15 border-2 border-emerald-500/50 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+                        <div className="flex items-start gap-3.5">
+                          <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white font-black text-xl flex items-center justify-center shrink-0 shadow-sm">
+                            ✅
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-base font-black text-slate-900 dark:text-white">
+                                ✅ MoMo Verified Seller Active
+                              </h4>
+                              <span className="text-[11px] font-black bg-emerald-600 text-white px-2.5 py-0.5 rounded-full uppercase tracking-wide">
+                                Verified
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-700 dark:text-slate-300">
+                              Registered Name: <strong className="text-slate-950 dark:text-white">{currentUser.momoName || currentUser.name}</strong> · MoMo Number: <strong className="font-mono text-emerald-700 dark:text-emerald-400">{currentUser.momoNumber || currentUser.phone} ({currentUser.momoNetwork || 'MTN'})</strong>
+                            </p>
+                            <p className="text-[11px] text-emerald-800 dark:text-emerald-300/90 font-medium pt-0.5">
+                              The small green ✅ MoMo Verified badge is live on all your product cards and profile. This reassures buyers that your identity is genuine and protects against scams.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="inline-flex items-center gap-1 text-xs font-black px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 shadow-2xs">
+                            <span>✅</span>
+                            <span>Badges Live on Products</span>
+                          </span>
+                        </div>
+                      </div>
+                    ) : isMoMoPending ? (
+                      /* Pending Verification Card */
+                      <div className="p-5 bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 border-2 border-amber-400 dark:border-amber-700 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+                        <div className="flex items-start gap-3.5">
+                          <div className="w-12 h-12 rounded-2xl bg-amber-500 text-slate-950 font-black text-xl flex items-center justify-center shrink-0 shadow-sm animate-pulse">
+                            ⏳
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-base font-black text-slate-900 dark:text-white">
+                                MoMo Verification: Pending Admin Review
+                              </h4>
+                              <span className="text-[11px] font-black bg-amber-500 text-slate-950 px-2.5 py-0.5 rounded-full uppercase tracking-wide">
+                                Pending
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-700 dark:text-slate-300">
+                              Submitted Name: <strong className="text-slate-950 dark:text-white">{currentUser.momoName || momoName}</strong> · Phone: <strong className="font-mono text-amber-700 dark:text-amber-400">{currentUser.momoNumber || momoNumber} ({currentUser.momoNetwork || momoNetwork})</strong>
+                            </p>
+                            <p className="text-[11px] text-amber-800 dark:text-amber-300/90 font-medium pt-0.5">
+                              Your details are currently awaiting verification by OGYA administrators. Once approved, the green ✅ MoMo Verified badge will appear automatically on all your product cards.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* One-Click Approval for Testing */}
+                        <div className="flex flex-col sm:flex-row items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleAdminApproveMoMo(currentMoMoReq?.id || 'req-momo-ansah-01')}
+                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-98"
+                            title="Simulate immediate admin approval to grant green badge"
+                          >
+                            <Check size={14} />
+                            <span>Instant Admin Approve (Demo KYC)</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Not Verified: Form with "Verify My MoMo" Button */
+                      <form onSubmit={handleSubmitMoMoVerification} className="p-5 bg-white dark:bg-slate-900 rounded-2xl border-2 border-emerald-500/30 shadow-md space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white font-black text-lg flex items-center justify-center shrink-0">
+                              🛡️
+                            </div>
+                            <div>
+                              <h4 className="text-sm sm:text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                                <span>Verify My MoMo (Stop Scams & Earn Trust)</span>
+                                <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded-full font-bold">
+                                  Ghana KYC
+                                </span>
+                              </h4>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">
+                                Enter your Mobile Money account name and number to earn the green ✅ MoMo Verified badge on all your listings.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                              MoMo Registered Name
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={momoName}
+                              onChange={(e) => setMomoName(e.target.value)}
+                              placeholder="e.g. Ansah Ford / Daniel Aboagye"
+                              className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                              MoMo Phone Number
+                            </label>
+                            <input
+                              type="tel"
+                              required
+                              value={momoNumber}
+                              onChange={(e) => setMomoNumber(e.target.value)}
+                              placeholder="e.g. 024 555 8899"
+                              className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                              Network Provider
+                            </label>
+                            <select
+                              value={momoNetwork}
+                              onChange={(e) => setMomoNetwork(e.target.value as 'MTN' | 'Telecel' | 'AT')}
+                              className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                            >
+                              <option value="MTN">MTN Mobile Money (MoMo)</option>
+                              <option value="Telecel">Telecel Cash</option>
+                              <option value="AT">AT Money (AirtelTigo)</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                            Submitting sends your request to administrators with status <strong>"Pending Verification"</strong>. Upon approval, your green badge activates instantly.
+                          </p>
+                          <button
+                            type="submit"
+                            disabled={isSubmittingMoMo}
+                            className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:opacity-95 text-white font-black text-xs sm:text-sm rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 active:scale-98"
+                          >
+                            {isSubmittingMoMo ? (
+                              <RefreshCw size={15} className="animate-spin" />
+                            ) : (
+                              <ShieldCheck size={16} />
+                            )}
+                            <span>Verify My MoMo</span>
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
+
+                  {/* FEATURE 2: ⭐ TRUSTED SELLER (3+ SALES) TRACKER & SIMULATOR */}
+                  <div className="lg:col-span-12 p-5 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border-2 border-amber-300 dark:border-amber-800/80 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+                    <div className="flex items-start gap-3.5">
+                      <div className="w-12 h-12 rounded-2xl bg-amber-500 text-slate-950 font-black text-xl flex items-center justify-center shrink-0 shadow-sm">
+                        ⭐
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="text-base font-black text-slate-900 dark:text-white">
+                            ⭐ Trusted Seller Milestone (3+ Successful Sales)
+                          </h4>
+                          {isTrusted ? (
+                            <span className="text-[11px] font-black bg-amber-500 text-slate-950 px-2.5 py-0.5 rounded-full uppercase tracking-wide">
+                              ⭐ Badge Active
+                            </span>
+                          ) : (
+                            <span className="text-[11px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-full">
+                              {salesCount} / 3 Completed
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-700 dark:text-slate-300">
+                          {isTrusted
+                            ? `You have completed ${salesCount} successful sales on OGYA! The ⭐ Trusted Seller badge is active across all your product cards and profile.`
+                            : `Complete 3 successful transactions to automatically unlock the ⭐ Trusted Seller badge on all your listings.`}
+                        </p>
+                        {/* Progress bar */}
+                        <div className="w-48 bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden mt-1.5">
+                          <div
+                            className="bg-amber-500 h-full rounded-full transition-all duration-300"
+                            style={{ width: `${Math.min(100, (salesCount / 3) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleSimulateSale}
+                      className="px-4 py-2.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-98"
+                      title="Simulate recording a completed sale to test the 3+ sales Trusted Seller milestone"
+                    >
+                      <Plus size={14} />
+                      <span>Record Completed Sale (+1)</span>
+                    </button>
+                  </div>
+
                   {/* 100 GHS/Month Verified Subscription Fast-Track Banner */}
                   <div className="lg:col-span-12 p-4 bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-amber-500/15 border-2 border-emerald-500/40 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-start gap-3">

@@ -76,6 +76,16 @@ export interface UserProfile {
   subscriptionPlan?: string;
   verifiedExpiresAt?: string;
   verifiedAmount?: number;
+  // MoMo Verification (Anti-scam KYC in Ghana)
+  momoVerified?: boolean;
+  momoStatus?: 'none' | 'pending' | 'verified' | 'rejected';
+  momoName?: string;
+  momoNumber?: string;
+  momoNetwork?: 'MTN' | 'Telecel' | 'AirtelTigo' | 'AT';
+  momoSubmittedAt?: string;
+  momoVerifiedAt?: string;
+  salesCount?: number;
+  isTrustedSeller?: boolean;
 }
 
 export type SellerBadgeId =
@@ -112,6 +122,14 @@ export interface SellerInfo {
   responseRate?: number;
   averageResponseTime?: string;
   whatsappClicks?: number;
+  // Trust & MoMo Verification
+  momoVerified?: boolean;
+  momoStatus?: 'none' | 'pending' | 'verified' | 'rejected';
+  momoName?: string;
+  momoNumber?: string;
+  momoNetwork?: 'MTN' | 'Telecel' | 'AirtelTigo';
+  salesCount?: number;
+  isTrustedSeller?: boolean;
 }
 
 export interface PriceHistoryPoint {
