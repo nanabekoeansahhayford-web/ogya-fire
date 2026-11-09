@@ -181,10 +181,10 @@ export const MyOrdersModal: React.FC<MyOrdersModalProps> = ({
             </div>
             <div>
               <h3 className="text-xl font-black tracking-tight leading-tight">
-                My Fire Gear Orders
+                My Orders
               </h3>
               <p className="text-xs text-white/90">
-                Track your equipment deliveries & Mobile Money payments in Ghana
+                Track your deliveries & Mobile Money payments in Ghana
               </p>
             </div>
           </div>
@@ -215,7 +215,7 @@ export const MyOrdersModal: React.FC<MyOrdersModalProps> = ({
                 No orders found yet
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                You haven't placed any fire safety equipment orders yet. Browse our store to order extinguishers, smoke detectors, and fire blankets with MTN MoMo.
+                You haven't placed any orders yet. Browse our marketplace or food vendors to order with MTN MoMo.
               </p>
               <button
                 type="button"
@@ -223,9 +223,9 @@ export const MyOrdersModal: React.FC<MyOrdersModalProps> = ({
                   onClose();
                   onOpenStore();
                 }}
-                className="mt-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all"
+                className="mt-2 px-5 py-2.5 bg-[#00875A] hover:bg-[#00734c] text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all"
               >
-                Browse Fire Safety Gear
+                Start Shopping
               </button>
             </div>
           ) : (

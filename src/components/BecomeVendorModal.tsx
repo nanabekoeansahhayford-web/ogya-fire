@@ -33,12 +33,12 @@ export const BecomeVendorModal: React.FC<BecomeVendorModalProps> = ({
   onOpenAuth,
 }) => {
   const [shopName, setShopName] = useState(
-    currentUser?.businessName || (currentUser?.name ? `${currentUser.name} Fire Supplies` : '')
+    currentUser?.businessName || (currentUser?.name ? `${currentUser.name} Store` : '')
   );
   const [phone, setPhone] = useState(currentUser?.phone || '+233 24 000 0000');
   const [location, setLocation] = useState(currentUser?.city || 'Accra, Greater Accra');
   const [description, setDescription] = useState(
-    'Specialist supplier of certified ABC powder fire extinguishers, optical smoke detectors, and commercial fire blankets.'
+    'Registered vendor offering quality products, food, and verified delivery across Ghana.'
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -122,10 +122,10 @@ export const BecomeVendorModal: React.FC<BecomeVendorModalProps> = ({
           </div>
 
           <h3 className="text-2xl font-black tracking-tight">
-            Become a Certified Fire Gear Vendor
+            Become a Verified Vendor
           </h3>
           <p className="text-xs text-white/90 mt-1 max-w-sm">
-            Open your dedicated fire safety shop in collection 'vendors' and manage your own product listings across Ghana.
+            Open your dedicated shop in collection 'vendors' and manage your own product listings across Ghana.
           </p>
         </div>
 
@@ -179,7 +179,7 @@ export const BecomeVendorModal: React.FC<BecomeVendorModalProps> = ({
               {/* Shop Name */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Fire Safety Shop / Business Name *
+                  Shop / Business Name *
                 </label>
                 <div className="relative">
                   <Building2 size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -188,7 +188,7 @@ export const BecomeVendorModal: React.FC<BecomeVendorModalProps> = ({
                     required
                     value={shopName}
                     onChange={(e) => setShopName(e.target.value)}
-                    placeholder="e.g. Apex Safety & Fire Solutions Ghana"
+                    placeholder="e.g. Osu Quality Merchants Ghana"
                     className="w-full pl-9 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500"
                   />
                 </div>

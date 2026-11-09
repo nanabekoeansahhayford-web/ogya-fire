@@ -88,7 +88,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
   const [price, setPrice] = useState('');
   const [image, setImage] = useState('');
   const [stock, setStock] = useState('15');
-  const [category, setCategory] = useState<ProductCategory>('Fire Extinguisher');
+  const [category, setCategory] = useState<ProductCategory>('General Goods');
   const [description, setDescription] = useState('');
   const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -344,20 +344,20 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
     }
 
     const defaultImages: Record<string, string> = {
-      'Fire Extinguisher': 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=600&auto=format&fit=crop&q=80',
-      'Smoke Detector': 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&auto=format&fit=crop&q=80',
-      'Fire Blanket': 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&auto=format&fit=crop&q=80',
-      'Alarm': 'https://images.unsplash.com/photo-1541888946425-d0fbb186c5f7?w=600&auto=format&fit=crop&q=80',
-      'Hose': 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&auto=format&fit=crop&q=80',
+      'General Goods': 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&auto=format&fit=crop&q=80',
+      'Electronics & Gadgets': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80',
+      'Fashion & Apparel': 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600&auto=format&fit=crop&q=80',
+      'Phone Accessories': 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=600&auto=format&fit=crop&q=80',
+      'Ghanaian Food': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
     };
 
-    const finalImage = image.trim() || defaultImages[category] || 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=600&auto=format&fit=crop&q=80';
+    const finalImage = image.trim() || defaultImages[category] || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&auto=format&fit=crop&q=80';
     const newProductId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
     const newProduct: Product = {
       id: newProductId,
       name: name.trim(),
-      description: description.trim() || `${name.trim()} - Certified fire safety equipment for Ghanaian homes and offices.`,
+      description: description.trim() || `${name.trim()} - Quality product from ${vendorInfo.name} for Ghanaian customers.`,
       price: numPrice,
       category,
       imageUrl: finalImage,
@@ -853,7 +853,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
                   No orders found for this vendor
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                  Only orders matching <strong className="text-slate-700 dark:text-slate-300">{vendorInfo.name}</strong> ({selectedVendorId}) appear in this list. Place a new order via the Fire Safety store to test!
+                  Only orders matching <strong className="text-slate-700 dark:text-slate-300">{vendorInfo.name}</strong> ({selectedVendorId}) appear in this list.
                 </p>
               </div>
             ) : (
@@ -1023,7 +1023,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
                   No products in your catalog yet
                 </h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                  Publish certified fire extinguishers, detectors, or alarms to start selling on OGYA.
+                  Publish products or items to start selling to customers on OGYA.
                 </p>
                 <button
                   type="button"
@@ -1094,10 +1094,10 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
           <div className="max-w-2xl bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-6">
             <div>
               <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                Add New Fire Safety Product
+                Add New Product
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Add a new product to Firestore 'products' with price in GHS, stock count, and image.
+                Add a new product to your catalog with price in GHS, stock count, and image.
               </p>
             </div>
 

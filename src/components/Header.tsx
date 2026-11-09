@@ -14,7 +14,6 @@ import {
   Truck,
   ShoppingCart,
   Store,
-  Flame,
   Package,
 } from 'lucide-react';
 import { UserProfile } from '../types/marketplace';
@@ -42,7 +41,6 @@ interface HeaderProps {
   onOpenMyOrders?: () => void;
   onOpenBecomeVendor?: () => void;
   onOpenVendorDashboard?: () => void;
-  onScrollToStore?: () => void;
   isVendor?: boolean;
 }
 
@@ -68,7 +66,6 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenMyOrders,
   onOpenBecomeVendor,
   onOpenVendorDashboard,
-  onScrollToStore,
   isVendor = false,
 }) => {
   const isBuyer = isUserBuyer(currentUser);
@@ -119,14 +116,6 @@ export const Header: React.FC<HeaderProps> = ({
             <span>🍲 Food Vendors</span>
           </button>
           <button
-            onClick={onScrollToStore || onGoHome}
-            className="hover:text-[#FF6600] dark:hover:text-[#FF6600] transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 py-1 cursor-pointer font-bold text-[#FF6600]"
-            title="Fire Protection & Safety Equipment Store"
-          >
-            <Flame size={16} className="text-[#FF6600]" />
-            <span>Fire Gear Store</span>
-          </button>
-          <button
             onClick={onGoHome}
             className="hover:text-[#00875A] dark:hover:text-white transition-colors whitespace-nowrap shrink-0 py-1 cursor-pointer font-bold"
           >
@@ -153,7 +142,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onOpenMyOrders}
               className="hover:text-slate-950 dark:hover:text-white transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 py-1 cursor-pointer"
-              title="Track your fire gear orders"
+              title="Track your orders"
             >
               <Package size={15} className="text-slate-400" />
               <span>My Orders</span>

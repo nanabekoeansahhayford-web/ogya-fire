@@ -69,7 +69,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setError(null);
 
     if (cart.length === 0) {
-      setError('Your cart is empty. Please add fire equipment to your cart before placing an order.');
+      setError('Your cart is empty. Please add items to your cart before placing an order.');
       return;
     }
 
@@ -214,7 +214,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-black uppercase tracking-wider mb-2">
             <Flame size={12} className="text-white animate-pulse" />
-            <span>OGYA SECURE FIRE GEAR CHECKOUT</span>
+            <span>OGYA SECURE CHECKOUT</span>
           </div>
 
           <h3 className="text-xl sm:text-2xl font-black tracking-tight leading-tight">
@@ -453,7 +453,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   Pay on Delivery
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 max-w-sm mx-auto leading-relaxed">
-                  Your fire safety equipment is booked for delivery. Hand cash to the courier upon inspection.
+                  Your order is booked for delivery. Hand cash to the courier upon inspection.
                 </p>
               </div>
 

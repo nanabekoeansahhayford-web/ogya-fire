@@ -22,7 +22,6 @@ import { CourierOrderModal } from './components/CourierOrderModal';
 import { CourierTrackingModal } from './components/CourierTrackingModal';
 import { VerifiedSubscriptionModal } from './components/VerifiedSubscriptionModal';
 import { VercelDeployGuideModal } from './components/VercelDeployGuideModal';
-import { ProductGrid } from './components/ProductGrid';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { CartModal } from './components/CartModal';
 import { CheckoutModal } from './components/CheckoutModal';
@@ -396,8 +395,8 @@ export default function App() {
     navigateToVendor();
   };
 
-  const handleScrollToStore = () => {
-    const el = document.getElementById('fire-safety-products');
+  const handleScrollToMarketplace = () => {
+    const el = document.getElementById('browse-listings');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
     }
@@ -836,7 +835,6 @@ export default function App() {
         onOpenMyOrders={() => handleOpenProfile('orders')}
         onOpenBecomeVendor={() => setIsBecomeVendorOpen(true)}
         onOpenVendorDashboard={navigateToVendor}
-        onScrollToStore={handleScrollToStore}
         isVendor={isVendor}
         onOpenIWantThis={() => setIsIWantThisOpen(true)}
       />
@@ -917,16 +915,6 @@ export default function App() {
         onAddToCart={handleAddFoodToCart}
         cartItemCount={getCartItemCount(cart)}
         getItemQuantityInCart={getItemQuantityInCart}
-      />
-
-      {/* Fire Protection & Safety Equipment Grid (Firestore collection 'products') */}
-      <ProductGrid
-        products={products}
-        onAddToCart={handleAddToCart}
-        onViewProduct={(p) => setSelectedProduct(p)}
-        onOpenBecomeVendor={() => setIsBecomeVendorOpen(true)}
-        onOpenVendorDashboard={navigateToVendor}
-        isVendor={isVendor}
       />
 
       {/* Main Content Area: Sidebar Filters + Listings Grid */}
@@ -1517,7 +1505,7 @@ export default function App() {
         isOpen={isMyOrdersOpen}
         onClose={() => setIsMyOrdersOpen(false)}
         currentUser={currentUser}
-        onOpenStore={handleScrollToStore}
+        onOpenStore={handleScrollToMarketplace}
       />
 
       {/* Become a Vendor Modal (Firestore 'vendors' + role='vendor') */}
@@ -1565,14 +1553,17 @@ export default function App() {
             <span className="text-[10px] font-bold mt-1">Market</span>
           </button>
 
-          {/* Tab 2: Fire Safety Store */}
+          {/* Tab 2: Food Vendors */}
           <button
             type="button"
-            onClick={handleScrollToStore}
-            className="flex flex-col items-center justify-center min-h-[44px] min-w-[44px] text-slate-600 dark:text-slate-400 hover:text-[#FF6600] transition-colors cursor-pointer"
+            onClick={() => {
+              const el = document.getElementById('accra-food-vendors');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="flex flex-col items-center justify-center min-h-[44px] min-w-[44px] text-slate-600 dark:text-slate-400 hover:text-[#00875A] dark:hover:text-emerald-400 transition-colors cursor-pointer"
           >
-            <Flame size={20} className="text-[#FF6600]" />
-            <span className="text-[10px] font-bold mt-1">Fire Store</span>
+            <span className="text-lg">🍲</span>
+            <span className="text-[10px] font-bold mt-0.5">Food</span>
           </button>
 
           {/* Tab 3: Center Elevated Sell Action */}

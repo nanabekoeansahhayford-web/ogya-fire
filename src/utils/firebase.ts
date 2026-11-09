@@ -1,6 +1,5 @@
 import { initializeApp } from 'firebase/app';
 import {
-  initializeFirestore,
   getFirestore,
   doc,
   getDoc,
@@ -31,13 +30,7 @@ import { SEED_PRODUCTS } from '../data/seedProducts';
 
 // Initialize Firebase App & Services
 const app = initializeApp(firebaseConfig);
-export const db = initializeFirestore(
-  app,
-  {
-    experimentalForceLongPolling: true,
-  },
-  firebaseConfig.firestoreDatabaseId
-);
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId); /* CRITICAL: The app will break without this line */
 export const auth = getAuth(app);
 
 /**
@@ -226,19 +219,13 @@ export async function sendFirebasePasswordReset(email: string): Promise<{
   }
 }
 
-// Test connection on boot with timeout safety
+// Test connection on boot
 export async function testConnection(): Promise<boolean> {
   try {
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('timeout')), 3000)
-    );
-    await Promise.race([
-      getDocFromServer(doc(db, 'test', 'connection')),
-      timeoutPromise,
-    ]);
+    await getDocFromServer(doc(db, 'test', 'connection'));
     return true;
   } catch (error) {
-    if (error instanceof Error && (error.message.includes('the client is offline') || error.message.includes('timeout'))) {
+    if (error instanceof Error && error.message.includes('the client is offline')) {
       console.warn('Firestore: operating with local data and cache.');
     }
     return false;
@@ -482,14 +469,14 @@ export async function deleteProductFromFirestore(productId: string): Promise<boo
 }
 
 /**
- * Fetch all products from Firestore, seeding with initial fire safety equipment if collection is fresh
+ * Fetch all products from Firestore, seeding with initial marketplace catalog if collection is fresh
  */
 export async function fetchProductsFromFirestore(): Promise<Product[]> {
   const path = 'products';
   try {
     const snap = await getDocs(collection(db, path));
     if (snap.empty) {
-      // Seed default fire safety products in background
+      // Seed default marketplace products in background
       for (const p of SEED_PRODUCTS) {
         saveProductToFirestore(p).catch(() => {});
       }

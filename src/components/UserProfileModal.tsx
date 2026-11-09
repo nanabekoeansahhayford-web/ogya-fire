@@ -1071,7 +1071,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                     <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-1">
                       {orderSearchQuery
                         ? `No orders matching "${orderSearchQuery}". Try clearing your search.`
-                        : 'Explore popular Ghanaian kitchens or fire safety equipment and enjoy fast doorstep delivery.'}
+                        : 'Explore popular Ghanaian kitchens or marketplace products and enjoy fast doorstep delivery.'}
                     </p>
                   </div>
                   <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
@@ -1097,8 +1097,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                         }}
                         className="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 border border-slate-200 dark:border-slate-700"
                       >
-                        <Flame size={13} className="text-[#FF6600]" />
-                        <span>Safety Equipment Store</span>
+                        <ShoppingBag size={13} className="text-[#FF6600]" />
+                        <span>Browse Marketplace</span>
                       </button>
                     )}
                   </div>

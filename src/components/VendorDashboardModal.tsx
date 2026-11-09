@@ -46,7 +46,7 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
-  const [category, setCategory] = useState<ProductCategory>('Fire Extinguisher');
+  const [category, setCategory] = useState<ProductCategory>('General Goods');
   const [imageUrl, setImageUrl] = useState('');
   const [stock, setStock] = useState('10');
 
@@ -71,7 +71,7 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
     setName('');
     setDescription('');
     setPrice('');
-    setCategory('Fire Extinguisher');
+    setCategory('General Goods');
     setImageUrl('');
     setStock('10');
     setEditingProduct(null);
@@ -110,14 +110,14 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
     }
 
     const defaultImages: Record<string, string> = {
-      'Fire Extinguisher': 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=600&auto=format&fit=crop&q=80',
-      'Smoke Detector': 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&auto=format&fit=crop&q=80',
-      'Fire Blanket': 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&auto=format&fit=crop&q=80',
-      'Alarm': 'https://images.unsplash.com/photo-1541888946425-d0fbb186c5f7?w=600&auto=format&fit=crop&q=80',
-      'Hose': 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&auto=format&fit=crop&q=80',
+      'General Goods': 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&auto=format&fit=crop&q=80',
+      'Electronics & Gadgets': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80',
+      'Fashion & Apparel': 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600&auto=format&fit=crop&q=80',
+      'Phone Accessories': 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=600&auto=format&fit=crop&q=80',
+      'Ghanaian Food': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
     };
 
-    const finalImage = imageUrl.trim() || defaultImages[category] || 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=600&auto=format&fit=crop&q=80';
+    const finalImage = imageUrl.trim() || defaultImages[category] || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&auto=format&fit=crop&q=80';
     const vendorId = currentUser?.id || vendor?.id || 'vnd-custom';
     const vendorName = vendor?.shopName || currentUser?.name || 'Verified OGYA Vendor';
 
@@ -152,7 +152,7 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
   };
 
   const handleDeleteProduct = async (productId: string) => {
-    if (!window.confirm('Are you sure you want to delete this fire safety product?')) return;
+    if (!window.confirm('Are you sure you want to delete this product?')) return;
     try {
       await deleteProductFromFirestore(productId);
       onProductUpdated();
@@ -332,7 +332,7 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
                     No products added yet
                   </h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                    Add your first fire safety product to the OGYA store. Set your price in GHS, upload photos, and start receiving MoMo orders.
+                    Add your first product to your catalog. Set your price in GHS, upload photos, and start receiving MoMo orders.
                   </p>
                   <button
                     type="button"
@@ -343,7 +343,7 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
                     className="mt-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all inline-flex items-center gap-2"
                   >
                     <Plus size={15} />
-                    <span>Add Fire Safety Product</span>
+                    <span>Add Product</span>
                   </button>
                 </div>
               ) : (
@@ -412,7 +412,7 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
             <form onSubmit={handleSaveProduct} className="space-y-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-black uppercase tracking-wider text-slate-500">
-                  {editingProduct ? 'Editing Product in Firestore' : 'Create New Fire Safety Product'}
+                  {editingProduct ? 'Editing Product in Firestore' : 'Create New Product'}
                 </span>
                 {editingProduct && (
                   <button
@@ -447,7 +447,7 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Category (Certified Fire Gear) *
+                    Category *
                   </label>
                   <select
                     value={category}

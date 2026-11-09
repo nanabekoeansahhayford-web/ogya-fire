@@ -1,9 +1,8 @@
 export type ProductCategory =
-  | 'Fire Extinguisher'
-  | 'Smoke Detector'
-  | 'Fire Blanket'
-  | 'Alarm'
-  | 'Hose'
+  | 'General Goods'
+  | 'Electronics & Gadgets'
+  | 'Fashion & Apparel'
+  | 'Phone Accessories'
   | 'Ghanaian Food'
   | 'Local Delicacies'
   | 'Grill & BBQ'
@@ -12,11 +11,10 @@ export type ProductCategory =
   | (string & {});
 
 export const PRODUCT_CATEGORIES: string[] = [
-  'Fire Extinguisher',
-  'Smoke Detector',
-  'Fire Blanket',
-  'Alarm',
-  'Hose',
+  'General Goods',
+  'Electronics & Gadgets',
+  'Fashion & Apparel',
+  'Phone Accessories',
   'Ghanaian Food',
   'Local Delicacies',
   'Grill & BBQ',
