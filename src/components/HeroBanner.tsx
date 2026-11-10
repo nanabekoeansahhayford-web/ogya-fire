@@ -241,181 +241,184 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/85 to-slate-900/60" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
-        <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-black uppercase tracking-wider mb-3 backdrop-blur-md">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>🇬🇭 GHANA VENDOR MARKETPLACE · FAST COURIER DISPATCH</span>
-          </div>
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
+        {/* Tablet 50/50 split & Desktop layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 md:gap-8 lg:gap-12 items-center">
+          {/* Left Column (50% on tablet): Headline, Subtitle, Search bar */}
+          <div className="w-full">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[11px] sm:text-xs font-black uppercase tracking-wider mb-3 backdrop-blur-md">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>🇬🇭 GHANA VENDOR MARKETPLACE · FAST COURIER</span>
+            </div>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white mb-3 leading-tight text-balance">
-            Shop Local in Accra - Fast Delivery
-          </h1>
+            <h1 className="text-[clamp(1.75rem,5.5vw,3rem)] font-black tracking-tight text-white mb-2 sm:mb-3 leading-tight text-balance">
+              Shop Local in Accra - Fast Delivery
+            </h1>
 
-          <p className="text-slate-300 text-sm sm:text-base mb-7 max-w-2xl leading-relaxed">
-            Direct from verified Ghanaian merchants in Osu, East Legon, Spintex, and Makola. Authentic goods with doorstep courier dispatch and Mobile Money protection.
-          </p>
+            <p className="text-slate-300 text-xs sm:text-sm md:text-base mb-5 sm:mb-6 leading-relaxed">
+              Direct from verified Ghanaian merchants in Osu, East Legon, Spintex, and Makola. Authentic goods with doorstep courier dispatch and Mobile Money protection.
+            </p>
 
-          {/* Unified search bar wrapper */}
-          <div ref={searchContainerRef} className="relative">
-            {/* Real-time Voice Search Listening / Status Banner */}
-            {isListening && (
-              <div className="absolute -top-11 left-0 right-0 flex items-center justify-center pointer-events-none z-30 animate-in fade-in slide-in-from-bottom-2 duration-150">
-                <div className="bg-red-600 text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-lg flex items-center gap-2 border border-red-400/40">
-                  <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
-                  <span>{voiceFeedback || 'Listening... Speak now into your microphone'}</span>
+            {/* Unified search bar wrapper - Stacks vertically on phone, 1 row on tablet/desktop */}
+            <div ref={searchContainerRef} className="relative">
+              {/* Real-time Voice Search Listening / Status Banner */}
+              {isListening && (
+                <div className="absolute -top-11 left-0 right-0 flex items-center justify-center pointer-events-none z-30 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                  <div className="bg-red-600 text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-lg flex items-center gap-2 border border-red-400/40">
+                    <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
+                    <span>{voiceFeedback || 'Listening... Speak now into your microphone'}</span>
+                  </div>
                 </div>
-              </div>
-            )}
-            {voiceError && (
-              <div className="absolute -top-11 left-0 right-0 flex items-center justify-center pointer-events-none z-30 animate-in fade-in duration-150">
-                <div className="bg-amber-600 text-white text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-lg border border-amber-400/40">
-                  {voiceError}
+              )}
+              {voiceError && (
+                <div className="absolute -top-11 left-0 right-0 flex items-center justify-center pointer-events-none z-30 animate-in fade-in duration-150">
+                  <div className="bg-amber-600 text-white text-xs font-semibold px-3.5 py-1.5 rounded-full shadow-lg border border-amber-400/40">
+                    {voiceError}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            <div
-              className={`bg-white dark:bg-slate-900 p-2 rounded-xl shadow-xl flex flex-col md:flex-row items-stretch gap-2 text-slate-900 dark:text-white border transition-all ${
-                isListening
-                  ? 'ring-2 ring-red-500 border-red-500 shadow-2xl'
-                  : isFocused
-                  ? 'ring-2 ring-amber-500/80 border-amber-500/50 shadow-2xl'
-                  : 'border-transparent dark:border-slate-800'
-              }`}
-            >
-              {/* Search query input */}
-              <div className="flex-1 flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-800/80 md:bg-transparent md:dark:bg-transparent rounded-lg">
-                <Search className="w-5 h-5 text-slate-400 shrink-0" />
-                <input
-                  ref={inputRef}
-                  type="text"
-                  placeholder={
-                    isListening
-                      ? 'Listening... say e.g. "Range Rover", "iPhone 15", or "East Legon"'
-                      : 'What are you looking for? (e.g. Toyota, iPhone, Villa, Plumber...)'
-                  }
-                  value={searchQuery}
-                  onChange={(e) => onSearchChange(e.target.value)}
-                  onFocus={handleInputFocus}
-                  onKeyDown={handleKeyDown}
-                  className="w-full bg-transparent text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none"
-                />
+              <div
+                className={`bg-white dark:bg-slate-900 p-2 sm:p-2.5 rounded-2xl shadow-xl flex flex-col md:flex-row items-stretch md:items-center gap-2 text-slate-900 dark:text-white border transition-all ${
+                  isListening
+                    ? 'ring-2 ring-red-500 border-red-500 shadow-2xl'
+                    : isFocused
+                    ? 'ring-2 ring-amber-500/80 border-amber-500/50 shadow-2xl'
+                    : 'border-transparent dark:border-slate-800'
+                }`}
+              >
+                {/* Search query input */}
+                <div className="flex-1 flex items-center gap-2 px-3 py-2.5 bg-slate-50 dark:bg-slate-800/80 md:bg-transparent md:dark:bg-transparent rounded-xl min-h-[44px]">
+                  <Search className="w-5 h-5 text-slate-400 shrink-0" />
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    placeholder={
+                      isListening
+                        ? 'Listening... say e.g. "Toyota", "iPhone 15"'
+                        : 'Search Waakye, Jollof, Phones, Kente...'
+                    }
+                    value={searchQuery}
+                    onChange={(e) => onSearchChange(e.target.value)}
+                    onFocus={handleInputFocus}
+                    onKeyDown={handleKeyDown}
+                    className="w-full bg-transparent text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none caret-amber-500"
+                  />
 
-                {/* Clear text button */}
-                {searchQuery && (
+                  {/* Clear text button */}
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSearchChange('');
+                        inputRef.current?.focus();
+                      }}
+                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer transition-colors"
+                      title="Clear search text"
+                      aria-label="Clear search"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+
+                  {/* Web Speech API Microphone Button */}
                   <button
                     type="button"
-                    onClick={() => {
-                      onSearchChange('');
-                      inputRef.current?.focus();
-                    }}
-                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer transition-colors"
-                    title="Clear search text"
-                    aria-label="Clear search"
+                    onClick={handleVoiceSearch}
+                    className={`p-1.5 rounded-lg transition-all cursor-pointer relative shrink-0 flex items-center justify-center min-h-[36px] min-w-[36px] ${
+                      isListening
+                        ? 'bg-red-500 text-white animate-pulse shadow-md ring-2 ring-red-400/60'
+                        : 'text-slate-400 hover:text-amber-500 hover:bg-slate-200/60 dark:hover:bg-slate-800'
+                    }`}
+                    title={
+                      isListening
+                        ? 'Listening... Speak your search query now (Click to stop)'
+                        : 'Search listings by voice (Web Speech API)'
+                    }
+                    aria-label={isListening ? 'Stop voice listening' : 'Start voice search'}
                   >
-                    <X size={14} />
+                    {isListening ? (
+                      <Mic size={17} className="animate-bounce" />
+                    ) : (
+                      <Mic size={17} />
+                    )}
+                    {isListening && (
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-400 rounded-full animate-ping" />
+                    )}
                   </button>
-                )}
+                </div>
 
-                {/* Web Speech API Microphone Button */}
+                {/* Category selection */}
+                <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-50 dark:bg-slate-800/80 md:bg-transparent md:dark:bg-transparent rounded-xl border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 min-h-[44px]">
+                  <Layers className="w-4 h-4 text-slate-400 shrink-0" />
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => onCategoryChange(e.target.value as CategoryId | 'all')}
+                    aria-label="Filter by Category"
+                    className="w-full md:w-auto bg-transparent text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer md:max-w-[130px] truncate"
+                  >
+                    <option value="all" className="dark:bg-slate-900 dark:text-slate-100">
+                      All Categories
+                    </option>
+                    {CATEGORIES.map((c) => (
+                      <option key={c.id} value={c.id} className="dark:bg-slate-900 dark:text-slate-100">
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Region selection */}
+                <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-50 dark:bg-slate-800/80 md:bg-transparent md:dark:bg-transparent rounded-xl border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 min-h-[44px]">
+                  <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                  <select
+                    value={selectedRegion === 'all' ? 'All Regions' : selectedRegion}
+                    onChange={(e) => {
+                      onRegionChange(e.target.value);
+                      setTimeout(() => {
+                        const el = document.getElementById('browse-listings') || document.querySelector('main');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }, 60);
+                    }}
+                    aria-label="Filter by Region"
+                    className="w-full md:w-auto bg-transparent text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer md:max-w-[130px] truncate"
+                  >
+                    <option value="All Regions" className="dark:bg-slate-900 dark:text-slate-100">
+                      All Regions
+                    </option>
+                    {selectedRegion &&
+                      selectedRegion !== 'All Regions' &&
+                      selectedRegion !== 'all' &&
+                      !REGIONS.includes(selectedRegion) && (
+                        <option value={selectedRegion} className="dark:bg-slate-900 dark:text-slate-100">
+                          📍 {selectedRegion}
+                        </option>
+                      )}
+                    {REGIONS.map((r) => (
+                      <option key={r} value={r} className="dark:bg-slate-900 dark:text-slate-100">
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Submit / Filter action */}
                 <button
                   type="button"
-                  onClick={handleVoiceSearch}
-                  className={`p-1.5 rounded-lg transition-all cursor-pointer relative shrink-0 flex items-center justify-center ${
-                    isListening
-                      ? 'bg-red-500 text-white animate-pulse shadow-md ring-2 ring-red-400/60'
-                      : 'text-slate-400 hover:text-amber-500 hover:bg-slate-200/60 dark:hover:bg-slate-800'
-                  }`}
-                  title={
-                    isListening
-                      ? 'Listening... Speak your search query now (Click to stop)'
-                      : 'Search listings by voice (Web Speech API)'
-                  }
-                  aria-label={isListening ? 'Stop voice listening' : 'Start voice search'}
+                  onClick={() => handleExecuteSearch()}
+                  className="w-full md:w-auto px-6 py-3.5 bg-[#00875A] hover:bg-[#00734c] active:bg-[#005a3c] text-white font-black text-sm rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 cursor-pointer shadow-md hover:shadow-lg active:scale-98 min-h-[44px] relative z-20"
                 >
-                  {isListening ? (
-                    <Mic size={17} className="animate-bounce" />
-                  ) : (
-                    <Mic size={17} />
-                  )}
-                  {isListening && (
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-400 rounded-full animate-ping" />
-                  )}
+                  <span>Search</span>
+                  <span className="text-[#FF6600]">🔥</span>
+                  <ArrowRight size={16} />
                 </button>
               </div>
 
-              {/* Category selection */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-800/80 md:bg-transparent md:dark:bg-transparent rounded-lg border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800">
-                <Layers className="w-4 h-4 text-slate-400 shrink-0" />
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => onCategoryChange(e.target.value as CategoryId | 'all')}
-                  aria-label="Filter by Category"
-                  className="bg-transparent text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer max-w-[140px] truncate"
+              {/* Dropdown panel displaying 'Recent Searches' when the search input is focused */}
+              {isFocused && (
+                <div
+                  className="absolute left-0 right-0 top-full mt-2 z-50 bg-slate-900/98 backdrop-blur-md text-white rounded-xl border border-slate-750 shadow-2xl p-4 animate-in fade-in slide-in-from-top-2 duration-150"
                 >
-                  <option value="all" className="dark:bg-slate-900 dark:text-slate-100">
-                    All 17 Categories
-                  </option>
-                  {CATEGORIES.map((c) => (
-                    <option key={c.id} value={c.id} className="dark:bg-slate-900 dark:text-slate-100">
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Region selection */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-800/80 md:bg-transparent md:dark:bg-transparent rounded-lg border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800">
-                <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-                <select
-                  value={selectedRegion === 'all' ? 'All Regions' : selectedRegion}
-                  onChange={(e) => {
-                    onRegionChange(e.target.value);
-                    setTimeout(() => {
-                      const el = document.getElementById('browse-listings') || document.querySelector('main');
-                      if (el) el.scrollIntoView({ behavior: 'smooth' });
-                    }, 60);
-                  }}
-                  aria-label="Filter by Region"
-                  className="bg-transparent text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer max-w-[140px] truncate"
-                >
-                  <option value="All Regions" className="dark:bg-slate-900 dark:text-slate-100">
-                    All Regions
-                  </option>
-                  {selectedRegion &&
-                    selectedRegion !== 'All Regions' &&
-                    selectedRegion !== 'all' &&
-                    !REGIONS.includes(selectedRegion) && (
-                      <option value={selectedRegion} className="dark:bg-slate-900 dark:text-slate-100">
-                        📍 {selectedRegion}
-                      </option>
-                    )}
-                  {REGIONS.map((r) => (
-                    <option key={r} value={r} className="dark:bg-slate-900 dark:text-slate-100">
-                      {r}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Submit / Filter action */}
-              <button
-                type="button"
-                onClick={() => handleExecuteSearch()}
-                className="px-6 py-3 bg-[#00875A] hover:bg-[#00734c] active:bg-[#005a3c] text-white font-extrabold text-sm rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 cursor-pointer shadow-md hover:shadow-lg active:scale-98"
-              >
-                <span>Search</span>
-                <span className="text-[#FF6600]">🔥</span>
-                <ArrowRight size={16} />
-              </button>
-            </div>
-
-            {/* Dropdown panel displaying 'Recent Searches' when the search input is focused */}
-            {isFocused && (
-              <div
-                className="absolute left-0 right-0 top-full mt-2 z-50 bg-slate-900/98 backdrop-blur-md text-white rounded-xl border border-slate-750 shadow-2xl p-4 animate-in fade-in slide-in-from-top-2 duration-150"
-              >
                 {recentSearches.length > 0 ? (
                   <div>
                     <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-800 text-xs">
@@ -477,17 +480,18 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                     <div className="pt-2.5 border-t border-slate-800">
                       <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2 flex items-center gap-1">
                         <Sparkles size={11} className="text-amber-400" />
-                        <span>Popular Suggestions</span>
+                        <span>Popular Suggestions:</span>
                       </span>
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        {quickTags.slice(0, 5).map((tag) => (
+                        {['Jollof Rice', 'Waakye Special', 'Kente Cloth', 'iPhone', 'Tilapia'].map((tag) => (
                           <button
                             key={tag}
                             type="button"
                             onClick={() => handleSelectTag(tag)}
-                            className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-amber-300 px-2.5 py-1 rounded-md border border-slate-700 transition-colors cursor-pointer"
+                            className="text-xs bg-slate-800 hover:bg-amber-600 hover:text-white text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 hover:border-amber-500 transition-colors cursor-pointer flex items-center gap-1 active:scale-95"
                           >
-                            {tag}
+                            <span>{tag}</span>
+                            <span className="text-amber-400 text-[10px]">🔥</span>
                           </button>
                         ))}
                       </div>
@@ -517,59 +521,81 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               </button>
             ))}
           </div>
-
-          {/* Big Orange "I WANT THIS - Post What You Want" Action Card */}
-          {onOpenIWantThis && (
-            <div className="mt-5 p-3 sm:p-4 rounded-2xl bg-gradient-to-r from-orange-600/90 via-amber-600/90 to-orange-500/90 border border-orange-400/40 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-white">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl p-2 rounded-xl bg-white/20 shrink-0">
-                  🔥
-                </span>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-black uppercase tracking-wider bg-white/30 px-2 py-0.5 rounded text-white">
-                      BUYERS DIRECT
-                    </span>
-                    <span className="text-xs font-bold text-orange-100">Can't find what you need?</span>
-                  </div>
-                  <p className="text-xs text-white font-medium mt-0.5">
-                    Tell Ghana sellers your budget and location. Verified merchants will message you with offers!
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={onOpenIWantThis}
-                className="shrink-0 px-5 py-3 rounded-xl bg-white hover:bg-orange-50 text-orange-600 hover:text-orange-700 font-black text-xs uppercase tracking-wider shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                <span>I WANT THIS - Post What You Want</span>
-                <ArrowRight size={15} />
-              </button>
-            </div>
-          )}
-
-          {/* End-to-End Door-to-Door Courier Access Strip */}
-          {onOpenCourierHub && (
-            <div className="mt-4 pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2 text-slate-300 font-medium">
-                <span className="bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded font-black text-[10px] uppercase tracking-wide border border-amber-500/30">
-                  NEW
-                </span>
-                <span>
-                  <strong>Door-to-Door Courier Across Ghana:</strong> Ship or receive parcels in all 16 regions with strict security OTP & escrow.
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={onOpenCourierHub}
-                className="text-amber-400 hover:text-amber-300 font-bold hover:underline transition-colors cursor-pointer shrink-0 inline-flex items-center gap-1"
-              >
-                <span>Book Courier or Track Parcel →</span>
-              </button>
-            </div>
-          )}
         </div>
+
+        {/* Right Column (50% on tablet/desktop): Hero Visual Card */}
+        <div className="hidden md:flex flex-col items-center justify-center relative">
+          <div className="w-full relative rounded-2xl overflow-hidden border border-slate-700/60 shadow-2xl bg-gradient-to-br from-slate-900 to-slate-950 group">
+            <img
+              src="/src/assets/images/hero_marketplace_showcase_1792291775965.jpg"
+              alt="OGYA FIRE Marketplace Ghana"
+              className="w-full h-64 lg:h-72 object-cover object-center group-hover:scale-105 transition-transform duration-500"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2 bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                <span className="font-bold text-white">Live in Accra, Kumasi & Tema</span>
+              </div>
+              <div className="flex items-center gap-1.5 bg-orange-600/90 text-white px-2.5 py-1 rounded-lg font-black text-[11px] shadow-md">
+                <span>⚡ 100% MoMo Secured</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Big Orange "I WANT THIS - Post What You Want" Action Card */}
+      {onOpenIWantThis && (
+        <div className="mt-5 p-3 sm:p-4 rounded-2xl bg-gradient-to-r from-orange-600/90 via-amber-600/90 to-orange-500/90 border border-orange-400/40 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-white">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl p-2 rounded-xl bg-white/20 shrink-0">
+              🔥
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase tracking-wider bg-white/30 px-2 py-0.5 rounded text-white">
+                  BUYERS DIRECT
+                </span>
+                <span className="text-xs font-bold text-orange-100">Can't find what you need?</span>
+              </div>
+              <p className="text-xs text-white font-medium mt-0.5">
+                Tell Ghana sellers your budget and location. Verified merchants will message you with offers!
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onOpenIWantThis}
+            className="shrink-0 w-full sm:w-auto px-5 py-3 rounded-xl bg-white hover:bg-orange-50 text-orange-600 hover:text-orange-700 font-black text-xs uppercase tracking-wider shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5 min-h-[44px]"
+          >
+            <span>I WANT THIS - Post What You Want</span>
+            <ArrowRight size={15} />
+          </button>
+        </div>
+      )}
+
+      {/* End-to-End Door-to-Door Courier Access Strip */}
+      {onOpenCourierHub && (
+        <div className="mt-4 pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-slate-300 font-medium">
+            <span className="bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded font-black text-[10px] uppercase tracking-wide border border-amber-500/30">
+              NEW
+            </span>
+            <span>
+              <strong>Door-to-Door Courier Across Ghana:</strong> Ship or receive parcels in all 16 regions with strict security OTP & escrow.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={onOpenCourierHub}
+            className="text-amber-400 hover:text-amber-300 font-bold hover:underline transition-colors cursor-pointer shrink-0 inline-flex items-center gap-1 min-h-[36px]"
+          >
+            <span>Book Courier or Track Parcel →</span>
+          </button>
+        </div>
+      )}
       </div>
     </div>
   );

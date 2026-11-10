@@ -837,6 +837,15 @@ export default function App() {
         onOpenVendorDashboard={navigateToVendor}
         isVendor={isVendor}
         onOpenIWantThis={() => setIsIWantThisOpen(true)}
+        searchQuery={filters.searchQuery}
+        onSearchChange={(q) => handleFilterUpdate({ searchQuery: q })}
+        onExecuteSearch={(q) => {
+          if (q !== undefined) handleFilterUpdate({ searchQuery: q });
+          setTimeout(() => {
+            const el = document.getElementById('browse-listings') || document.querySelector('main');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }, 50);
+        }}
       />
 
       {/* Category Navigation Bar for 17 Sectors */}
@@ -915,6 +924,7 @@ export default function App() {
         onAddToCart={handleAddFoodToCart}
         cartItemCount={getCartItemCount(cart)}
         getItemQuantityInCart={getItemQuantityInCart}
+        searchQuery={filters.searchQuery}
       />
 
       {/* Main Content Area: Sidebar Filters + Listings Grid */}
@@ -1172,14 +1182,38 @@ export default function App() {
 
             {/* Grid of Listings */}
             {filteredListings.length === 0 ? (
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center shadow-xs">
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 sm:p-12 text-center shadow-xs animate-in fade-in duration-200">
                 <AlertCircle size={48} className="mx-auto text-amber-500 mb-3 stroke-1" />
-                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">
-                  No Listings Match Your Selected Criteria
+                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1.5">
+                  {filters.searchQuery
+                    ? `No results for "${filters.searchQuery}" - Try Waakye, Jollof`
+                    : 'No Listings Match Your Selected Criteria'}
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6 leading-relaxed">
-                  Try broadening your price range, searching for a different keyword, or resetting your location/category filter.
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-4 leading-relaxed">
+                  {filters.searchQuery ? (
+                    <span>
+                      We couldn't find items matching "<strong>{filters.searchQuery}</strong>". Try these popular Ghana searches:
+                    </span>
+                  ) : (
+                    'Try broadening your price range, searching for a different keyword, or resetting your location/category filter.'
+                  )}
                 </p>
+
+                {/* Popular suggestion chips */}
+                <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
+                  {['Waakye', 'Jollof', 'Tilapia', 'iPhone', 'Kente Cloth'].map((term) => (
+                    <button
+                      key={term}
+                      type="button"
+                      onClick={() => handleFilterUpdate({ searchQuery: term })}
+                      className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-800 text-xs font-bold transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center gap-1"
+                    >
+                      <span>{term}</span>
+                      <span className="text-amber-500">🔥</span>
+                    </button>
+                  ))}
+                </div>
+
                 <div className="flex items-center justify-center gap-3">
                   <button
                     onClick={handleResetFilters}
@@ -1197,7 +1231,7 @@ export default function App() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
                 {filteredListings.map((item) => (
                   <ListingCard
                     key={item.id}

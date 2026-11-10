@@ -38,11 +38,11 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
           )}
         </div>
 
-        {/* Scrollable Category Buttons with Icons */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none no-scrollbar">
+        {/* Responsive Category Buttons: horizontal scroll with snap on phone, 4-5 per row on tablet, full row on PC */}
+        <div className="flex items-center gap-2 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-1 scrollbar-none no-scrollbar sm:grid sm:grid-cols-4 md:grid-cols-5 lg:flex lg:flex-wrap lg:items-center lg:gap-2 lg:overflow-visible sm:snap-none">
           <button
             onClick={() => onSelectCategory('all')}
-            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`flex items-center justify-center sm:justify-start gap-2 px-3 sm:px-3.5 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap shrink-0 sm:shrink cursor-pointer snap-start min-h-[40px] ${
               selectedCategory === 'all'
                 ? 'bg-[#FF6600] text-white shadow-md shadow-orange-500/20'
                 : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white border border-slate-200/70 dark:border-slate-700/70'
@@ -69,7 +69,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
               <button
                 key={cat.id}
                 onClick={() => onSelectCategory(cat.id)}
-                className={`flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`flex items-center justify-center sm:justify-start gap-2 px-3 sm:px-3.5 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap shrink-0 sm:shrink cursor-pointer snap-start min-h-[40px] ${
                   isSelected
                     ? 'bg-[#FF6600] text-white shadow-md shadow-orange-500/20'
                     : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white border border-slate-200/70 dark:border-slate-700/70'
@@ -81,7 +81,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
                   size={16}
                   className={isSelected ? 'text-white' : 'text-[#FF6600] dark:text-orange-400'}
                 />
-                <span>{cat.name}</span>
+                <span className="truncate">{cat.name}</span>
                 {count > 0 && (
                   <span
                     className={`text-[11px] tabular-nums font-mono px-1.5 py-0.2 rounded-md ${

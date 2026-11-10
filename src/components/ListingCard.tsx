@@ -382,10 +382,10 @@ export const ListingCard: React.FC<ListingCardProps> = ({
       </div>
 
       {/* Card Content */}
-      <div className="p-4 flex-1 flex flex-col justify-between">
+      <div className="p-2.5 sm:p-4 flex-1 flex flex-col justify-between">
         <div>
           {/* Unboxed metadata row */}
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mb-1.5 font-medium truncate">
+          <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mb-1.5 font-medium truncate">
             <span>{listing.categoryName}</span>
             <span aria-hidden="true" className="text-slate-300 dark:text-slate-600">·</span>
             <span>{listing.condition}</span>
@@ -394,7 +394,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           </div>
 
           {/* Title */}
-          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors line-clamp-2 mb-2 leading-snug">
+          <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors line-clamp-2 mb-2 leading-snug">
             {listing.title}
           </h3>
 
@@ -426,20 +426,20 @@ export const ListingCard: React.FC<ListingCardProps> = ({
 
         <div>
           {/* Price in GHS with ₵ symbol & Ratings Stars */}
-          <div className="mt-2 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-baseline justify-between gap-2">
-            <div className="flex items-baseline gap-1.5 flex-wrap">
+          <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-baseline justify-between gap-1.5 flex-wrap">
+            <div className="flex items-baseline gap-1 flex-wrap">
               <span className="text-xs font-black text-[#00875A] dark:text-emerald-400">₵</span>
-              <span className={`text-lg sm:text-xl font-black tabular-nums tracking-tight ${isSold ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-950 dark:text-white'}`}>
+              <span className={`text-base sm:text-lg md:text-xl font-black tabular-nums tracking-tight ${isSold ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-950 dark:text-white'}`}>
                 {listing.price.toLocaleString('en-US')}
               </span>
-              <span className="text-[10px] font-black uppercase text-slate-400 ml-0.5">GHS</span>
+              <span className="text-[9px] font-black uppercase text-slate-400 ml-0.5">GHS</span>
               {listing.originalPrice && listing.originalPrice > listing.price && !isSold && (
-                <span className="text-xs text-slate-400 dark:text-slate-500 line-through tabular-nums font-mono">
+                <span className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 line-through tabular-nums font-mono">
                   ₵{listing.originalPrice.toLocaleString('en-US')}
                 </span>
               )}
               {isSold && (
-                <span className="ml-1 bg-red-100 dark:bg-red-950/80 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900 text-[10px] font-black uppercase px-1.5 py-0.2 rounded">
+                <span className="ml-1 bg-red-100 dark:bg-red-950/80 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900 text-[9px] font-black uppercase px-1 py-0.2 rounded">
                   SOLD
                 </span>
               )}
@@ -449,24 +449,24 @@ export const ListingCard: React.FC<ListingCardProps> = ({
             </div>
 
             {/* Vendor rating stars & sales count */}
-            <div className="flex items-center gap-1.5 text-xs shrink-0 font-bold" title={`Seller Rating: ${(listing.seller.rating || 4.8).toFixed(1)} / 5 (${listing.seller.reviewCount || 18} verified buyer ratings) • ${salesCount} successful sales`}>
-              <div className="flex items-center gap-1">
-                <span className="text-amber-500 text-sm">★</span>
+            <div className="flex items-center gap-1 text-[11px] sm:text-xs shrink-0 font-bold" title={`Seller Rating: ${(listing.seller.rating || 4.8).toFixed(1)} / 5 (${listing.seller.reviewCount || 18} verified buyer ratings) • ${salesCount} successful sales`}>
+              <div className="flex items-center gap-0.5">
+                <span className="text-amber-500 text-xs">★</span>
                 <span className="text-slate-800 dark:text-slate-200 tabular-nums">
                   {(listing.seller.rating || 4.8).toFixed(1)}
                 </span>
-                <span className="text-[10px] text-slate-400 font-normal">
+                <span className="text-[9px] text-slate-400 font-normal">
                   ({listing.seller.reviewCount || 18})
                 </span>
               </div>
-              <span className="text-[10px] font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 px-1.5 py-0.2 rounded tabular-nums">
-                {salesCount} sales
+              <span className="text-[9px] sm:text-[10px] font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 px-1 py-0.2 rounded tabular-nums">
+                {salesCount}
               </span>
             </div>
           </div>
 
           {/* Seller trust badges: MoMo Verified & Trusted Seller & Name */}
-          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+          <div className="mt-1.5 flex flex-wrap items-center gap-1 text-[10px] sm:text-xs">
             {isMoMoVerified && (
               <span
                 onClick={(e) => {
@@ -475,11 +475,11 @@ export const ListingCard: React.FC<ListingCardProps> = ({
                     onOpenSellerProfile(listing.seller, e);
                   }
                 }}
-                className="inline-flex items-center gap-1 text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 cursor-pointer shadow-2xs hover:bg-emerald-200 transition-colors"
+                className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 cursor-pointer shadow-2xs hover:bg-emerald-200 transition-colors"
                 title="✅ MoMo Verified Seller (Identity and phone number verified on Mobile Money)"
               >
                 <span>✅</span>
-                <span>MoMo Verified</span>
+                <span>MoMo</span>
               </span>
             )}
 
@@ -491,11 +491,11 @@ export const ListingCard: React.FC<ListingCardProps> = ({
                     onOpenSellerProfile(listing.seller, e);
                   }
                 }}
-                className="inline-flex items-center gap-0.5 text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 cursor-pointer shadow-2xs hover:bg-amber-200 transition-colors"
+                className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 cursor-pointer shadow-2xs hover:bg-amber-200 transition-colors"
                 title={`⭐ Trusted Seller: Over ${salesCount} successful sales with excellent buyer satisfaction`}
               >
                 <span>⭐</span>
-                <span>Trusted Seller</span>
+                <span>Trusted</span>
               </span>
             )}
 
@@ -507,7 +507,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
                   onOpenSellerProfile(listing.seller, e);
                 }
               }}
-              className="text-[11px] text-slate-600 dark:text-slate-300 font-semibold truncate hover:text-[#00875A] dark:hover:text-emerald-400 cursor-pointer transition-colors max-w-[130px] text-left"
+              className="text-[10px] sm:text-[11px] text-slate-600 dark:text-slate-300 font-semibold truncate hover:text-[#00875A] dark:hover:text-emerald-400 cursor-pointer transition-colors max-w-[110px] text-left"
               title={`View seller profile for ${listing.seller.name}`}
             >
               {listing.seller.name}
@@ -515,42 +515,43 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           </div>
 
           {/* Location & Courier */}
-          <div className="mt-1.5 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <div className="mt-1 flex items-center justify-between text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
             <div className="flex items-center gap-1 min-w-0 truncate">
-              <MapPin size={12} className="text-slate-400 shrink-0" />
+              <MapPin size={11} className="text-slate-400 shrink-0" />
               <span className="truncate">{listing.location}</span>
             </div>
             {!isCV && !isJob && !isSold && !isBigItem && (
-              <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0 ml-1.5 flex items-center gap-1" title="Door-to-door courier service across Accra & Ghana">
+              <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0 ml-1 flex items-center gap-0.5" title="Door-to-door courier service across Accra & Ghana">
                 <span>🚚</span>
-                <span>Accra Courier</span>
+                <span className="hidden sm:inline">Accra</span>
+                <span>Courier</span>
               </span>
             )}
           </div>
 
           {/* Jiji/Tonaton/Jumia Small items vs Big items distinction */}
           {isBigItem ? (
-            <div className="mt-2.5 space-y-1.5">
+            <div className="mt-2 space-y-1.5">
               {/* Big items (Cars, Property): Contact on WhatsApp + Call, NO online payment */}
               <button
                 type="button"
                 onClick={handleWhatsAppChat}
-                className="w-full py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-white border border-[#20ba59] group/wa"
+                className="w-full py-2.5 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-white border border-[#20ba59] group/wa min-h-[40px]"
                 title={`Contact ${listing.seller.name} on WhatsApp`}
               >
-                <MessageCircle size={16} className="fill-current text-white shrink-0 group-hover/wa:scale-110 transition-transform" />
-                <span>Contact Seller on WhatsApp</span>
+                <MessageCircle size={15} className="fill-current text-white shrink-0 group-hover/wa:scale-110 transition-transform" />
+                <span className="truncate">WhatsApp Seller</span>
               </button>
 
-              <div className="px-2 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/50 rounded-lg text-[10px] text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-1.5">
-                <ShieldAlert size={12} className="text-amber-600 shrink-0" />
-                <span className="truncate">🚫 Inspect in Person · No Online Payment</span>
+              <div className="px-1.5 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/50 rounded-lg text-[9px] sm:text-[10px] text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-1">
+                <ShieldAlert size={11} className="text-amber-600 shrink-0" />
+                <span className="truncate">Inspect in Person · No Online Pay</span>
               </div>
             </div>
           ) : !isCV && !isJob && !isSold ? (
             /* Small items: Add to Cart (Pay with Paystack MoMo) + WhatsApp */
-            <div className="mt-2.5 space-y-1.5">
-              <div className="grid grid-cols-2 gap-1.5">
+            <div className="mt-2 space-y-1.5">
+              <div className="flex flex-col sm:grid sm:grid-cols-2 gap-1.5">
                 <button
                   type="button"
                   onClick={(e) => {
@@ -561,7 +562,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
                       onOpenDetails(listing);
                     }
                   }}
-                  className="py-2.5 px-2 bg-[#FF6600] hover:bg-[#e65c00] active:scale-98 text-white rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm border border-orange-500 hover:shadow-md"
+                  className="w-full py-2.5 px-2 bg-[#FF6600] hover:bg-[#e65c00] active:scale-98 text-white rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm border border-orange-500 hover:shadow-md min-h-[38px]"
                   title="Add to Cart & Pay with Paystack MoMo or Cash on Delivery"
                 >
                   <ShoppingCart size={14} className="shrink-0" />
@@ -573,7 +574,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
                 <button
                   type="button"
                   onClick={handleWhatsAppChat}
-                  className="py-2.5 px-2 bg-[#25D366] hover:bg-[#20ba59] active:scale-98 text-white rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm border border-[#20ba59] hover:shadow-md"
+                  className="w-full py-2.5 px-2 bg-[#25D366] hover:bg-[#20ba59] active:scale-98 text-white rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm border border-[#20ba59] hover:shadow-md min-h-[38px]"
                   title={`Chat with ${listing.seller.name} on WhatsApp`}
                 >
                   <MessageCircle size={14} className="fill-current text-white shrink-0" />
@@ -583,12 +584,12 @@ export const ListingCard: React.FC<ListingCardProps> = ({
                 </button>
               </div>
 
-              <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 px-1 font-medium">
-                <span className="flex items-center gap-1 text-[#00875A] dark:text-emerald-400 font-bold">
+              <div className="flex items-center justify-between text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 px-0.5 font-medium">
+                <span className="flex items-center gap-0.5 text-[#00875A] dark:text-emerald-400 font-bold truncate">
                   <span>✓</span>
-                  <span>Paystack MoMo / COD</span>
+                  <span>MoMo / COD</span>
                 </span>
-                <span>Fast Door Delivery</span>
+                <span className="truncate ml-1">Door Courier</span>
               </div>
             </div>
           ) : (
@@ -596,14 +597,14 @@ export const ListingCard: React.FC<ListingCardProps> = ({
             <button
               type="button"
               onClick={handleWhatsAppChat}
-              className={`w-full mt-2.5 py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm group/wa ${
+              className={`w-full mt-2 py-2.5 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm group/wa min-h-[40px] ${
                 isSold
                   ? 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                   : 'bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-white border border-[#20ba59] shadow-sm hover:shadow-md'
               }`}
             >
-              <MessageCircle size={16} className="fill-current text-white shrink-0 group-hover/wa:scale-110 transition-transform" />
-              <span>{isSold ? 'Item Sold · Inquire Seller' : isJob || isCV ? 'Contact on WhatsApp' : 'WhatsApp Seller'}</span>
+              <MessageCircle size={15} className="fill-current text-white shrink-0 group-hover/wa:scale-110 transition-transform" />
+              <span className="truncate">{isSold ? 'Item Sold · Inquire' : isJob || isCV ? 'Contact on WhatsApp' : 'WhatsApp Seller'}</span>
             </button>
           )}
 

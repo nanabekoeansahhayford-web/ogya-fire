@@ -163,15 +163,15 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-6 animate-in zoom-in-95 duration-200 flex flex-col max-h-[88vh]"
+        className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-2 sm:my-6 animate-in zoom-in-95 duration-200 flex flex-col max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 bg-gradient-to-r from-[#00875A] via-emerald-700 to-[#FF6600] text-white flex items-center justify-between">
+        <div className="p-4 sm:p-6 bg-gradient-to-r from-[#00875A] via-emerald-700 to-[#FF6600] text-white flex items-center justify-between gap-3">
           <div className="flex items-center gap-3.5">
             {/* Vendor Logo */}
             <div className="w-14 h-14 rounded-2xl overflow-hidden ring-2 ring-white/30 bg-white/20 backdrop-blur-md shrink-0 shadow-md">

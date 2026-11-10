@@ -19,11 +19,13 @@ interface FoodVendorsSectionProps {
   onAddToCart: (item: FoodMenuItem, vendor: FoodVendor) => void;
   cartItemCount?: number;
   getItemQuantityInCart?: (itemId: string) => number;
+  searchQuery?: string;
 }
 
 export const FoodVendorsSection: React.FC<FoodVendorsSectionProps> = ({
   onAddToCart,
   getItemQuantityInCart = () => 0,
+  searchQuery = '',
 }) => {
   const [selectedVendorForModal, setSelectedVendorForModal] = useState<FoodVendor | null>(null);
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('All');
@@ -31,9 +33,29 @@ export const FoodVendorsSection: React.FC<FoodVendorsSectionProps> = ({
 
   const neighborhoods = ['All', 'Osu', 'East Legon', 'Madina', 'Spintex', 'Adenta', 'Cantonments'];
 
-  const filteredVendors = selectedNeighborhood === 'All'
-    ? FOOD_VENDORS
-    : FOOD_VENDORS.filter((v) => v.neighborhood.toLowerCase() === selectedNeighborhood.toLowerCase());
+  const query = (searchQuery || '').trim().toLowerCase();
+
+  const filteredVendors = FOOD_VENDORS.filter((v) => {
+    // Neighborhood filter
+    if (selectedNeighborhood !== 'All' && v.neighborhood.toLowerCase() !== selectedNeighborhood.toLowerCase()) {
+      return false;
+    }
+    // Search query live filter (checks vendor name, food menu items, tags, neighborhood, city)
+    if (query) {
+      const matchName = v.name.toLowerCase().includes(query);
+      const matchNeighborhood = v.neighborhood.toLowerCase().includes(query);
+      const matchCity = v.city.toLowerCase().includes(query);
+      const matchTags = v.tags.some((t) => t.toLowerCase().includes(query));
+      const matchMenu = v.menu.some(
+        (m) =>
+          m.name.toLowerCase().includes(query) ||
+          m.category.toLowerCase().includes(query) ||
+          m.description.toLowerCase().includes(query)
+      );
+      return matchName || matchNeighborhood || matchCity || matchTags || matchMenu;
+    }
+    return true;
+  });
 
   const handleAddItem = (item: FoodMenuItem, vendor: FoodVendor, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -89,7 +111,14 @@ export const FoodVendorsSection: React.FC<FoodVendorsSectionProps> = ({
         </div>
 
         {/* 6 Demo Vendors Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredVendors.length === 0 ? (
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 text-center border border-slate-200 dark:border-slate-800">
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              No food kitchens matched "{searchQuery}". See matching marketplace listings below!
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredVendors.map((vendor) => (
             <div
               key={vendor.id}
@@ -256,7 +285,8 @@ export const FoodVendorsSection: React.FC<FoodVendorsSectionProps> = ({
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Full Vendor Detail & Menu Modal */}

@@ -591,15 +591,15 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-2 sm:my-8 animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Banner */}
-        <div className="relative bg-gradient-to-r from-amber-600 via-orange-500 to-red-600 p-6 text-white">
+        <div className="relative bg-gradient-to-r from-amber-600 via-orange-500 to-red-600 p-4 sm:p-6 text-white">
           <div className="absolute top-4 right-4 flex items-center gap-2">
             <button
               type="button"
