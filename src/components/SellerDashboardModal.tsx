@@ -71,6 +71,7 @@ interface SellerDashboardModalProps {
   onProfileUpdated: (user: UserProfile) => void;
   onToast: (msg: string) => void;
   onLogout?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export const SellerDashboardModal: React.FC<SellerDashboardModalProps> = ({
@@ -86,6 +87,7 @@ export const SellerDashboardModal: React.FC<SellerDashboardModalProps> = ({
   onProfileUpdated,
   onToast,
   onLogout,
+  onOpenSettings,
 }) => {
   const [activeTab, setActiveTab] = useState<'products' | 'views' | 'chats' | 'verification'>('products');
   const [productFilter, setProductFilter] = useState<'all' | 'active' | 'sold'>('all');
@@ -566,6 +568,17 @@ export const SellerDashboardModal: React.FC<SellerDashboardModalProps> = ({
               <Plus size={14} />
               <span>Post Product</span>
             </button>
+            {onOpenSettings && (
+              <button
+                type="button"
+                onClick={onOpenSettings}
+                className="py-1.5 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                title="Open Profile > Settings & Legal"
+              >
+                <Sliders size={14} className="text-amber-500" />
+                <span className="hidden sm:inline">Settings &amp; Legal</span>
+              </button>
+            )}
             {onLogout && (
               <button
                 type="button"

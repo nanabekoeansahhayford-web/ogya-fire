@@ -8,6 +8,7 @@ import {
   firebaseAuthSignIn,
   firebaseGoogleSignIn,
   firebaseAuthSignOut,
+  deleteCurrentAccountAndData,
 } from './firebase';
 
 const STORAGE_KEY_CURRENT_USER = 'ogya_auth_current_user';
@@ -335,3 +336,58 @@ export function logoutUser(): void {
   setCurrentUser(null);
   firebaseAuthSignOut().catch(() => {});
 }
+
+/**
+ * Purge user-specific cached localStorage records when account is deleted
+ */
+export function purgeLocalUserData(userId: string): void {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+
+    setCurrentUser(null);
+    const allUsers = getAllRegisteredUsers().filter((u) => u.id !== userId);
+    saveRegisteredUsers(allUsers);
+
+    // Remove user's own listings from local storage cache if present
+    const storedListingsRaw = localStorage.getItem('ogya_marketplace_listings');
+    if (storedListingsRaw) {
+      try {
+        const parsed = JSON.parse(storedListingsRaw);
+        if (Array.isArray(parsed)) {
+          const filtered = parsed.filter((l: any) => l?.userId !== userId && l?.sellerId !== userId);
+          localStorage.setItem('ogya_marketplace_listings', JSON.stringify(filtered));
+        }
+      } catch {
+        // ignore parse issue
+      }
+    }
+
+    localStorage.removeItem('ogya_saved_ads');
+    localStorage.removeItem('ogya_price_alerts');
+    localStorage.removeItem('ogya_recently_viewed');
+    localStorage.removeItem('ogya_fire_cart');
+  } catch (err) {
+    console.warn('Local user cache cleanup notice:', err);
+  }
+}
+
+/**
+ * Permanently delete account + all user data from Firebase Auth, Firestore, and local cache
+ */
+export async function deleteAccountAndData(
+  userId: string,
+  password?: string
+): Promise<{
+  success: boolean;
+  requiresRecentLogin?: boolean;
+  error?: string;
+}> {
+  const result = await deleteCurrentAccountAndData(password);
+  if (!result.success) {
+    return result;
+  }
+
+  purgeLocalUserData(userId);
+  return { success: true };
+}
+

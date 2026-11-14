@@ -21,7 +21,6 @@ import { CourierHubModal } from './components/CourierHubModal';
 import { CourierOrderModal } from './components/CourierOrderModal';
 import { CourierTrackingModal } from './components/CourierTrackingModal';
 import { VerifiedSubscriptionModal } from './components/VerifiedSubscriptionModal';
-import { VercelDeployGuideModal } from './components/VercelDeployGuideModal';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { CartModal } from './components/CartModal';
 import { CheckoutModal } from './components/CheckoutModal';
@@ -33,6 +32,8 @@ import { FoodVendorsSection } from './components/FoodVendorsSection';
 import { StoreProductsSection } from './components/StoreProductsSection';
 import { IWantThisModal } from './components/IWantThisModal';
 import { BuyersWantFeed } from './components/BuyersWantFeed';
+import { LegalPagesModal, LegalPageId } from './components/LegalPagesModal';
+import { LegalPageView } from './components/LegalPageView';
 import { FoodVendor, FoodMenuItem } from './data/foodVendors';
 import { Product, Vendor, Order, CartItem, matchesProductCategoryFilter } from './types/store';
 import { SEED_PRODUCTS } from './data/seedProducts';
@@ -165,6 +166,48 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isSellerDashboardOpen, setIsSellerDashboardOpen] = useState(false);
   const [fraudReportingListing, setFraudReportingListing] = useState<Listing | null>(null);
+  const [reportTargetType, setReportTargetType] = useState<'listing' | 'user'>('listing');
+  const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+  const [legalModalPage, setLegalModalPage] = useState<LegalPageId>('privacy');
+  const [deletedAccountConfirmed, setDeletedAccountConfirmed] = useState(false);
+
+  const openLegalPage = (page: LegalPageId) => {
+    setLegalModalPage(page);
+    setIsLegalModalOpen(true);
+  };
+
+  const buildReportListingFromProduct = (product: Product): Listing => ({
+    id: product.id,
+    title: product.name,
+    price: product.price,
+    currency: 'GHS',
+    categoryId: 'accessories',
+    categoryName: product.category || 'Store Product',
+    subcategory: product.category || 'Product',
+    condition: 'Brand New',
+    location: 'Accra, Ghana',
+    region: 'Greater Accra',
+    description: product.description || product.name,
+    images: product.imageUrl ? [product.imageUrl] : [],
+    postedAt: 'Active',
+    viewsCount: 0,
+    likesCount: 0,
+    isFeatured: false,
+    isPromoted: false,
+    isNegotiable: false,
+    userId: product.sellerId || product.vendorId,
+    seller: {
+      name: product.vendorName || 'OGYA Vendor',
+      isVerified: true,
+      memberSince: '2026',
+      phone: '+233 24 000 0000',
+      whatsapp: '+233 24 000 0000',
+      rating: 4.9,
+      reviewCount: 1,
+      responseTime: 'Under 15 mins',
+      location: 'Accra, Ghana',
+    },
+  });
 
   // Ghana Courier Services State
   const [isCourierHubOpen, setIsCourierHubOpen] = useState(false);
@@ -198,11 +241,10 @@ export default function App() {
   const [authMode, setAuthMode] = useState<'register' | 'signin'>('register');
   const [authDefaultRole, setAuthDefaultRole] = useState<'buyer' | 'seller'>('buyer');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [profileInitialTab, setProfileInitialTab] = useState<'profile' | 'my-ads' | 'orders' | 'reputation' | 'security'>('profile');
+  const [profileInitialTab, setProfileInitialTab] = useState<'profile' | 'my-ads' | 'orders' | 'reputation' | 'settings' | 'security'>('profile');
   const [isVerifiedModalOpen, setIsVerifiedModalOpen] = useState(false);
-  const [isVercelGuideOpen, setIsVercelGuideOpen] = useState(false);
 
-  const handleOpenProfile = (tab: 'profile' | 'my-ads' | 'orders' | 'reputation' | 'security' = 'profile') => {
+  const handleOpenProfile = (tab: 'profile' | 'my-ads' | 'orders' | 'reputation' | 'settings' | 'security' = 'profile') => {
     setProfileInitialTab(tab);
     setIsProfileOpen(true);
   };
@@ -341,18 +383,41 @@ export default function App() {
     showToast('Order Placed');
   };
 
-  // Routing state for /vendor or marketplace /
-  const [currentPath, setCurrentPath] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const path = window.location.pathname.toLowerCase();
-      const hash = window.location.hash.toLowerCase();
-      const params = new URLSearchParams(window.location.search);
-      if (path === '/vendor' || path === '/vendor/' || hash === '#vendor' || params.get('page') === 'vendor') {
-        return '/vendor';
-      }
+  const resolveRouteFromWindow = (): string => {
+    if (typeof window === 'undefined') return '/';
+    const path = window.location.pathname.toLowerCase();
+    const hash = window.location.hash.toLowerCase();
+    const params = new URLSearchParams(window.location.search);
+    const pageParam = params.get('page')?.toLowerCase();
+
+    if (path === '/vendor' || path === '/vendor/' || hash === '#vendor' || pageParam === 'vendor') {
+      return '/vendor';
+    }
+    if (path === '/privacy' || path === '/privacy-policy' || hash === '#privacy' || pageParam === 'privacy') {
+      return '/privacy';
+    }
+    if (path === '/terms' || path === '/terms-of-service' || hash === '#terms' || pageParam === 'terms') {
+      return '/terms';
+    }
+    if (
+      path === '/refund-policy' ||
+      path === '/escrow' ||
+      path === '/escrow-policy' ||
+      hash === '#refund-policy' ||
+      hash === '#escrow' ||
+      pageParam === 'escrow' ||
+      pageParam === 'refund-policy'
+    ) {
+      return '/refund-policy';
+    }
+    if (path === '/safe-trading' || path === '/safety' || hash === '#safety' || pageParam === 'safety') {
+      return '/safe-trading';
     }
     return '/';
-  });
+  };
+
+  // Routing state for /vendor, /privacy, /terms, /refund-policy, or marketplace /
+  const [currentPath, setCurrentPath] = useState<string>(() => resolveRouteFromWindow());
 
   const navigateToVendor = () => {
     setCurrentPath('/vendor');
@@ -370,19 +435,29 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Support direct deep links to /vendor, Cart or Checkout (#cart, #checkout, ?view=cart, ?view=checkout)
+  const navigateToLegalPage = (page: LegalPageId) => {
+    const routeMap: Record<LegalPageId, string> = {
+      privacy: '/privacy',
+      terms: '/terms',
+      escrow: '/refund-policy',
+      safety: '/safe-trading',
+    };
+    const nextPath = routeMap[page] || '/privacy';
+    setCurrentPath(nextPath);
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', nextPath);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Support direct deep links to /vendor, /privacy, /terms, /refund-policy, Cart or Checkout
   useEffect(() => {
     const handleLocationChange = () => {
       try {
-        const path = window.location.pathname.toLowerCase();
+        setCurrentPath(resolveRouteFromWindow());
+
         const hash = window.location.hash.toLowerCase();
         const params = new URLSearchParams(window.location.search);
-        if (path === '/vendor' || path === '/vendor/' || hash === '#vendor' || params.get('page') === 'vendor') {
-          setCurrentPath('/vendor');
-        } else {
-          setCurrentPath('/');
-        }
-
         const view = params.get('view')?.toLowerCase();
         const cartParam = params.get('cart');
         const checkoutParam = params.get('checkout');
@@ -834,6 +909,31 @@ export default function App() {
 
   const currentCategoryInfo = CATEGORIES.find((c) => c.id === filters.category);
 
+  // Dedicated standalone Legal Pages (/privacy, /terms, /refund-policy, /safe-trading)
+  if (
+    currentPath === '/privacy' ||
+    currentPath === '/terms' ||
+    currentPath === '/refund-policy' ||
+    currentPath === '/safe-trading'
+  ) {
+    const activeLegalPage: LegalPageId =
+      currentPath === '/terms'
+        ? 'terms'
+        : currentPath === '/refund-policy'
+        ? 'escrow'
+        : currentPath === '/safe-trading'
+        ? 'safety'
+        : 'privacy';
+
+    return (
+      <LegalPageView
+        page={activeLegalPage}
+        onSelectPage={navigateToLegalPage}
+        onNavigateHome={navigateToHome}
+      />
+    );
+  }
+
   // If on /vendor page, render the full-page Vendor Dashboard + AuthModal so sellers can sign in directly
   if (currentPath === '/vendor') {
     return (
@@ -850,6 +950,12 @@ export default function App() {
           initialMode={authMode}
           defaultRole={authDefaultRole}
           onAuthSuccess={handleAuthSuccess}
+          onOpenLegalPage={openLegalPage}
+        />
+        <LegalPagesModal
+          isOpen={isLegalModalOpen}
+          initialPage={legalModalPage}
+          onClose={() => setIsLegalModalOpen(false)}
         />
       </>
     );
@@ -921,6 +1027,13 @@ export default function App() {
             const el = document.getElementById('browse-listings') || document.querySelector('main');
             if (el) el.scrollIntoView({ behavior: 'smooth' });
           }, 50);
+        }}
+        onOpenSettings={() => {
+          if (currentUser) {
+            handleOpenProfile('settings');
+          } else {
+            openLegalPage('privacy');
+          }
         }}
       />
 
@@ -1013,6 +1126,10 @@ export default function App() {
         onSelectProduct={(p) => setSelectedProduct(p)}
         onAddToCart={(p) => handleAddToCart(p, 1)}
         onSelectCategory={handleSelectCategory}
+        onReportProduct={(product) => {
+          setReportTargetType('listing');
+          setFraudReportingListing(buildReportListingFromProduct(product));
+        }}
       />
 
       {/* Main Content Area: Sidebar Filters + Listings Grid */}
@@ -1335,7 +1452,10 @@ export default function App() {
                       e.stopPropagation();
                       setBoostListing(item);
                     }}
-                    onReportListing={(item) => setFraudReportingListing(item)}
+                    onReportListing={(item) => {
+                      setReportTargetType('listing');
+                      setFraudReportingListing(item);
+                    }}
                     onAddToCart={handleAddToCartFromListing}
                   />
                 ))}
@@ -1352,18 +1472,22 @@ export default function App() {
           savedIds={savedIds}
           onClear={handleClearRecentlyViewed}
           variant="feed"
+          onReportListing={(item) => {
+            setReportTargetType('listing');
+            setFraudReportingListing(item);
+          }}
         />
       </main>
 
       {/* Footer */}
       <Footer
         onSelectCategory={handleSelectCategory}
-        onOpenSafety={() => setIsSafetyOpen(true)}
+        onOpenSafety={() => navigateToLegalPage('safety')}
+        onOpenLegalPage={navigateToLegalPage}
         onOpenPostAd={() => setIsPostAdOpen(true)}
         onOpenAuth={handleOpenAuth}
         onOpenCourierHub={handleOpenCourierHub}
         onOpenVerifiedSubscription={() => setIsVerifiedModalOpen(true)}
-        onOpenVercelDeployGuide={() => setIsVercelGuideOpen(true)}
       />
 
       {/* Listing Detail Modal / PDP */}
@@ -1425,6 +1549,40 @@ export default function App() {
           setSelectedSeller(null);
           setChatListing(listing);
         }}
+        onReportListing={(listing) => {
+          setSelectedSeller(null);
+          setReportTargetType('listing');
+          setFraudReportingListing(listing);
+        }}
+        onReportSeller={(seller, sampleListing) => {
+          setSelectedSeller(null);
+          setReportTargetType('user');
+          if (sampleListing) {
+            setFraudReportingListing(sampleListing);
+          } else {
+            setFraudReportingListing({
+              id: `seller-report-${seller.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+              title: `${seller.name} (Seller Profile)`,
+              price: 0,
+              currency: 'GHS',
+              categoryId: 'services',
+              categoryName: 'Seller Account',
+              subcategory: 'Profile',
+              condition: 'Not Applicable',
+              location: seller.location || 'Ghana',
+              region: 'Greater Accra',
+              description: `Seller profile report for ${seller.name}`,
+              images: [],
+              postedAt: 'Active',
+              viewsCount: 0,
+              likesCount: 0,
+              isFeatured: false,
+              isPromoted: false,
+              isNegotiable: false,
+              seller,
+            });
+          }
+        }}
       />
 
       {/* In-App Live Messenger Modal */}
@@ -1470,6 +1628,7 @@ export default function App() {
         initialMode={authMode}
         defaultRole={authDefaultRole}
         onAuthSuccess={handleAuthSuccess}
+        onOpenLegalPage={openLegalPage}
       />
 
       {/* User Account & Profile Modal */}
@@ -1499,6 +1658,20 @@ export default function App() {
           setIsProfileOpen(false);
           setIsCartOpen(true);
         }}
+        onOpenLegalPage={(page) => {
+          setIsProfileOpen(false);
+          navigateToLegalPage(page);
+        }}
+        onAccountDeleted={(deletedUid) => {
+          setCurrentUser(null);
+          setCurrentVendor(null);
+          setListings((prev) => prev.filter((l) => l.userId !== deletedUid && l.sellerId !== deletedUid));
+          setProducts((prev) => prev.filter((p) => p.sellerId !== deletedUid && p.vendorId !== deletedUid));
+          setIsProfileOpen(false);
+          setIsSellerDashboardOpen(false);
+          setDeletedAccountConfirmed(true);
+          showToast('Your account and associated data have been permanently deleted.');
+        }}
       />
 
       {/* AF Seller Dashboard Modal (My Products, Views, Chats, Ghana Card Verification) */}
@@ -1525,6 +1698,10 @@ export default function App() {
           onProfileUpdated={handleProfileUpdated}
           onToast={showToast}
           onLogout={handleLogout}
+          onOpenSettings={() => {
+            setIsSellerDashboardOpen(false);
+            handleOpenProfile('settings');
+          }}
         />
       )}
 
@@ -1534,8 +1711,9 @@ export default function App() {
           isOpen={Boolean(fraudReportingListing)}
           onClose={() => setFraudReportingListing(null)}
           listing={fraudReportingListing}
+          initialTarget={reportTargetType}
           onReportSuccess={(report) => {
-            showToast(`🚨 Fraud report #${report.referenceId} submitted. Trust & Safety team is investigating.`);
+            showToast(`🚨 Report #${report.referenceId} submitted. Trust & Safety team is investigating.`);
             setFraudReportingListing(null);
           }}
         />
@@ -1588,19 +1766,57 @@ export default function App() {
         onSubscriptionSuccess={handleSubscriptionSuccess}
       />
 
-      {/* Vercel Automated CI/CD Deployment Guide Modal */}
-      <VercelDeployGuideModal
-        isOpen={isVercelGuideOpen}
-        onClose={() => setIsVercelGuideOpen(false)}
-      />
-
       {/* Product Detail Modal */}
       <ProductDetailModal
         product={selectedProduct}
         isOpen={Boolean(selectedProduct)}
         onClose={() => setSelectedProduct(null)}
         onAddToCart={handleAddToCart}
+        onReportProduct={(product) => {
+          setSelectedProduct(null);
+          setReportTargetType('listing');
+          setFraudReportingListing(buildReportListingFromProduct(product));
+        }}
       />
+
+      {/* Legal Pages Reader Modal (Privacy Policy, Terms of Service, Refund / Escrow Policy, Safe Trading Guide) */}
+      <LegalPagesModal
+        isOpen={isLegalModalOpen}
+        initialPage={legalModalPage}
+        onClose={() => setIsLegalModalOpen(false)}
+      />
+
+      {/* Account Deleted Confirmation Modal */}
+      {deletedAccountConfirmed && (
+        <div
+          className="fixed inset-0 z-[75] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setDeletedAccountConfirmed(false)}
+        >
+          <div
+            className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl text-center space-y-4 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto border border-emerald-200 dark:border-emerald-800">
+              <CheckCircle2 size={26} />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-black text-slate-950 dark:text-white">
+                Account &amp; Data Permanently Deleted
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Your OGYA account, profile details, store products, marketplace listings, and local session data have been permanently deleted.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDeletedAccountConfirmed(false)}
+              className="w-full py-2.5 px-4 bg-slate-900 dark:bg-amber-500 hover:bg-slate-800 dark:hover:bg-amber-400 text-white dark:text-slate-950 font-black text-xs rounded-xl transition-colors cursor-pointer"
+            >
+              Return to Marketplace
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Fire Safety Cart Modal */}
       <CartModal

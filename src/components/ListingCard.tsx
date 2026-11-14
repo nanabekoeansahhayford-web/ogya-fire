@@ -637,7 +637,8 @@ export const ListingCard: React.FC<ListingCardProps> = ({
               type="button"
               onClick={handleReportClick}
               className="py-1.5 px-1 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-950/70 text-rose-700 dark:text-rose-400 text-[11px] font-bold rounded-lg border border-rose-200/80 dark:border-rose-900/60 transition-colors flex items-center justify-center gap-1 cursor-pointer"
-              title="Buyer can report fraud or counterfeit product"
+              title="Report User / Report Listing"
+              aria-label="Report User or Report Listing"
             >
               <ShieldAlert size={11} className="text-rose-600 dark:text-rose-400 shrink-0" />
               <span>Report</span>

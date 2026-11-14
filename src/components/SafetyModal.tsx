@@ -95,6 +95,18 @@ export const SafetyModal: React.FC<SafetyModalProps> = ({ isOpen, onClose }) => 
                 </p>
               </div>
             </div>
+
+            {/* How OGYA Escrow Works */}
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
+              <h5 className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">
+                How OGYA Escrow &amp; Refunds Work
+              </h5>
+              <ul className="space-y-1 text-xs text-slate-600 dark:text-slate-300">
+                <li><strong>Who holds payment:</strong> Buyer pays via MoMo to OGYA; OGYA holds the funds securely until delivery.</li>
+                <li><strong>When seller gets paid:</strong> Released after buyer inspects the item and confirms receipt (or 24h after courier-confirmed delivery with no dispute).</li>
+                <li><strong>How buyer gets refund:</strong> Do not confirm receipt—tap Report / Dispute within 24 hours with photo/video proof; OGYA Support reviews within 48 hours.</li>
+              </ul>
+            </div>
           </div>
 
           <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-end">

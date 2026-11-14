@@ -20,6 +20,7 @@ import {
   HelpCircle,
   ThumbsUp,
   Flame,
+  Flag,
 } from 'lucide-react';
 import { Listing, SellerInfo, SellerBadgeId } from '../types/marketplace';
 import { ListingCard } from './ListingCard';
@@ -39,6 +40,8 @@ interface SellerProfileModalProps {
   priceAlerts: string[];
   onTogglePriceAlert: (id: string, e?: React.MouseEvent) => void;
   onOpenChatWithSeller?: (listing: Listing) => void;
+  onReportListing?: (listing: Listing, e?: React.MouseEvent) => void;
+  onReportSeller?: (seller: SellerInfo, sampleListing?: Listing) => void;
 }
 
 export const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
@@ -52,6 +55,8 @@ export const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
   priceAlerts,
   onTogglePriceAlert,
   onOpenChatWithSeller,
+  onReportListing,
+  onReportSeller,
 }) => {
   const [showPhone, setShowPhone] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
@@ -263,6 +268,18 @@ export const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
                       >
                         <Phone size={14} />
                         <span>Call Phone</span>
+                      </button>
+                    )}
+
+                    {onReportSeller && (
+                      <button
+                        type="button"
+                        onClick={() => onReportSeller(seller, sellerListings[0])}
+                        className="px-3.5 py-2.5 bg-rose-950/80 hover:bg-rose-900 text-rose-200 font-bold text-xs rounded-xl border border-rose-700/80 transition-colors flex items-center gap-1.5 cursor-pointer"
+                        title={`Report user ${seller.name}`}
+                      >
+                        <Flag size={13} className="text-rose-400" />
+                        <span>Report User</span>
                       </button>
                     )}
                   </div>
@@ -666,6 +683,7 @@ export const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
                     }}
                     hasPriceAlert={priceAlerts.includes(listing.id)}
                     onTogglePriceAlert={onTogglePriceAlert}
+                    onReportListing={onReportListing}
                   />
                 ))}
               </div>

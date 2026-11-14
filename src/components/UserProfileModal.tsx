@@ -36,9 +36,16 @@ import {
   Flame,
   RefreshCw,
   Bike,
+  Settings,
+  Scale,
+  FileText,
+  Lock,
+  Trash2,
+  ShieldAlert,
+  ChevronRight,
 } from 'lucide-react';
 import { UserProfile, Listing, SellerInfo } from '../types/marketplace';
-import { updateUserProfile } from '../utils/auth';
+import { updateUserProfile, deleteAccountAndData } from '../utils/auth';
 import { formatPrice, markListingAsSold } from '../utils/storage';
 import { updateListingStatusInFirestore, fetchOrdersByUserId, subscribeToOrdersByUserId } from '../utils/firebase';
 import { REGIONS } from '../data/categories';
@@ -46,6 +53,7 @@ import { getSellerReputation, BADGE_DEFINITIONS } from '../utils/reputation';
 import { ReputationBadge } from './ReputationBadge';
 import { Order, CartItem, OrderStatus } from '../types/store';
 import { getLocalPlacedOrders, addToCart } from '../utils/cartStorage';
+import type { LegalPageId } from './LegalPagesModal';
 import mamaEfuaImg from '../assets/images/food_mama_efua_jollof_1793886043512.jpg';
 import accraGrillImg from '../assets/images/food_accra_grill_tilapia_1793886043887.jpg';
 import auntieMuniImg from '../assets/images/food_auntie_muni_waakye_1793886045717.jpg';
@@ -203,10 +211,12 @@ interface UserProfileModalProps {
   onOpenBoost?: (listing: Listing) => void;
   onProfileUpdated: (updated: UserProfile) => void;
   onListingUpdated?: (updated: Listing) => void;
-  initialTab?: 'profile' | 'my-ads' | 'orders' | 'reputation' | 'security';
+  initialTab?: 'profile' | 'my-ads' | 'orders' | 'reputation' | 'settings' | 'security';
   onOpenStore?: () => void;
   onOpenFoodVendors?: () => void;
   onOpenCart?: () => void;
+  onOpenLegalPage?: (page: LegalPageId) => void;
+  onAccountDeleted?: (deletedUserId: string) => void;
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({
@@ -224,16 +234,18 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   onOpenStore,
   onOpenFoodVendors,
   onOpenCart,
+  onOpenLegalPage,
+  onAccountDeleted,
 }) => {
-  const [activeTab, setActiveTab] = useState<'profile' | 'my-ads' | 'orders' | 'reputation' | 'security'>(
-    initialTab || 'profile'
+  const [activeTab, setActiveTab] = useState<'profile' | 'my-ads' | 'orders' | 'reputation' | 'settings' | 'security'>(
+    initialTab === 'security' ? 'settings' : (initialTab || 'profile')
   );
   const [isEditing, setIsEditing] = useState(false);
 
   // Sync activeTab when initialTab or isOpen changes
   useEffect(() => {
     if (initialTab) {
-      setActiveTab(initialTab);
+      setActiveTab(initialTab === 'security' ? 'settings' : initialTab);
     }
   }, [initialTab, isOpen]);
 
@@ -248,6 +260,14 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [updatingListingId, setUpdatingListingId] = useState<string | null>(null);
   const [adsFilter, setAdsFilter] = useState<'all' | 'active' | 'sold'>('all');
 
+  // Delete Account confirmation states (MUST remain above early return to preserve Hooks order)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deletePassword, setDeletePassword] = useState('');
+  const [needsReauthPassword, setNeedsReauthPassword] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   // Keep edit fields synced with current user when modal opens or user changes
   useEffect(() => {
     if (user) {
@@ -257,6 +277,14 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       setCity(user.city || '');
       setRegion(user.region || REGIONS[0]);
       setBio(user.bio || '');
+    }
+    if (!isOpen) {
+      setShowDeleteConfirm(false);
+      setDeleteConfirmText('');
+      setDeletePassword('');
+      setNeedsReauthPassword(false);
+      setDeleteError(null);
+      setIsDeletingAccount(false);
     }
   }, [user, isOpen]);
 
@@ -782,14 +810,15 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               </span>
             </button>
             <button
-              onClick={() => setActiveTab('security')}
-              className={`px-3 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'security'
+              onClick={() => setActiveTab('settings')}
+              className={`px-3 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                activeTab === 'settings' || activeTab === 'security'
                   ? 'border-white text-white font-extrabold'
                   : 'border-transparent text-white/70 hover:text-white'
               }`}
             >
-              Security & Sign Out
+              <Settings size={13} />
+              <span>Settings</span>
             </button>
           </div>
         </div>
@@ -1649,24 +1678,141 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             </div>
           )}
 
-          {/* Tab 4: Security & Sign Out */}
-          {activeTab === 'security' && (
-            <div className="space-y-4">
+          {/* Tab 4: Settings > Legal, Security, Sign Out & Delete Account */}
+          {(activeTab === 'settings' || activeTab === 'security') && (
+            <div className="space-y-5">
+              {/* Settings > Legal Submenu */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-slate-950 dark:text-white font-black text-xs uppercase tracking-wider">
+                    <Scale size={15} className="text-amber-500" />
+                    <span>Settings &gt; Legal</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                    Policies &amp; Buyer Protection
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenLegalPage?.('privacy');
+                    }}
+                    className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 hover:border-amber-500 text-left flex items-center justify-between gap-2 transition-colors cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <Lock size={15} className="text-sky-500 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 truncate">
+                          Privacy Policy
+                        </div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                          Data protection &amp; deletion rights
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight size={14} className="text-slate-400 shrink-0" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenLegalPage?.('terms');
+                    }}
+                    className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 hover:border-amber-500 text-left flex items-center justify-between gap-2 transition-colors cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <FileText size={15} className="text-amber-500 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 truncate">
+                          Terms of Service
+                        </div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                          Marketplace rules &amp; seller obligations
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight size={14} className="text-slate-400 shrink-0" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenLegalPage?.('escrow');
+                    }}
+                    className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 hover:border-emerald-500 text-left flex items-center justify-between gap-2 transition-colors cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <Banknote size={15} className="text-emerald-500 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate">
+                          Refund / Escrow Policy
+                        </div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                          Who holds MoMo, payout &amp; refund rules
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight size={14} className="text-slate-400 shrink-0" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenLegalPage?.('safety');
+                    }}
+                    className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 hover:border-amber-500 text-left flex items-center justify-between gap-2 transition-colors cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <ShieldCheck size={15} className="text-emerald-500 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 truncate">
+                          Safe Trading Guide
+                        </div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                          Inspection rules &amp; scam red flags
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight size={14} className="text-slate-400 shrink-0" />
+                  </button>
+                </div>
+
+                {/* Short Escrow Summary Box */}
+                <div className="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-900/60 text-[11px] text-slate-700 dark:text-slate-300 space-y-1">
+                  <div className="font-black text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                    <ShieldCheck size={13} />
+                    <span>How OGYA Escrow Works</span>
+                  </div>
+                  <p>
+                    <strong>1. Payment Hold:</strong> OGYA Fire Escrow holds buyer funds safely upon MoMo or card checkout.{' '}
+                    <strong>2. Seller Payout:</strong> Released after buyer delivery confirmation &amp; courier OTP.{' '}
+                    <strong>3. Refunds:</strong> Full refund to buyer&apos;s MoMo wallet if undelivered or item differs materially.
+                  </p>
+                </div>
+              </div>
+
+              {/* Account Security & Sign Out */}
               <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-xs">
                 <div className="flex items-center gap-2 text-slate-900 dark:text-slate-100 font-bold mb-1">
                   <ShieldCheck size={16} className="text-emerald-500" />
-                  <span>Account Security & Verification</span>
+                  <span>Account Security &amp; Verification</span>
                 </div>
                 <p className="text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Your OGYA account is protected by verified phone binding. All listings and direct inquiries are monitored by our automated fraud detection system.
+                  Your OGYA account is protected by Firebase Authentication and phone binding. All listings and direct inquiries are monitored for marketplace safety.
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl border border-rose-200 dark:border-rose-950/60 bg-rose-50/50 dark:bg-rose-950/20 text-xs flex items-center justify-between">
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/40 text-xs flex items-center justify-between gap-3">
                 <div>
-                  <h5 className="font-bold text-rose-900 dark:text-rose-300">Sign Out of Account</h5>
-                  <p className="text-[11px] text-rose-700 dark:text-rose-400">
-                    Signing out will clear this session from this browser.
+                  <h5 className="font-bold text-slate-900 dark:text-white">Sign Out of Account</h5>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Signing out clears your active session from this browser.
                   </p>
                 </div>
                 <button
@@ -1675,11 +1821,132 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                     onLogout();
                     onClose();
                   }}
-                  className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm"
+                  className="px-3.5 py-2 bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 dark:hover:bg-slate-600 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm shrink-0"
                 >
                   <LogOut size={14} />
                   <span>Sign Out</span>
                 </button>
+              </div>
+
+              {/* Danger Zone: Delete Account + Data */}
+              <div className="p-4 rounded-2xl border border-rose-300 dark:border-rose-900/70 bg-rose-50/70 dark:bg-rose-950/25 text-xs space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h5 className="font-black text-rose-900 dark:text-rose-300 flex items-center gap-1.5">
+                      <ShieldAlert size={15} className="text-rose-600 dark:text-rose-400" />
+                      <span>Delete Account &amp; All Data</span>
+                    </h5>
+                    <p className="text-[11px] text-rose-800/90 dark:text-rose-300/80 mt-0.5 leading-relaxed">
+                      Permanently deletes your OGYA account, profile, store products, marketplace listings, and local session data. This cannot be undone.
+                    </p>
+                  </div>
+
+                  {!showDeleteConfirm && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDeleteConfirm(true);
+                        setDeleteError(null);
+                      }}
+                      className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 shadow-sm shrink-0 self-start sm:self-center"
+                    >
+                      <Trash2 size={14} />
+                      <span>Delete Account</span>
+                    </button>
+                  )}
+                </div>
+
+                {showDeleteConfirm && (
+                  <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-rose-300 dark:border-rose-800 space-y-3 animate-in fade-in duration-150">
+                    <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                      To confirm permanent deletion of <strong className="text-rose-600 dark:text-rose-400">{user.email}</strong> and all your listings/products, type <strong className="font-mono">DELETE</strong> below:
+                    </p>
+
+                    <input
+                      type="text"
+                      value={deleteConfirmText}
+                      onChange={(e) => setDeleteConfirmText(e.target.value)}
+                      placeholder="Type DELETE to confirm"
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:border-rose-500"
+                    />
+
+                    {needsReauthPassword && (
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                          Enter your account password to re-verify identity:
+                        </label>
+                        <input
+                          type="password"
+                          value={deletePassword}
+                          onChange={(e) => setDeletePassword(e.target.value)}
+                          placeholder="Account password"
+                          className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-rose-500"
+                        />
+                      </div>
+                    )}
+
+                    {deleteError && (
+                      <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-[11px] font-semibold">
+                        {deleteError}
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        disabled={isDeletingAccount}
+                        onClick={() => {
+                          setShowDeleteConfirm(false);
+                          setDeleteConfirmText('');
+                          setDeletePassword('');
+                          setDeleteError(null);
+                        }}
+                        className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isDeletingAccount || deleteConfirmText.trim().toUpperCase() !== 'DELETE'}
+                        onClick={async () => {
+                          setDeleteError(null);
+                          setIsDeletingAccount(true);
+                          try {
+                            const res = await deleteAccountAndData(
+                              user.id,
+                              deletePassword.trim() || undefined
+                            );
+                            if (res.success) {
+                              setShowDeleteConfirm(false);
+                              onClose();
+                              onAccountDeleted?.(user.id);
+                            } else if (res.requiresRecentLogin) {
+                              setNeedsReauthPassword(true);
+                              setDeleteError(
+                                res.error ||
+                                  'For security, please enter your password or confirm re-authentication to complete account deletion.'
+                              );
+                            } else {
+                              setDeleteError(res.error || 'Failed to delete account. Please try again.');
+                            }
+                          } catch (err: any) {
+                            setDeleteError(err?.message || 'Unexpected error deleting account.');
+                          } finally {
+                            setIsDeletingAccount(false);
+                          }
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-45 text-white font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-sm"
+                      >
+                        {isDeletingAccount ? (
+                          <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Trash2 size={13} />
+                        )}
+                        <span>{isDeletingAccount ? 'Deleting Account...' : 'Permanently Delete Account'}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

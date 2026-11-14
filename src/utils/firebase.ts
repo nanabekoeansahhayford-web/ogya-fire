@@ -27,6 +27,10 @@ import {
   signInWithPhoneNumber,
   ConfirmationResult,
   updateProfile,
+  deleteUser,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
   User as FirebaseUser,
 } from 'firebase/auth';
 import firebaseConfig from '../../firebase-applet-config.json';
@@ -1435,3 +1439,166 @@ export function subscribeToWantedItemsFromFirestore(
     return () => {};
   }
 }
+
+/* =========================================================================
+   ACCOUNT & DATA DELETION (Firebase Auth + User Firestore Data)
+   ========================================================================= */
+
+/**
+ * Permanently deletes the signed-in user's Firestore data (listings, products,
+ * vendors, public seller profile, wanted items, and user profile doc) and then
+ * deletes their Firebase Auth account.
+ */
+export async function deleteCurrentAccountAndData(password?: string): Promise<{
+  success: boolean;
+  deletedCounts?: {
+    listings: number;
+    products: number;
+    vendors: number;
+    wantedItems: number;
+  };
+  requiresRecentLogin?: boolean;
+  error?: string;
+}> {
+  const user = auth.currentUser;
+  if (!user) {
+    return { success: false, error: 'You must be signed in to delete your account.' };
+  }
+
+  const uid = user.uid;
+  const hasPasswordProvider = user.providerData.some((p) => p.providerId === 'password');
+  const hasGoogleProvider = user.providerData.some((p) => p.providerId === 'google.com');
+
+  // Re-authenticate upfront if password is provided or if login session is older than 4 minutes
+  const lastSignInMs = user.metadata?.lastSignInTime ? Date.parse(user.metadata.lastSignInTime) : 0;
+  const sessionAgeMs = lastSignInMs ? Date.now() - lastSignInMs : Infinity;
+
+  try {
+    if (password && password.trim() && user.email && hasPasswordProvider) {
+      const cred = EmailAuthProvider.credential(user.email, password);
+      await reauthenticateWithCredential(user, cred);
+    } else if (sessionAgeMs > 4 * 60 * 1000 && hasGoogleProvider && !hasPasswordProvider) {
+      await reauthenticateWithPopup(user, new GoogleAuthProvider());
+    } else if (sessionAgeMs > 4 * 60 * 1000 && hasPasswordProvider && !password?.trim()) {
+      return {
+        success: false,
+        requiresRecentLogin: true,
+        error: 'Please enter your account password to confirm permanent account deletion.',
+      };
+    }
+  } catch (reauthErr: any) {
+    const code = reauthErr?.code || '';
+    if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+      return {
+        success: false,
+        requiresRecentLogin: true,
+        error: 'Incorrect password. Please enter your valid password to delete your account.',
+      };
+    }
+    if (code === 'auth/popup-closed-by-user') {
+      return {
+        success: false,
+        requiresRecentLogin: true,
+        error: 'Google verification popup was closed before confirming deletion.',
+      };
+    }
+    return {
+      success: false,
+      requiresRecentLogin: true,
+      error: reauthErr?.message || 'Re-authentication failed. Please sign in again and retry.',
+    };
+  }
+
+  const deletedCounts = {
+    listings: 0,
+    products: 0,
+    vendors: 0,
+    wantedItems: 0,
+  };
+
+  try {
+    // 1. Delete user's listings
+    const listingsByUser = await getDocs(query(collection(db, 'listings'), where('userId', '==', uid)));
+    const deletedListingIds = new Set<string>();
+    for (const d of listingsByUser.docs) {
+      await deleteDoc(doc(db, 'listings', d.id));
+      deletedListingIds.add(d.id);
+      deletedCounts.listings += 1;
+    }
+    const listingsBySeller = await getDocs(query(collection(db, 'listings'), where('sellerId', '==', uid)));
+    for (const d of listingsBySeller.docs) {
+      if (!deletedListingIds.has(d.id)) {
+        await deleteDoc(doc(db, 'listings', d.id));
+        deletedCounts.listings += 1;
+      }
+    }
+
+    // 2. Delete user's products
+    const productsBySeller = await getDocs(query(collection(db, 'products'), where('sellerId', '==', uid)));
+    const deletedProductIds = new Set<string>();
+    for (const d of productsBySeller.docs) {
+      await deleteDoc(doc(db, 'products', d.id));
+      deletedProductIds.add(d.id);
+      deletedCounts.products += 1;
+    }
+    const productsByVendor = await getDocs(query(collection(db, 'products'), where('vendorId', '==', uid)));
+    for (const d of productsByVendor.docs) {
+      if (!deletedProductIds.has(d.id)) {
+        await deleteDoc(doc(db, 'products', d.id));
+        deletedCounts.products += 1;
+      }
+    }
+
+    // 3. Delete user's vendor shop(s)
+    const vendorsSnap = await getDocs(query(collection(db, 'vendors'), where('ownerId', '==', uid)));
+    for (const d of vendorsSnap.docs) {
+      await deleteDoc(doc(db, 'vendors', d.id));
+      deletedCounts.vendors += 1;
+    }
+
+    // 4. Delete user's public seller profile if present
+    try {
+      const sellerDocRef = doc(db, 'sellers', uid);
+      const sellerSnap = await getDoc(sellerDocRef);
+      if (sellerSnap.exists()) {
+        await deleteDoc(sellerDocRef);
+      }
+    } catch {
+      // ignore if absent
+    }
+
+    // 5. Delete user's wanted_items
+    const wantedSnap = await getDocs(query(collection(db, 'wanted_items'), where('userId', '==', uid)));
+    for (const d of wantedSnap.docs) {
+      await deleteDoc(doc(db, 'wanted_items', d.id));
+      deletedCounts.wantedItems += 1;
+    }
+
+    // 6. Delete user's private profile document (/users/{uid})
+    try {
+      await deleteDoc(doc(db, 'users', uid));
+    } catch {
+      // ignore if already absent
+    }
+
+    // 7. Delete Firebase Authentication account
+    await deleteUser(user);
+
+    return { success: true, deletedCounts };
+  } catch (err: any) {
+    const code = err?.code || '';
+    if (code === 'auth/requires-recent-login') {
+      return {
+        success: false,
+        requiresRecentLogin: true,
+        error: 'For security, please enter your password (or sign out and sign back in) before deleting your account.',
+      };
+    }
+    console.error('Account deletion error:', err);
+    return {
+      success: false,
+      error: err?.message || 'Could not complete account deletion. Please try again.',
+    };
+  }
+}
+

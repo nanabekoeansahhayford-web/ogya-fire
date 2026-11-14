@@ -40,12 +40,15 @@ import {
   formatGhanaPhoneE164,
 } from '../utils/firebase';
 
+import type { LegalPageId } from './LegalPagesModal';
+
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialMode?: 'register' | 'signin';
   defaultRole?: 'buyer' | 'seller';
   onAuthSuccess: (user: UserProfile, message: string) => void;
+  onOpenLegalPage?: (page: LegalPageId) => void;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -54,6 +57,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   initialMode = 'signin',
   defaultRole = 'buyer',
   onAuthSuccess,
+  onOpenLegalPage,
 }) => {
   const [mode, setMode] = useState<'register' | 'signin' | 'forgot_password'>(initialMode);
   const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
@@ -897,10 +901,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     />
                     <span className="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">
                       I agree to the{' '}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          onOpenLegalPage?.('terms');
+                        }}
+                        className="font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
+                      >
+                        Terms of Service
+                      </button>
+                      ,{' '}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          onOpenLegalPage?.('privacy');
+                        }}
+                        className="font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
+                      >
+                        Privacy Policy
+                      </button>
+                      , and{' '}
                       <strong className="text-slate-900 dark:text-slate-200">
                         OGYA Safe Trade Guidelines
-                      </strong>{' '}
-                      and confirm my account information is accurate.
+                      </strong>
+                      .
                     </span>
                   </label>
 
@@ -984,6 +1010,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </form>
               )}
             </>
+          )}
+
+          {/* Legal Notice on Sign Up Screen (Applies to Email, Phone OTP & Google Sign Up) */}
+          {mode === 'register' && (
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-center text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              By creating an account, you agree to OGYA&apos;s{' '}
+              <button
+                type="button"
+                onClick={() => onOpenLegalPage?.('terms')}
+                className="font-bold text-[#00875A] dark:text-emerald-400 hover:underline cursor-pointer"
+              >
+                Terms of Service
+              </button>{' '}
+              and{' '}
+              <button
+                type="button"
+                onClick={() => onOpenLegalPage?.('privacy')}
+                className="font-bold text-[#00875A] dark:text-emerald-400 hover:underline cursor-pointer"
+              >
+                Privacy Policy
+              </button>
+              .
+            </div>
           )}
 
           {/* Switch Prompt */}

@@ -86,6 +86,7 @@ interface ReportListingModalProps {
   isOpen: boolean;
   onClose: () => void;
   listing: Listing;
+  initialTarget?: 'listing' | 'user';
   onReportSuccess: (report: AdReportRecord) => void;
   onReportWithdraw?: (listingId: string) => void;
   existingReport?: AdReportRecord;
@@ -95,10 +96,12 @@ export const ReportListingModal: React.FC<ReportListingModalProps> = ({
   isOpen,
   onClose,
   listing,
+  initialTarget = 'listing',
   onReportSuccess,
   onReportWithdraw,
   existingReport,
 }) => {
+  const [reportTarget, setReportTarget] = useState<'listing' | 'user'>(initialTarget);
   const [selectedReasonId, setSelectedReasonId] = useState<string>('scam');
   const [additionalDetails, setAdditionalDetails] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -107,6 +110,7 @@ export const ReportListingModal: React.FC<ReportListingModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
+      setReportTarget(initialTarget);
       if (existingReport) {
         const found = REPORT_REASONS.find((r) => r.title === existingReport.reason);
         if (found) {
@@ -121,7 +125,7 @@ export const ReportListingModal: React.FC<ReportListingModalProps> = ({
         setTicketId('');
       }
     }
-  }, [isOpen, existingReport]);
+  }, [isOpen, existingReport, initialTarget]);
 
   if (!isOpen) return null;
 
@@ -136,7 +140,7 @@ export const ReportListingModal: React.FC<ReportListingModalProps> = ({
 
     const reportRecord: AdReportRecord = {
       listingId: listing.id,
-      reason: currentReason.title,
+      reason: `${reportTarget === 'user' ? '[User Report] ' : ''}${currentReason.title}`,
       details: additionalDetails.trim() || undefined,
       reportedAt: new Date().toLocaleDateString('en-US', {
         month: 'short',
@@ -184,12 +188,12 @@ export const ReportListingModal: React.FC<ReportListingModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm sm:text-base font-extrabold text-slate-950 dark:text-white leading-tight">
-                {isSubmitted ? 'Report Submitted' : existingReport ? 'Reported Listing Details' : 'Report Ad'}
+                {isSubmitted ? 'Report Submitted' : existingReport ? 'Reported Listing / User Details' : 'Report User / Report Listing'}
               </h3>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 {isSubmitted
                   ? 'Thank you for helping keep OGYA safe'
-                  : 'Select a reason for reporting this suspicious listing'}
+                  : 'Report a suspicious listing or seller account to Trust & Safety'}
               </p>
             </div>
           </div>
@@ -272,6 +276,36 @@ export const ReportListingModal: React.FC<ReportListingModalProps> = ({
           ) : (
             /* REPORT FORM */
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                  What would you like to report?
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setReportTarget('listing')}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      reportTarget === 'listing'
+                        ? 'bg-red-600 text-white border-red-600 shadow-xs'
+                        : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    Report Listing
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReportTarget('user')}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer truncate ${
+                      reportTarget === 'user'
+                        ? 'bg-red-600 text-white border-red-600 shadow-xs'
+                        : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    Report User ({listing.seller.name.split(' ')[0]})
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
                   Select Reason for Reporting:

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingCart, Store, Star, ShieldCheck, Package, Tag } from 'lucide-react';
+import { ShoppingCart, Store, Star, ShieldCheck, Package, Tag, Flag } from 'lucide-react';
 import {
   Product,
   PRODUCT_CATEGORIES,
@@ -16,6 +16,7 @@ interface StoreProductsSectionProps {
   onSelectProduct: (product: Product) => void;
   onAddToCart: (product: Product) => void;
   onSelectCategory?: (category: CategoryId | 'all') => void;
+  onReportProduct?: (product: Product, e: React.MouseEvent) => void;
 }
 
 const CATEGORY_TO_NAV_ID: Record<string, CategoryId> = {
@@ -37,6 +38,7 @@ export const StoreProductsSection: React.FC<StoreProductsSectionProps> = ({
   onSelectProduct,
   onAddToCart,
   onSelectCategory,
+  onReportProduct,
 }) => {
   const cleanProducts = React.useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -151,6 +153,20 @@ export const StoreProductsSection: React.FC<StoreProductsSectionProps> = ({
                         <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/80 backdrop-blur-xs text-[10px] font-bold text-white truncate max-w-[75%]">
                           {product.category}
                         </span>
+                        {onReportProduct && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onReportProduct(product, e);
+                            }}
+                            title="Report User / Report Listing"
+                            aria-label="Report User or Listing"
+                            className="absolute top-2 right-2 p-1.5 rounded-full bg-slate-900/70 hover:bg-rose-600 text-white backdrop-blur-xs transition-colors cursor-pointer"
+                          >
+                            <Flag size={11} />
+                          </button>
+                        )}
                       </div>
 
                       {/* Content */}
@@ -191,18 +207,34 @@ export const StoreProductsSection: React.FC<StoreProductsSectionProps> = ({
                             </span>
                           </div>
 
-                          <button
-                            type="button"
-                            disabled={!inStock}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onAddToCart(product);
-                            }}
-                            className="w-full min-h-[38px] py-2 px-3 rounded-xl bg-[#00875A] hover:bg-[#00704a] active:scale-[0.98] text-white font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                          >
-                            <ShoppingCart size={13} />
-                            <span>{inStock ? 'Add to Cart' : 'Out of Stock'}</span>
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              disabled={!inStock}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onAddToCart(product);
+                              }}
+                              className="flex-1 min-h-[38px] py-2 px-3 rounded-xl bg-[#00875A] hover:bg-[#00704a] active:scale-[0.98] text-white font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                            >
+                              <ShoppingCart size={13} />
+                              <span>{inStock ? 'Add to Cart' : 'Out of Stock'}</span>
+                            </button>
+                            {onReportProduct && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onReportProduct(product, e);
+                                }}
+                                title="Report User / Report Listing"
+                                className="min-h-[38px] px-2.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                              >
+                                <Flag size={12} />
+                                <span className="hidden sm:inline">Report</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>

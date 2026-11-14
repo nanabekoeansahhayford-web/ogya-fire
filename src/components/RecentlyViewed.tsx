@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, Trash2, Heart, MapPin, Eye, ExternalLink, ChevronRight, Sparkles } from 'lucide-react';
+import { Clock, Trash2, Heart, MapPin, Eye, ExternalLink, ChevronRight, Sparkles, Flag } from 'lucide-react';
 import { Listing } from '../types/marketplace';
 import { formatPrice } from '../utils/storage';
 
@@ -10,6 +10,7 @@ interface RecentlyViewedProps {
   savedIds: string[];
   onClear: () => void;
   variant?: 'feed' | 'sidebar';
+  onReportListing?: (listing: Listing, e: React.MouseEvent) => void;
 }
 
 export const RecentlyViewed: React.FC<RecentlyViewedProps> = ({
@@ -19,6 +20,7 @@ export const RecentlyViewed: React.FC<RecentlyViewedProps> = ({
   savedIds,
   onClear,
   variant = 'feed',
+  onReportListing,
 }) => {
   if (items.length === 0) {
     if (variant === 'sidebar') return null;
@@ -168,20 +170,36 @@ export const RecentlyViewed: React.FC<RecentlyViewedProps> = ({
                   )}
                 </div>
 
-                {/* Save Heart Button */}
-                <button
-                  type="button"
-                  onClick={(e) => onToggleSave(listing.id, e)}
-                  className={`absolute top-2 right-2 p-1.5 rounded-full backdrop-blur-xs transition-colors cursor-pointer ${
-                    isSaved
-                      ? 'bg-rose-500 text-white'
-                      : 'bg-slate-900/60 text-white hover:bg-slate-900/90'
-                  }`}
-                  title={isSaved ? 'Remove from saved' : 'Save ad'}
-                  aria-label="Save listing"
-                >
-                  <Heart size={14} fill={isSaved ? 'currentColor' : 'none'} />
-                </button>
+                {/* Save Heart & Report Buttons */}
+                <div className="absolute top-2 right-2 flex items-center gap-1">
+                  {onReportListing && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onReportListing(listing, e);
+                      }}
+                      className="p-1.5 rounded-full backdrop-blur-xs bg-slate-900/60 text-white hover:bg-rose-600 transition-colors cursor-pointer"
+                      title="Report User / Report Listing"
+                      aria-label="Report User or Listing"
+                    >
+                      <Flag size={13} />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => onToggleSave(listing.id, e)}
+                    className={`p-1.5 rounded-full backdrop-blur-xs transition-colors cursor-pointer ${
+                      isSaved
+                        ? 'bg-rose-500 text-white'
+                        : 'bg-slate-900/60 text-white hover:bg-slate-900/90'
+                    }`}
+                    title={isSaved ? 'Remove from saved' : 'Save ad'}
+                    aria-label="Save listing"
+                  >
+                    <Heart size={14} fill={isSaved ? 'currentColor' : 'none'} />
+                  </button>
+                </div>
               </div>
 
               {/* Card Content */}

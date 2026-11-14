@@ -442,11 +442,11 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                   ? 'bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/60'
                   : 'text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50/50 dark:hover:bg-red-950/30 border border-transparent hover:border-red-200 dark:hover:border-red-900/50'
               }`}
-              title={currentReport ? `You reported this ad: ${currentReport.reason}` : 'Report suspicious ad (Spam, Scam, Sold...)'}
-              aria-label="Report Ad"
+              title={currentReport ? `You reported this: ${currentReport.reason}` : 'Report User or Report Listing'}
+              aria-label="Report User or Listing"
             >
               <Flag size={14} className={currentReport ? 'fill-current text-red-600 dark:text-red-400' : 'text-red-500'} />
-              <span>{currentReport ? 'Reported' : 'Report Ad'}</span>
+              <span>{currentReport ? 'Reported' : 'Report Listing / User'}</span>
             </button>
 
             <button
@@ -872,7 +872,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                     className="inline-flex items-center gap-1 font-bold text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:underline cursor-pointer"
                   >
                     <Flag size={12} className={currentReport ? 'fill-current' : ''} />
-                    <span>{currentReport ? 'Ad Reported' : 'Report Ad'}</span>
+                    <span>{currentReport ? 'Listing / User Reported' : 'Report User / Report Listing'}</span>
                   </button>
                 </div>
               </div>

@@ -58,6 +58,7 @@ interface HeaderProps {
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
   onExecuteSearch?: (query?: string) => void;
+  onOpenSettings?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -86,6 +87,7 @@ export const Header: React.FC<HeaderProps> = ({
   searchQuery = '',
   onSearchChange = () => {},
   onExecuteSearch,
+  onOpenSettings,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
@@ -841,6 +843,20 @@ export const Header: React.FC<HeaderProps> = ({
                 <ChevronRight size={16} className="text-slate-400" />
               )}
             </button>
+
+            {onOpenSettings && (
+              <button
+                type="button"
+                onClick={() => handleNavClick(onOpenSettings)}
+                className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-100 font-bold text-sm transition-colors text-left min-h-[44px]"
+              >
+                <div className="flex items-center gap-2.5">
+                  <ShieldCheck size={18} className="text-emerald-500" />
+                  <span>Settings &amp; Legal (Escrow / Privacy)</span>
+                </div>
+                <ChevronRight size={16} className="text-slate-400" />
+              </button>
+            )}
           </div>
 
           {/* Theme Switcher inside mobile drawer */}
