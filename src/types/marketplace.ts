@@ -66,7 +66,7 @@ export interface UserProfile {
   memberSince: string;
   avatarUrl?: string;
   password?: string;
-  // Ghana Card Verification & Paid Verified Pro Subscription (100 GHS/month)
+  // Ghana Card Verification & Paid Verified Seller Badge (GH₵50)
   ghanaCardNumber?: string;
   ghanaCardPhotoUrl?: string;
   ghanaCardBackUrl?: string;
@@ -78,6 +78,8 @@ export interface UserProfile {
   subscriptionPlan?: string;
   verifiedExpiresAt?: string;
   verifiedAmount?: number;
+  verificationProofUrl?: string;
+  verificationStatus?: 'none' | 'pending' | 'verified' | 'rejected';
   // MoMo Verification (Anti-scam KYC in Ghana)
   momoVerified?: boolean;
   momoStatus?: 'none' | 'pending' | 'verified' | 'rejected';
@@ -153,6 +155,7 @@ export interface Listing {
   currency: string;
   isNegotiable: boolean;
   location: string;
+  sellerLocation?: string;
   region: string;
   condition: ItemCondition;
   description: string;

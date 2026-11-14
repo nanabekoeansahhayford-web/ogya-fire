@@ -111,3 +111,17 @@ export function getLocalPlacedOrders(): any[] {
     return [];
   }
 }
+
+export function updateLocalOrder(orderId: string, updates: Record<string, any>): any[] {
+  try {
+    const existing = getLocalPlacedOrders();
+    const updated = existing.map((o) => (o.id === orderId ? { ...o, ...updates } : o));
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(STORAGE_KEY_PLACED_ORDERS, JSON.stringify(updated));
+    }
+    return updated;
+  } catch (e) {
+    console.error('Failed to update local order', e);
+    return getLocalPlacedOrders();
+  }
+}

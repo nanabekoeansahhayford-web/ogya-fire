@@ -28,7 +28,7 @@ const LEGAL_TABS: {
   icon: React.ComponentType<{ size?: number; className?: string }>;
 }[] = [
   { id: 'privacy', label: 'Privacy Policy', shortLabel: 'Privacy', icon: Lock },
-  { id: 'terms', label: 'Terms of Service', shortLabel: 'Terms', icon: FileText },
+  { id: 'terms', label: 'Terms of Use', shortLabel: 'Terms', icon: FileText },
   { id: 'escrow', label: 'Refund / Escrow Policy', shortLabel: 'Escrow & Refunds', icon: Scale },
   { id: 'safety', label: 'Safe Trading Guide', shortLabel: 'Safe Trading', icon: ShieldCheck },
 ];
@@ -68,7 +68,7 @@ export const LegalPagesModal: React.FC<LegalPagesModalProps> = ({
                 OGYA (FIRE) Legal, Escrow &amp; Safety Center
               </h3>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                OGYA Accra, Ghana · Last Updated: November 14, 2026
+                OGYA (FIRE) · Accra, Ghana · Last Updated: 14 November 2026
               </p>
             </div>
           </div>
@@ -107,7 +107,7 @@ export const LegalPagesModal: React.FC<LegalPagesModalProps> = ({
         </div>
 
         {/* Page Content */}
-        <div className="overflow-y-auto p-5 sm:p-7 space-y-6 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed flex-1">
+        <div className="overflow-y-auto overscroll-contain p-4 sm:p-7 space-y-6 text-sm text-slate-700 dark:text-slate-300 leading-relaxed flex-1">
           <LegalDocumentContent activePage={activePage} onSelectPage={setActivePage} />
         </div>
 
@@ -144,251 +144,198 @@ export const LegalDocumentContent: React.FC<LegalDocumentContentProps> = ({
           {/* 1. PRIVACY POLICY */}
           {activePage === 'privacy' && (
             <div className="space-y-5 animate-in fade-in duration-150">
-              <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#00875A] dark:text-emerald-400">
-                  Last Updated: November 14, 2026
+              <div className="border-b border-slate-200 dark:border-slate-800 pb-4 space-y-1.5">
+                <span className="inline-block text-[11px] font-bold uppercase tracking-wider text-[#00875A] dark:text-emerald-400">
+                  Last Updated: 14 November 2026
                 </span>
-                <h2 className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white mt-1">
-                  OGYA (FIRE) - Privacy Policy
+                <h2 className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white">
+                  PRIVACY POLICY - OGYA (FIRE)
                 </h2>
+                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                  OGYA (FIRE) is a Ghana marketplace app. This policy explains what we collect.
+                </p>
               </div>
 
-              <section className="space-y-2">
-                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm">
-                  1. Who We Are
+              <section className="space-y-1.5">
+                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm sm:text-base">
+                  1. What We Collect
                 </h4>
-                <p>
-                  OGYA Accra, Ghana (&ldquo;OGYA&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;) operates a multi-vendor marketplace connecting buyers and verified merchants in Accra and across Ghana.
-                </p>
-                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                  Contact:{' '}
-                  <a
-                    href="mailto:nanabekoeansahhayford@gmail.com"
-                    className="text-[#00875A] dark:text-emerald-400 hover:underline"
-                  >
-                    nanabekoeansahhayford@gmail.com
-                  </a>{' '}
-                  /{' '}
-                  <a
-                    href="https://wa.me/233205749630"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[#00875A] dark:text-emerald-400 hover:underline"
-                  >
-                    0205749630 (WhatsApp)
-                  </a>
+                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                  Name, phone number, location (town/area), product photos, order details, MoMo payment proof screenshots, reviews.
                 </p>
               </section>
 
-              <section className="space-y-2">
-                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm">
-                  2. Data We Collect
+              <section className="space-y-1.5">
+                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm sm:text-base">
+                  2. How We Use It
                 </h4>
-                <ul className="list-disc pl-5 space-y-1.5 text-xs sm:text-sm">
-                  <li>
-                    <strong>Account Data:</strong> Name, phone number, email, profile photo, location (Accra / Region)
-                  </li>
-                  <li>
-                    <strong>Listing Data:</strong> Photos, titles, prices, descriptions you post
-                  </li>
-                  <li>
-                    <strong>Transaction Data:</strong> Orders, delivery address, Mobile Money transaction reference (we do NOT store your Mobile Money PIN)
-                  </li>
-                  <li>
-                    <strong>Device Data:</strong> Device type, app version, crash logs
-                  </li>
-                  <li>
-                    <strong>Messages:</strong> In-app chat between buyer and seller for safety and dispute resolution
-                  </li>
-                </ul>
+                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                  To show your products to buyers near you, to let buyers order via WhatsApp, to show order status, to show reviews and verified badges.
+                </p>
               </section>
 
-              <section className="space-y-2">
-                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm">
-                  3. How We Use Data
+              <section className="space-y-1.5">
+                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm sm:text-base">
+                  3. Where We Store It
                 </h4>
-                <ul className="list-disc pl-5 space-y-1.5 text-xs sm:text-sm">
-                  <li>To create and manage your account</li>
-                  <li>To show listings near you</li>
-                  <li>To process orders, deliveries, and escrow payments</li>
-                  <li>To verify sellers and prevent fraud</li>
-                  <li>To send order updates, safety alerts, and support messages</li>
-                  <li>To improve the app and fix bugs</li>
-                </ul>
+                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                  We use Firebase Firestore for data and Cloudinary for images. Data is stored securely.
+                </p>
               </section>
 
-              <section className="space-y-2">
-                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm">
+              <section className="space-y-1.5">
+                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm sm:text-base">
                   4. What We Do NOT Do
                 </h4>
-                <ul className="list-disc pl-5 space-y-1.5 text-xs sm:text-sm">
-                  <li>We do NOT sell your personal data</li>
-                  <li>We do NOT share your phone number publicly without your permission</li>
-                  <li>We do NOT store your Mobile Money PIN or bank password</li>
-                </ul>
+                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                  We do NOT sell your personal data. We do NOT share your phone number publicly except to the buyer/seller you are ordering from via WhatsApp.
+                </p>
+              </section>
+
+              <section className="space-y-1.5">
+                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm sm:text-base">
+                  5. Payments
+                </h4>
+                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                  Buyers pay sellers directly via MTN MoMo or other MoMo. OGYA (FIRE) does not hold buyer money. Verified Seller fee GH₵50 is paid directly to OGYA (FIRE) via MoMo.
+                </p>
+              </section>
+
+              <section className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2.5">
+                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm sm:text-base">
+                  6. Delete Your Account
+                </h4>
+                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                  To delete your data, WhatsApp us from the app and ask &ldquo;Delete my account&rdquo;. We will delete within 7 days.
+                </p>
+                <a
+                  href="https://wa.me/233205749630?text=Delete%20my%20account"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#25D366] hover:bg-[#1fb857] text-white font-bold text-xs transition-colors"
+                >
+                  <span>WhatsApp: Delete my account</span>
+                </a>
+              </section>
+
+              <section className="space-y-1.5">
+                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm sm:text-base">
+                  7. Children
+                </h4>
+                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                  You must be 18+ or have parent permission to use OGYA (FIRE).
+                </p>
               </section>
 
               <section className="space-y-2">
-                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm">
-                  5. Sharing Data
+                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm sm:text-base">
+                  8. Contact
                 </h4>
-                <p>We share data only with:</p>
-                <ul className="list-disc pl-5 space-y-1.5 text-xs sm:text-sm">
-                  <li>Delivery couriers (only your delivery address and phone for that order)</li>
-                  <li>Payment providers (MTN MoMo, Telecel Cash, AirtelTigo Money) to process payment</li>
-                  <li>Law enforcement if required by Ghana law</li>
-                </ul>
+                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                  Contact us via WhatsApp button inside the app.
+                </p>
+                <a
+                  href="https://wa.me/233205749630"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors"
+                >
+                  <span>Contact via WhatsApp (0205749630)</span>
+                </a>
               </section>
 
-              <section className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
-                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm">
-                  6. Your Rights
-                </h4>
-                <p className="text-xs">You can:</p>
-                <ul className="list-disc pl-5 space-y-1 text-xs sm:text-sm">
-                  <li>View and edit your profile at any time</li>
-                  <li>Request a copy of your data</li>
-                  <li>
-                    Request deletion of your account and data in{' '}
-                    <strong>App &gt; Profile &gt; Settings &gt; Delete Account</strong>
-                  </li>
-                </ul>
-                <p className="text-xs pt-1">
-                  Contact us at{' '}
-                  <a
-                    href="mailto:nanabekoeansahhayford@gmail.com"
-                    className="font-bold text-[#00875A] dark:text-emerald-400 hover:underline"
-                  >
-                    nanabekoeansahhayford@gmail.com
-                  </a>{' '}
-                  for any privacy request. We will respond within 30 days.
-                </p>
-              </section>
-
-              <section className="space-y-1.5">
-                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm">
-                  7. Children
-                </h4>
-                <p>
-                  OGYA is for users 18 years and older. We do not knowingly collect data from children under 18.
-                </p>
-              </section>
-
-              <section className="space-y-1.5">
-                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm">
-                  8. Changes
-                </h4>
-                <p>
-                  If we change this policy, we will update the date above and notify you in the app.
-                </p>
-              </section>
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-500 dark:text-slate-400">
+                Last Updated: 14 November 2026
+              </div>
             </div>
           )}
 
-          {/* 2. TERMS OF SERVICE */}
+          {/* 2. TERMS OF USE */}
           {activePage === 'terms' && (
             <div className="space-y-5 animate-in fade-in duration-150">
-              <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#FF6600]">
-                  Last Updated: November 14, 2026
+              <div className="border-b border-slate-200 dark:border-slate-800 pb-4 space-y-1.5">
+                <span className="inline-block text-[11px] font-bold uppercase tracking-wider text-[#FF6600]">
+                  Last Updated: 14 November 2026
                 </span>
-                <h2 className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white mt-1">
-                  OGYA (FIRE) - Terms of Service
+                <h2 className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white">
+                  TERMS OF USE - OGYA (FIRE)
                 </h2>
               </div>
 
               <section className="space-y-1.5">
-                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm">
-                  1. What OGYA Is
+                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm sm:text-base">
+                  1. About OGYA (FIRE)
                 </h4>
-                <p>
-                  OGYA is a marketplace platform. We connect buyers and sellers. We are not the seller of most products listed. Sellers are responsible for the accuracy of their listings.
-                </p>
-              </section>
-
-              <section className="space-y-2">
-                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm">
-                  2. Accounts
-                </h4>
-                <ul className="list-disc pl-5 space-y-1.5 text-xs sm:text-sm">
-                  <li>You must be 18+ to register</li>
-                  <li>You must provide accurate name and phone number</li>
-                  <li>You are responsible for keeping your account secure</li>
-                  <li>One account per person. Fake accounts will be banned</li>
-                </ul>
-              </section>
-
-              <section className="space-y-2">
-                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm">
-                  3. Verified Sellers
-                </h4>
-                <ul className="list-disc pl-5 space-y-1.5 text-xs sm:text-sm">
-                  <li>&ldquo;GH Verified Badge&rdquo; means the seller has completed phone verification and ID check with OGYA</li>
-                  <li>It does NOT mean OGYA guarantees every product. Buyers must still inspect items on delivery</li>
-                  <li>OGYA may remove a Verified Badge if a seller violates these terms</li>
-                </ul>
-              </section>
-
-              <section className="space-y-2">
-                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm">
-                  4. Listings
-                </h4>
-                <p>Sellers agree NOT to post:</p>
-                <ul className="list-disc pl-5 space-y-1.5 text-xs sm:text-sm">
-                  <li>Stolen goods, fake products, weapons, drugs, or illegal items</li>
-                  <li>Misleading photos, prices, or descriptions</li>
-                  <li>Contact info to bypass OGYA escrow and scam buyers</li>
-                </ul>
-                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                  OGYA may remove any listing without notice.
-                </p>
-              </section>
-
-              <section className="space-y-2">
-                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm">
-                  5. Orders and Delivery
-                </h4>
-                <ul className="list-disc pl-5 space-y-1.5 text-xs sm:text-sm">
-                  <li>OGYA offers 1-2 hour doorstep delivery in Accra where available. Delivery times outside Accra may vary</li>
-                  <li>Buyer must inspect item on delivery before confirming receipt</li>
-                  <li>If buyer is not available, courier may reschedule</li>
-                </ul>
-              </section>
-
-              <section className="space-y-2">
-                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm">
-                  6. Prohibited Conduct
-                </h4>
-                <ul className="list-disc pl-5 space-y-1.5 text-xs sm:text-sm">
-                  <li>Fraud, scamming, harassment, threats, or abusive language</li>
-                  <li>Creating multiple accounts to evade a ban</li>
-                  <li>Using OGYA to launder money or commit fraud</li>
-                </ul>
-                <p className="text-xs font-semibold text-rose-700 dark:text-rose-400">
-                  Violation will result in warning, suspension, or permanent ban.
+                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                  OGYA (FIRE) is a marketplace connecting buyers and sellers in Ghana. We do not sell products ourselves.
                 </p>
               </section>
 
               <section className="space-y-1.5">
-                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm">
-                  7. Liability
+                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm sm:text-base">
+                  2. Sellers
                 </h4>
-                <p>
-                  OGYA provides the platform &ldquo;as is&rdquo;. To the maximum extent allowed by Ghana law, OGYA is not liable for loss caused by a seller&apos;s product, but we will assist in dispute resolution and escrow refunds as described in our Refund Policy.
+                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                  Sellers are responsible for their products, prices, quality, and delivery. Fake products, scams, or stolen items will be removed and account banned.
+                </p>
+              </section>
+
+              <section className="space-y-1.5">
+                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm sm:text-base">
+                  3. Buyers
+                </h4>
+                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                  Buyers must confirm price and delivery with seller on WhatsApp before paying. Check product on delivery.
+                </p>
+              </section>
+
+              <section className="space-y-1.5">
+                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm sm:text-base">
+                  4. Orders
+                </h4>
+                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                  Order status: Pending -&gt; Confirmed -&gt; On Delivery -&gt; Delivered. Sellers must update status.
+                </p>
+              </section>
+
+              <section className="p-4 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 space-y-1.5">
+                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm sm:text-base">
+                  5. Verified Sellers
+                </h4>
+                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                  Verified badge costs GH₵50 for 30 days. It gives top placement. It is non-refundable after activation. OGYA (FIRE) can remove badge for fraud.
                 </p>
               </section>
 
               <section className="space-y-2">
-                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm">
-                  8. Changes &amp; Governing Law
+                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm sm:text-base">
+                  6. No Liability
                 </h4>
-                <p>
-                  We may update these terms. Continued use of the app means you accept the new terms.
+                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                  OGYA (FIRE) is not responsible for delivery delays, food quality, or disputes between buyer and seller. Resolve disputes on WhatsApp first, then contact us.
                 </p>
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white">
-                  Governing Law: Laws of the Republic of Ghana.
-                </div>
+                <a
+                  href="https://wa.me/233205749630"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs transition-colors"
+                >
+                  <span>Contact OGYA (FIRE) via WhatsApp</span>
+                </a>
               </section>
+
+              <section className="space-y-1.5">
+                <h4 className="font-extrabold text-slate-950 dark:text-white text-sm sm:text-base">
+                  7. Changes
+                </h4>
+                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                  We can update these terms. Continued use means you accept.
+                </p>
+              </section>
+
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-500 dark:text-slate-400">
+                Last Updated: 14 November 2026
+              </div>
             </div>
           )}
 
@@ -412,7 +359,7 @@ export const LegalDocumentContent: React.FC<LegalDocumentContentProps> = ({
                     <span>1. Who Holds Payment</span>
                   </div>
                   <p className="text-xs text-slate-800 dark:text-slate-200 leading-relaxed">
-                    Buyer pays via Mobile Money to OGYA. <strong>OGYA holds the money securely</strong> — the seller does NOT get paid yet.
+                    Buyer pays via Mobile Money to OGYA (FIRE). <strong>OGYA (FIRE) holds the money securely</strong> — the seller does NOT get paid yet.
                   </p>
                 </div>
 
@@ -432,7 +379,7 @@ export const LegalDocumentContent: React.FC<LegalDocumentContentProps> = ({
                     <span>3. How Buyer Gets Refund</span>
                   </div>
                   <p className="text-xs text-slate-800 dark:text-slate-200 leading-relaxed">
-                    Do NOT confirm receipt. Tap <strong>Report / Dispute within 24 hours</strong> with photo/video proof; OGYA Support reviews within 48 hours.
+                    Do NOT confirm receipt. Tap <strong>Report / Dispute within 24 hours</strong> with photo/video proof; OGYA (FIRE) Support reviews within 48 hours.
                   </p>
                 </div>
               </div>
@@ -442,11 +389,11 @@ export const LegalDocumentContent: React.FC<LegalDocumentContentProps> = ({
                   1. How Escrow Works
                 </h4>
                 <ul className="list-disc pl-5 space-y-1.5 text-xs sm:text-sm">
-                  <li>Buyer pays via Mobile Money to OGYA</li>
-                  <li>OGYA holds the money securely — seller does NOT get paid yet</li>
+                  <li>Buyer pays via Mobile Money to OGYA (FIRE)</li>
+                  <li>OGYA (FIRE) holds the money securely — seller does NOT get paid yet</li>
                   <li>Courier delivers the item</li>
                   <li>Buyer inspects the item on delivery and confirms receipt in the app</li>
-                  <li>OGYA then releases payment to the seller, minus OGYA service fee</li>
+                  <li>OGYA (FIRE) then releases payment to the seller, minus OGYA (FIRE) service fee</li>
                 </ul>
                 <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
                   This is &ldquo;Doorstep Escrow Protection&rdquo; — your money is protected until you receive what you ordered.
@@ -483,7 +430,7 @@ export const LegalDocumentContent: React.FC<LegalDocumentContentProps> = ({
                   <li>Do NOT confirm receipt</li>
                   <li>Tap Report / Dispute on the order within 24 hours of delivery</li>
                   <li>Upload photo/video proof</li>
-                  <li>OGYA Support will review within 48 hours and decide</li>
+                  <li>OGYA (FIRE) Support will review within 48 hours and decide</li>
                 </ul>
               </section>
 
@@ -550,7 +497,7 @@ export const LegalDocumentContent: React.FC<LegalDocumentContentProps> = ({
                     Our #1 Rule: Never Send Personal Advance MoMo Transfers
                   </h4>
                   <p className="text-emerald-900 dark:text-emerald-300/90 text-xs sm:text-sm">
-                    Never send mobile money deposits, delivery fees, or &ldquo;holding fees&rdquo; to an individual&apos;s personal number before inspecting goods. Use OGYA Escrow at checkout so your funds stay protected until delivery.
+                    Never send mobile money deposits, delivery fees, or &ldquo;holding fees&rdquo; to an individual&apos;s personal number before inspecting goods. Use OGYA (FIRE) Escrow at checkout so your funds stay protected until delivery.
                   </p>
                 </div>
               </div>
@@ -587,7 +534,7 @@ export const LegalDocumentContent: React.FC<LegalDocumentContentProps> = ({
                       Protect Your 4-Digit Release OTP & Banking PINs
                     </h5>
                     <p className="text-slate-600 dark:text-slate-400 text-xs">
-                      OGYA staff will never ask for your Mobile Money PIN or password. When receiving a courier delivery, inspect the item at your doorstep first before sharing your 4-digit release OTP.
+                      OGYA (FIRE) staff will never ask for your Mobile Money PIN or password. When receiving a courier delivery, inspect the item at your doorstep first before sharing your 4-digit release OTP.
                     </p>
                   </div>
                 </div>

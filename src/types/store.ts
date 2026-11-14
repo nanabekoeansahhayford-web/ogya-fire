@@ -129,6 +129,13 @@ export interface Product {
   sellerId?: string; // Firebase Auth UID of product owner
   vendorId: string;
   vendorName: string;
+  location?: string;
+  sellerLocation?: string;
+  sellerPhone?: string;
+  sellerWhatsapp?: string;
+  isVerified?: boolean;
+  rating?: number;
+  reviewCount?: number;
   isTest?: boolean;
   createdAt?: any;
 }
@@ -148,9 +155,13 @@ export interface Vendor {
   createdAt?: any;
 }
 
-export type PaymentMethod = 'MTN MoMo' | 'Telecel Cash' | 'Cash on Delivery';
+export type PaymentMethod = 'MTN MoMo' | 'Telecel Cash' | 'Cash on Delivery' | 'WhatsApp + MoMo';
 
 export type OrderStatus =
+  | 'Pending'
+  | 'Confirmed'
+  | 'On Delivery'
+  | 'Delivered'
   | 'pending'
   | 'pending_payment'
   | 'paid'
@@ -158,6 +169,17 @@ export type OrderStatus =
   | 'shipped'
   | 'delivered'
   | 'cancelled';
+
+export type CanonicalOrderStep = 'Pending' | 'Confirmed' | 'On Delivery' | 'Delivered';
+
+export function normalizeOrderStatus(status?: string): CanonicalOrderStep | 'Cancelled' {
+  const s = (status || '').trim().toLowerCase();
+  if (s === 'cancelled') return 'Cancelled';
+  if (s === 'delivered') return 'Delivered';
+  if (s === 'on delivery' || s === 'shipped') return 'On Delivery';
+  if (s === 'confirmed' || s === 'paid' || s === 'processing') return 'Confirmed';
+  return 'Pending';
+}
 
 export interface CartItem {
   id: string; // productId
@@ -179,12 +201,36 @@ export interface Order {
   vendorId?: string;
   sellerId?: string;
   sellerIds?: string[];
+  sellerName?: string;
+  sellerPhone?: string;
+  productId?: string;
   items: CartItem[];
   total: number;
   deliveryAddress: string;
+  buyerLocation?: string;
   phone: string;
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   momoNumber?: string;
+  proofUrl?: string;
+  whatsappOrder?: boolean;
+  hasReviewed?: boolean;
+  reviewId?: string;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+export interface Review {
+  id: string;
+  orderId?: string;
+  productId?: string;
+  listingId?: string;
+  sellerId?: string;
+  sellerName: string;
+  userId: string;
+  buyerName: string;
+  rating: number; // 1 to 5
+  comment: string;
   createdAt?: any;
 }
+

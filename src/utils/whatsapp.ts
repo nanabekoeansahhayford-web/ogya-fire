@@ -49,6 +49,31 @@ export function generateGhanaWhatsAppUrl(
   return `https://wa.me/${cleanPhone}?text=${encoded}`;
 }
 
+export function generateOrderWhatsAppUrl(
+  phone: string,
+  productName: string,
+  price: number,
+  buyerLocation: string
+): string {
+  const cleanPhone = cleanGhanaPhoneNumber(phone);
+  const loc = (buyerLocation || 'Accra').trim();
+  const formattedPrice = Number(price || 0).toLocaleString('en-US');
+  const message = `Hi, I want to order ${productName} - GH₵${formattedPrice} from OGYA. My location is ${loc}. Delivery or Pickup?`;
+  return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+}
+
+export function generateOrderStatusWhatsAppUrl(
+  buyerPhone: string,
+  orderId: string,
+  productSummary: string,
+  newStatus: string
+): string {
+  const cleanPhone = cleanGhanaPhoneNumber(buyerPhone);
+  const shortId = orderId.slice(-8).toUpperCase();
+  const message = `OGYA Order Update (#${shortId}): Your order for "${productSummary}" is now *${newStatus}*. Thank you for shopping on OGYA!`;
+  return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+}
+
 export function generateGhanaCallUrl(phone: string): string {
   const clean = cleanGhanaPhoneNumber(phone);
   return `tel:+${clean}`;

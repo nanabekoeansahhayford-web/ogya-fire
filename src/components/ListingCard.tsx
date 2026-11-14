@@ -20,6 +20,7 @@ import {
   ShoppingCart,
 } from 'lucide-react';
 import { Listing, SellerInfo } from '../types/marketplace';
+import { Review } from '../types/store';
 import { formatPrice } from '../utils/storage';
 import { CategoryIcon } from './CategoryIcon';
 import { getSellerReputation } from '../utils/reputation';
@@ -29,6 +30,7 @@ import {
   generateGhanaCallUrl,
   recordWhatsAppClick,
 } from '../utils/whatsapp';
+import { isListingSellerVerified, getReviewSummary } from '../utils/marketplaceHelpers';
 
 interface ListingCardProps {
   listing: Listing;
@@ -41,6 +43,8 @@ interface ListingCardProps {
   onOpenBoost?: (listing: Listing, e: React.MouseEvent) => void;
   onReportListing?: (listing: Listing, e: React.MouseEvent) => void;
   onAddToCart?: (listing: Listing, e: React.MouseEvent) => void;
+  onOrderWhatsApp?: (listing: Listing, e: React.MouseEvent) => void;
+  reviews?: Review[];
 }
 
 export const ListingCard: React.FC<ListingCardProps> = ({
@@ -54,6 +58,8 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   onOpenBoost,
   onReportListing,
   onAddToCart,
+  onOrderWhatsApp,
+  reviews = [],
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [failedImages, setFailedImages] = useState<Record<number, boolean>>({});
@@ -81,6 +87,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   const primaryBadge = reputation.badges[0];
 
   // Trust & Anti-Scam MoMo Verification Metrics
+  const isVerifiedBadge = isListingSellerVerified(listing);
   const isMoMoVerified = Boolean(
     listing.seller?.momoVerified ||
     listing.seller?.momoStatus === 'verified' ||
@@ -89,6 +96,15 @@ export const ListingCard: React.FC<ListingCardProps> = ({
     listing.seller?.badges?.includes('verified-pro') ||
     listing.seller?.name?.toLowerCase().includes('daniel')
   );
+
+  const reviewSummary = getReviewSummary(reviews, {
+    listingId: listing.id,
+    productId: listing.id,
+    sellerId: listing.sellerId || listing.userId,
+    sellerName: listing.seller?.name,
+    fallbackRating: listing.seller?.rating || 4.8,
+    fallbackCount: listing.seller?.reviewCount || 18,
+  });
 
   const salesCount = listing.seller?.salesCount ?? (
     listing.seller?.name?.toLowerCase().includes('daniel') ? 56 :
@@ -121,6 +137,10 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   const handleWhatsAppChat = (e: React.MouseEvent) => {
     e.stopPropagation();
     recordWhatsAppClick(listing.id);
+    if (onOrderWhatsApp) {
+      onOrderWhatsApp(listing, e);
+      return;
+    }
     const isDaniel = listing.seller?.name?.includes('Daniel Arnan Aboagye') || listing.id?.startsWith('daniel-');
     const targetUrl = isDaniel
       ? 'https://wa.me/233549769720?text=Hello%20Daniel%20I%20saw%20your%20accessories%20on%20OGYA%20FIRE'
@@ -301,10 +321,10 @@ export const ListingCard: React.FC<ListingCardProps> = ({
                   Negotiable
                 </span>
               )}
-              {isMoMoVerified && (
-                <span className="bg-emerald-600/95 text-white font-bold text-[10px] tracking-wide px-1.5 py-0.5 rounded shadow-xs flex items-center gap-1 backdrop-blur-xs" title="MoMo Verified Seller">
+              {(isVerifiedBadge || isMoMoVerified) && (
+                <span className="bg-emerald-600/95 text-white font-black text-[10px] tracking-wide px-1.5 py-0.5 rounded shadow-xs flex items-center gap-1 backdrop-blur-xs" title="Verified OGYA Seller">
                   <span>✅</span>
-                  <span>MoMo</span>
+                  <span>VERIFIED</span>
                 </span>
               )}
               {isTrustedSeller && !isHotDeal && (
@@ -449,14 +469,14 @@ export const ListingCard: React.FC<ListingCardProps> = ({
             </div>
 
             {/* Vendor rating stars & sales count */}
-            <div className="flex items-center gap-1 text-[11px] sm:text-xs shrink-0 font-bold" title={`Seller Rating: ${(listing.seller.rating || 4.8).toFixed(1)} / 5 (${listing.seller.reviewCount || 18} verified buyer ratings) • ${salesCount} successful sales`}>
+            <div className="flex items-center gap-1 text-[11px] sm:text-xs shrink-0 font-bold" title={`Seller Rating: ${reviewSummary.avgRating.toFixed(1)} / 5 (${reviewSummary.count} buyer reviews) • ${salesCount} successful sales`}>
               <div className="flex items-center gap-0.5">
                 <span className="text-amber-500 text-xs">★</span>
                 <span className="text-slate-800 dark:text-slate-200 tabular-nums">
-                  {(listing.seller.rating || 4.8).toFixed(1)}
+                  {reviewSummary.avgRating.toFixed(1)}
                 </span>
                 <span className="text-[9px] text-slate-400 font-normal">
-                  ({listing.seller.reviewCount || 18})
+                  ({reviewSummary.count})
                 </span>
               </div>
               <span className="text-[9px] sm:text-[10px] font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/60 px-1 py-0.2 rounded tabular-nums">
@@ -465,9 +485,9 @@ export const ListingCard: React.FC<ListingCardProps> = ({
             </div>
           </div>
 
-          {/* Seller trust badges: MoMo Verified & Trusted Seller & Name */}
+          {/* Seller trust badges: VERIFIED & Trusted Seller & Name */}
           <div className="mt-1.5 flex flex-wrap items-center gap-1 text-[10px] sm:text-xs">
-            {isMoMoVerified && (
+            {(isVerifiedBadge || isMoMoVerified) && (
               <span
                 onClick={(e) => {
                   if (onOpenSellerProfile) {
@@ -476,10 +496,10 @@ export const ListingCard: React.FC<ListingCardProps> = ({
                   }
                 }}
                 className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 cursor-pointer shadow-2xs hover:bg-emerald-200 transition-colors"
-                title="✅ MoMo Verified Seller (Identity and phone number verified on Mobile Money)"
+                title="✅ Verified OGYA Seller"
               >
                 <span>✅</span>
-                <span>MoMo</span>
+                <span>VERIFIED</span>
               </span>
             )}
 
@@ -532,62 +552,56 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           {/* Jiji/Tonaton/Jumia Small items vs Big items distinction */}
           {isBigItem ? (
             <div className="mt-2 space-y-1.5">
-              {/* Big items (Cars, Property): Contact on WhatsApp + Call, NO online payment */}
+              {/* Big items (Cars, Property): Order on WhatsApp + Inspect */}
               <button
                 type="button"
                 onClick={handleWhatsAppChat}
-                className="w-full py-2.5 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-white border border-[#20ba59] group/wa min-h-[40px]"
-                title={`Contact ${listing.seller.name} on WhatsApp`}
+                className="w-full py-2.5 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-slate-950 border border-[#20ba59] group/wa min-h-[40px]"
+                title={`Order ${listing.title} on WhatsApp`}
               >
-                <MessageCircle size={15} className="fill-current text-white shrink-0 group-hover/wa:scale-110 transition-transform" />
-                <span className="truncate">WhatsApp Seller</span>
+                <MessageCircle size={15} className="fill-current shrink-0 group-hover/wa:scale-110 transition-transform" />
+                <span className="truncate">Order on WhatsApp</span>
               </button>
 
               <div className="px-1.5 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/50 rounded-lg text-[9px] sm:text-[10px] text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-1">
                 <ShieldAlert size={11} className="text-amber-600 shrink-0" />
-                <span className="truncate">Inspect in Person · No Online Pay</span>
+                <span className="truncate">Inspect in Person · MoMo After Check</span>
               </div>
             </div>
           ) : !isCV && !isJob && !isSold ? (
-            /* Small items: Add to Cart (Pay with Paystack MoMo) + WhatsApp */
+            /* Small items: Big Green Order on WhatsApp + Add to Cart */
             <div className="mt-2 space-y-1.5">
-              <div className="flex flex-col sm:grid sm:grid-cols-2 gap-1.5">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (onAddToCart) {
-                      onAddToCart(listing, e);
-                    } else {
-                      onOpenDetails(listing);
-                    }
-                  }}
-                  className="w-full py-2.5 px-2 bg-[#FF6600] hover:bg-[#e65c00] active:scale-98 text-white rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm border border-orange-500 hover:shadow-md min-h-[38px]"
-                  title="Add to Cart & Pay with Paystack MoMo or Cash on Delivery"
-                >
-                  <ShoppingCart size={14} className="shrink-0" />
-                  <span className="truncate">
-                    {listing.seller?.name?.includes('Daniel') ? 'Add to Cart - MoMo' : 'Add to Cart'}
-                  </span>
-                </button>
+              <button
+                type="button"
+                onClick={handleWhatsAppChat}
+                className="w-full py-2.5 px-2 bg-[#25D366] hover:bg-[#20ba59] active:scale-98 text-slate-950 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm border border-[#20ba59] hover:shadow-md min-h-[40px]"
+                title={`Order ${listing.title} on WhatsApp`}
+              >
+                <MessageCircle size={15} className="fill-current shrink-0" />
+                <span className="truncate">Order on WhatsApp</span>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={handleWhatsAppChat}
-                  className="w-full py-2.5 px-2 bg-[#25D366] hover:bg-[#20ba59] active:scale-98 text-white rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm border border-[#20ba59] hover:shadow-md min-h-[38px]"
-                  title={`Chat with ${listing.seller.name} on WhatsApp`}
-                >
-                  <MessageCircle size={14} className="fill-current text-white shrink-0" />
-                  <span className="truncate">
-                    {listing.seller?.name?.includes('Daniel') ? 'Chat Daniel' : 'WhatsApp'}
-                  </span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onAddToCart) {
+                    onAddToCart(listing, e);
+                  } else {
+                    onOpenDetails(listing);
+                  }
+                }}
+                className="w-full py-2 px-2 bg-[#FF6600] hover:bg-[#e65c00] active:scale-98 text-white rounded-xl text-[11px] font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs border border-orange-500 min-h-[34px]"
+                title="Add to Cart & Pay with MoMo or Cash on Delivery"
+              >
+                <ShoppingCart size={13} className="shrink-0" />
+                <span className="truncate">Add to Cart · MoMo / COD</span>
+              </button>
 
               <div className="flex items-center justify-between text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 px-0.5 font-medium">
                 <span className="flex items-center gap-0.5 text-[#00875A] dark:text-emerald-400 font-bold truncate">
                   <span>✓</span>
-                  <span>MoMo / COD</span>
+                  <span>MoMo Proof Ready</span>
                 </span>
                 <span className="truncate ml-1">Door Courier</span>
               </div>
@@ -600,11 +614,11 @@ export const ListingCard: React.FC<ListingCardProps> = ({
               className={`w-full mt-2 py-2.5 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm group/wa min-h-[40px] ${
                 isSold
                   ? 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                  : 'bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-white border border-[#20ba59] shadow-sm hover:shadow-md'
+                  : 'bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-slate-950 border border-[#20ba59] shadow-sm hover:shadow-md'
               }`}
             >
-              <MessageCircle size={15} className="fill-current text-white shrink-0 group-hover/wa:scale-110 transition-transform" />
-              <span className="truncate">{isSold ? 'Item Sold · Inquire' : isJob || isCV ? 'Contact on WhatsApp' : 'WhatsApp Seller'}</span>
+              <MessageCircle size={15} className="fill-current shrink-0 group-hover/wa:scale-110 transition-transform" />
+              <span className="truncate">{isSold ? 'Item Sold · Inquire' : isJob || isCV ? 'Contact on WhatsApp' : 'Order on WhatsApp'}</span>
             </button>
           )}
 

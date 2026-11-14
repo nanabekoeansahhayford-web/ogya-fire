@@ -505,7 +505,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               {!heroCardError ? (
                 <img
                   src={heroMarketplaceShowcaseImg}
-                  alt="OGYA FIRE Marketplace Ghana"
+                  alt="OGYA (FIRE) Marketplace Ghana"
                   onError={() => setHeroCardError(true)}
                   referrerPolicy="no-referrer"
                   className="w-full h-64 lg:h-72 object-cover object-center group-hover:scale-105 transition-transform duration-500"
@@ -513,7 +513,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               ) : (
                 <div className="w-full h-64 lg:h-72 bg-gradient-to-br from-slate-900 via-[#111A2E] to-slate-950 flex flex-col items-center justify-center p-6 text-center">
                   <Store className="w-12 h-12 text-[#F59E0B] mb-2" />
-                  <p className="text-sm font-black text-white">OGYA FIRE Ghana Marketplace</p>
+                  <p className="text-sm font-black text-white">OGYA (FIRE) Ghana Marketplace</p>
                   <p className="text-xs text-slate-400 mt-1">Verified Vendors Across All 16 Regions</p>
                 </div>
               )}

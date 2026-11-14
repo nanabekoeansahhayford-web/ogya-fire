@@ -35,8 +35,9 @@ import {
 } from 'firebase/auth';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { Listing, WantedItem } from '../types/marketplace';
-import { Product, Vendor, Order, OrderStatus } from '../types/store';
+import { Product, Vendor, Order, OrderStatus, Review } from '../types/store';
 import { SEED_PRODUCTS } from '../data/seedProducts';
+import { savePlacedOrderLocally, updateLocalOrder } from './cartStorage';
 
 // Initialize Firebase App & Services (Auth + Firestore only; images use Cloudinary)
 const app = initializeApp(firebaseConfig);
@@ -502,6 +503,7 @@ export async function saveListingToFirestore(listing: Listing): Promise<Listing>
       updatedAt: serverTimestamp(),
     };
 
+    if (listing.sellerLocation) docData.sellerLocation = listing.sellerLocation.trim().slice(0, 256);
     if (listing.soldAt) docData.soldAt = listing.soldAt;
     if (listing.attributes) docData.attributes = listing.attributes;
     if (listing.cvDetails) docData.cvDetails = listing.cvDetails;
@@ -703,6 +705,13 @@ export async function saveProductToFirestore(product: Product): Promise<boolean>
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
+    if (product.location) data.location = product.location.trim().slice(0, 256);
+    if (product.sellerLocation) data.sellerLocation = product.sellerLocation.trim().slice(0, 256);
+    if (product.sellerPhone) data.sellerPhone = product.sellerPhone.trim().slice(0, 64);
+    if (product.sellerWhatsapp) data.sellerWhatsapp = product.sellerWhatsapp.trim().slice(0, 64);
+    if (typeof product.isVerified === 'boolean') data.isVerified = product.isVerified;
+    if (typeof product.rating === 'number') data.rating = Math.min(5, Math.max(0, product.rating));
+    if (typeof product.reviewCount === 'number') data.reviewCount = Math.max(0, product.reviewCount);
     if (typeof product.isTest === 'boolean') {
       data.isTest = product.isTest;
     }
@@ -1040,6 +1049,30 @@ export async function createOrderInFirestore(order: Order): Promise<boolean> {
     if (order.momoNumber) {
       data.momoNumber = order.momoNumber.trim().slice(0, 64);
     }
+    if (order.sellerName) {
+      data.sellerName = order.sellerName.trim().slice(0, 256);
+    }
+    if (order.sellerPhone) {
+      data.sellerPhone = order.sellerPhone.trim().slice(0, 64);
+    }
+    if (order.productId && /^[a-zA-Z0-9_-]+$/.test(order.productId)) {
+      data.productId = order.productId.slice(0, 128);
+    }
+    if (order.buyerLocation) {
+      data.buyerLocation = order.buyerLocation.trim().slice(0, 256);
+    }
+    if (order.proofUrl) {
+      data.proofUrl = order.proofUrl.trim().slice(0, 2048);
+    }
+    if (typeof order.whatsappOrder === 'boolean') {
+      data.whatsappOrder = order.whatsappOrder;
+    }
+    if (typeof order.hasReviewed === 'boolean') {
+      data.hasReviewed = order.hasReviewed;
+    }
+    if (order.reviewId && /^[a-zA-Z0-9_-]+$/.test(order.reviewId)) {
+      data.reviewId = order.reviewId.slice(0, 128);
+    }
     await setDoc(docRef, data);
     return true;
   } catch (error) {
@@ -1208,8 +1241,9 @@ export async function updateOrderStatusInFirestore(
   orderId: string,
   status: OrderStatus
 ): Promise<boolean> {
+  updateLocalOrder(orderId, { status, updatedAt: new Date().toISOString() });
   if (!auth.currentUser) {
-    throw new Error('Please sign in to update order status.');
+    return false;
   }
   const path = `orders/${orderId}`;
   try {
@@ -1223,6 +1257,305 @@ export async function updateOrderStatusInFirestore(
     } catch {
       // logged
     }
+    return false;
+  }
+}
+
+/**
+ * Place a WhatsApp order (saves locally for immediate tracking & in Firestore if signed in)
+ */
+export async function placeWhatsAppOrder(order: Order): Promise<{ savedToFirestore: boolean; order: Order }> {
+  const safeOrder: Order = {
+    ...order,
+    status: order.status || 'Pending',
+    whatsappOrder: true,
+    createdAt: order.createdAt || new Date().toISOString(),
+  };
+  savePlacedOrderLocally(safeOrder);
+
+  if (!auth.currentUser) {
+    return { savedToFirestore: false, order: safeOrder };
+  }
+
+  try {
+    const syncedOrder: Order = {
+      ...safeOrder,
+      userId: auth.currentUser.uid,
+      buyerId: auth.currentUser.uid,
+    };
+    await createOrderInFirestore(syncedOrder);
+    return { savedToFirestore: true, order: syncedOrder };
+  } catch (error) {
+    console.warn(`WhatsApp order ${order.id} saved locally; Firestore sync deferred:`, error);
+    return { savedToFirestore: false, order: safeOrder };
+  }
+}
+
+/**
+ * Attach Cloudinary MoMo payment proof URL to an order in Firestore + local storage
+ */
+export async function updateOrderProofUrlInFirestore(
+  orderId: string,
+  proofUrl: string
+): Promise<boolean> {
+  const safeProofUrl = proofUrl.trim().slice(0, 2048);
+  updateLocalOrder(orderId, { proofUrl: safeProofUrl, updatedAt: new Date().toISOString() });
+
+  if (!auth.currentUser) {
+    return false;
+  }
+  const path = `orders/${orderId}`;
+  try {
+    await updateDoc(doc(db, 'orders', orderId), {
+      proofUrl: safeProofUrl,
+      updatedAt: serverTimestamp(),
+    });
+    return true;
+  } catch (error) {
+    console.warn(`Failed to save MoMo proofUrl on order ${orderId} in Firestore (kept locally):`, error);
+    try {
+      handleFirestoreError(error, OperationType.UPDATE, path);
+    } catch {
+      // logged
+    }
+    return false;
+  }
+}
+
+/**
+ * Mark an order as reviewed in Firestore + local storage
+ */
+export async function markOrderReviewedInFirestore(
+  orderId: string,
+  reviewId: string
+): Promise<boolean> {
+  updateLocalOrder(orderId, {
+    hasReviewed: true,
+    reviewId,
+    updatedAt: new Date().toISOString(),
+  });
+  if (!auth.currentUser) {
+    return false;
+  }
+  try {
+    await updateDoc(doc(db, 'orders', orderId), {
+      hasReviewed: true,
+      reviewId: reviewId.slice(0, 128),
+      updatedAt: serverTimestamp(),
+    });
+    return true;
+  } catch (error) {
+    console.warn(`Could not mark order ${orderId} reviewed in Firestore:`, error);
+    return false;
+  }
+}
+
+/* =========================================================================
+   BUYER REVIEWS & RATINGS (/reviews collection)
+   ========================================================================= */
+
+const STORAGE_KEY_REVIEWS = 'ogya_fire_reviews_v1';
+
+export function getLocalReviews(): Review[] {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return [];
+    const raw = localStorage.getItem(STORAGE_KEY_REVIEWS);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveLocalReview(review: Review): Review[] {
+  try {
+    const existing = getLocalReviews();
+    const updated = [review, ...existing.filter((r) => r.id !== review.id)];
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(STORAGE_KEY_REVIEWS, JSON.stringify(updated));
+    }
+    return updated;
+  } catch {
+    return [review];
+  }
+}
+
+export async function saveReviewToFirestore(review: Review): Promise<{ savedToFirestore: boolean; review: Review }> {
+  const cleanReview: Review = {
+    ...review,
+    rating: Math.min(5, Math.max(1, Math.round(Number(review.rating) || 5))),
+    comment: review.comment.trim().slice(0, 2000),
+    createdAt: review.createdAt || new Date().toISOString(),
+  };
+
+  saveLocalReview(cleanReview);
+  if (cleanReview.orderId) {
+    updateLocalOrder(cleanReview.orderId, { hasReviewed: true, reviewId: cleanReview.id });
+  }
+
+  if (!auth.currentUser) {
+    return { savedToFirestore: false, review: cleanReview };
+  }
+
+  const uid = auth.currentUser.uid;
+  const path = `reviews/${cleanReview.id}`;
+  try {
+    const docData: Record<string, any> = {
+      id: cleanReview.id,
+      userId: uid,
+      buyerName: (cleanReview.buyerName || auth.currentUser.displayName || 'OGYA Buyer').trim().slice(0, 128),
+      sellerName: (cleanReview.sellerName || 'OGYA Seller').trim().slice(0, 256),
+      rating: cleanReview.rating,
+      comment: cleanReview.comment,
+      createdAt: serverTimestamp(),
+    };
+    if (cleanReview.orderId && /^[a-zA-Z0-9_-]+$/.test(cleanReview.orderId)) {
+      docData.orderId = cleanReview.orderId.slice(0, 128);
+    }
+    if (cleanReview.productId && /^[a-zA-Z0-9_-]+$/.test(cleanReview.productId)) {
+      docData.productId = cleanReview.productId.slice(0, 128);
+    }
+    if (cleanReview.listingId && /^[a-zA-Z0-9_-]+$/.test(cleanReview.listingId)) {
+      docData.listingId = cleanReview.listingId.slice(0, 128);
+    }
+    if (cleanReview.sellerId && /^[a-zA-Z0-9_-]+$/.test(cleanReview.sellerId)) {
+      docData.sellerId = cleanReview.sellerId.slice(0, 128);
+    }
+
+    await setDoc(doc(db, 'reviews', cleanReview.id), docData);
+
+    if (cleanReview.orderId) {
+      await markOrderReviewedInFirestore(cleanReview.orderId, cleanReview.id);
+    }
+    return { savedToFirestore: true, review: { ...cleanReview, userId: uid } };
+  } catch (error) {
+    console.warn(`Could not save review ${cleanReview.id} to Firestore (saved locally):`, error);
+    try {
+      handleFirestoreError(error, OperationType.WRITE, path);
+    } catch {
+      // logged
+    }
+    return { savedToFirestore: false, review: cleanReview };
+  }
+}
+
+export async function fetchReviewsFromFirestore(): Promise<Review[]> {
+  const local = getLocalReviews();
+  try {
+    const snap = await getDocs(collection(db, 'reviews'));
+    const remote: Review[] = [];
+    snap.forEach((d) => {
+      const data = d.data() as Review;
+      remote.push({ ...data, id: data.id || d.id });
+    });
+    const map = new Map<string, Review>();
+    remote.forEach((r) => map.set(r.id, r));
+    local.forEach((r) => {
+      if (!map.has(r.id)) map.set(r.id, r);
+    });
+    return Array.from(map.values());
+  } catch (error) {
+    console.warn('Could not fetch reviews from Firestore, using local cache:', error);
+    return local;
+  }
+}
+
+export function subscribeToReviewsFromFirestore(onUpdate: (reviews: Review[]) => void): () => void {
+  const local = getLocalReviews();
+  try {
+    return onSnapshot(
+      collection(db, 'reviews'),
+      (snapshot) => {
+        const remote: Review[] = [];
+        snapshot.forEach((d) => {
+          const data = d.data() as Review;
+          remote.push({ ...data, id: data.id || d.id });
+        });
+        const currentLocal = getLocalReviews();
+        const map = new Map<string, Review>();
+        remote.forEach((r) => map.set(r.id, r));
+        currentLocal.forEach((r) => {
+          if (!map.has(r.id)) map.set(r.id, r);
+        });
+        onUpdate(Array.from(map.values()));
+      },
+      (error) => {
+        console.warn('Firestore reviews listener warning:', error);
+        onUpdate(local);
+      }
+    );
+  } catch (error) {
+    console.warn('Error setting up onSnapshot for reviews:', error);
+    onUpdate(local);
+    return () => {};
+  }
+}
+
+/**
+ * Activate Verified Seller Badge (GH₵50) in Firestore (/sellers, /vendors, /products, /listings)
+ */
+export async function submitVerifiedBadgeMoMoProof(payload: {
+  uid: string;
+  shopName: string;
+  phone?: string;
+  location?: string;
+  proofUrl: string;
+}): Promise<boolean> {
+  if (!auth.currentUser || auth.currentUser.uid !== payload.uid) {
+    return false;
+  }
+  const uid = auth.currentUser.uid;
+  const safeProofUrl = payload.proofUrl.trim().slice(0, 2048);
+
+  try {
+    await setDoc(
+      doc(db, 'sellers', uid),
+      {
+        id: uid,
+        sellerId: uid,
+        ownerId: uid,
+        shopName: (payload.shopName || auth.currentUser.displayName || 'Verified OGYA Seller').trim().slice(0, 256),
+        phone: (payload.phone || '').trim().slice(0, 64),
+        location: (payload.location || 'Accra, Ghana').trim().slice(0, 256),
+        isVerified: true,
+        momoVerified: true,
+        isTrustedSeller: true,
+        verificationProofUrl: safeProofUrl,
+        verificationStatus: 'verified',
+        verifiedPlan: 'Verified Seller (GH₵50)',
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    // Mark owned vendors verified
+    const vendorsSnap = await getDocs(query(collection(db, 'vendors'), where('ownerId', '==', uid)));
+    for (const v of vendorsSnap.docs) {
+      await updateDoc(doc(db, 'vendors', v.id), { isVerified: true, updatedAt: serverTimestamp() });
+    }
+
+    // Mark owned products verified
+    const prodSnap = await getDocs(query(collection(db, 'products'), where('sellerId', '==', uid)));
+    for (const p of prodSnap.docs) {
+      await updateDoc(doc(db, 'products', p.id), { isVerified: true, updatedAt: serverTimestamp() });
+    }
+
+    // Mark owned listings verified
+    const listSnap = await getDocs(query(collection(db, 'listings'), where('userId', '==', uid)));
+    for (const l of listSnap.docs) {
+      const existingSeller = (l.data()?.seller || {}) as Record<string, any>;
+      await updateDoc(doc(db, 'listings', l.id), {
+        seller: {
+          ...existingSeller,
+          isVerified: true,
+          isSubscribedVerified: true,
+          verifiedPlan: 'Verified Seller (GH₵50)',
+        },
+        updatedAt: serverTimestamp(),
+      });
+    }
+    return true;
+  } catch (error) {
+    console.warn('Could not persist Verified Seller GH₵50 status to Firestore:', error);
     return false;
   }
 }

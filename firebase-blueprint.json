@@ -73,6 +73,13 @@
         "sellerId": { "type": "string", "maxLength": 128 },
         "vendorId": { "type": "string", "maxLength": 128 },
         "vendorName": { "type": "string", "maxLength": 256 },
+        "location": { "type": "string", "maxLength": 256 },
+        "sellerLocation": { "type": "string", "maxLength": 256 },
+        "sellerPhone": { "type": "string", "maxLength": 64 },
+        "sellerWhatsapp": { "type": "string", "maxLength": 64 },
+        "isVerified": { "type": "boolean" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" },
         "isTest": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
@@ -103,6 +110,10 @@
         "bio": { "type": "string", "maxLength": 3000 },
         "momoVerified": { "type": "boolean" },
         "isTrustedSeller": { "type": "boolean" },
+        "isVerified": { "type": "boolean" },
+        "verificationProofUrl": { "type": "string", "maxLength": 2048 },
+        "verificationStatus": { "type": "string", "maxLength": 32 },
+        "verifiedPlan": { "type": "string", "maxLength": 128 },
         "salesCount": { "type": "number" },
         "rating": { "type": "number" }
       },
@@ -118,16 +129,43 @@
         "sellerId": { "type": "string", "maxLength": 128 },
         "vendorId": { "type": "string", "maxLength": 128 },
         "sellerIds": { "type": "array" },
+        "sellerName": { "type": "string", "maxLength": 256 },
+        "sellerPhone": { "type": "string", "maxLength": 64 },
+        "productId": { "type": "string", "maxLength": 128 },
         "items": { "type": "array" },
         "total": { "type": "number" },
         "deliveryAddress": { "type": "string", "maxLength": 500 },
+        "buyerLocation": { "type": "string", "maxLength": 256 },
         "phone": { "type": "string", "maxLength": 64 },
-        "status": { "type": "string", "enum": ["pending", "pending_payment", "paid", "processing", "shipped", "delivered", "cancelled"] },
+        "status": { "type": "string", "enum": ["Pending", "Confirmed", "On Delivery", "Delivered", "pending", "pending_payment", "paid", "processing", "shipped", "delivered", "cancelled"] },
         "paymentMethod": { "type": "string", "maxLength": 64 },
         "momoNumber": { "type": "string", "maxLength": 64 },
+        "proofUrl": { "type": "string", "maxLength": 2048 },
+        "whatsappOrder": { "type": "boolean" },
+        "hasReviewed": { "type": "boolean" },
+        "reviewId": { "type": "string", "maxLength": 128 },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "buyerId", "sellerIds", "items", "total", "deliveryAddress", "phone", "status", "paymentMethod"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Buyer 1-5 star rating and comment submitted after an order is Delivered",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "orderId": { "type": "string", "maxLength": 128 },
+        "productId": { "type": "string", "maxLength": 128 },
+        "listingId": { "type": "string", "maxLength": 128 },
+        "sellerId": { "type": "string", "maxLength": 128 },
+        "sellerName": { "type": "string", "maxLength": 256 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "buyerName": { "type": "string", "maxLength": 128 },
+        "rating": { "type": "number" },
+        "comment": { "type": "string", "maxLength": 2000 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "sellerName", "userId", "buyerName", "rating", "comment"]
     },
     "WantedItem": {
       "title": "WantedItem",
@@ -179,6 +217,10 @@
     "/wanted_items/{wantedItemId}": {
       "schema": { "$ref": "#/entities/WantedItem" },
       "description": "Buyer requested items readable publicly, writable by authenticated userId == auth.uid"
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/Review" },
+      "description": "Verified buyer ratings and reviews readable publicly, writable by signed-in buyer userId == auth.uid"
     }
   }
 }

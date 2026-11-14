@@ -38,21 +38,20 @@ export const Footer: React.FC<FooterProps> = ({
           {/* Brand Col */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2">
-              <span className="bg-gradient-to-tr from-[#00875A] via-emerald-600 to-[#FF6600] text-white w-9 h-9 rounded-xl flex items-center justify-center font-black text-base shadow-sm">
+              <span className="bg-gradient-to-tr from-orange-600 via-[#FF6600] to-amber-500 text-white w-9 h-9 rounded-xl flex items-center justify-center font-black text-base shadow-sm">
                 🔥
               </span>
               <span className="text-xl font-black text-white tracking-tight flex items-center gap-1.5">
                 <span>OGYA</span>
-                <span className="text-[#FF6600] text-xs font-extrabold uppercase">(FIRE)</span>
-                <span>🔥</span>
+                <span className="text-[#FF6600] text-sm font-black uppercase">(FIRE)</span>
               </span>
             </div>
             <div className="text-white font-extrabold text-sm flex items-center gap-1.5">
               <MapPin size={15} className="text-[#00875A]" />
-              <span>OGYA Accra, Ghana</span>
+              <span>OGYA (FIRE) · Accra, Ghana</span>
             </div>
             <p className="text-slate-400 text-xs leading-relaxed max-w-sm">
-              OGYA Accra, Ghana is the premier multi-vendor commerce hub connecting buyers directly with verified merchants in Accra and across Ghana. Fast 1–2 hour doorstep delivery and protected Mobile Money payments.
+              OGYA (FIRE) Accra, Ghana is the premier multi-vendor commerce hub connecting buyers directly with verified merchants in Accra and across Ghana. Fast 1–2 hour doorstep delivery and protected Mobile Money payments.
             </p>
             <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs pt-1">
               <ShieldCheck size={16} className="text-[#00875A]" />
@@ -64,7 +63,7 @@ export const Footer: React.FC<FooterProps> = ({
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
                   <Lock size={12} />
-                  <span>How OGYA Escrow Works</span>
+                  <span>How OGYA (FIRE) Escrow Works</span>
                 </span>
                 <button
                   type="button"
@@ -76,7 +75,7 @@ export const Footer: React.FC<FooterProps> = ({
               </div>
               <ul className="space-y-1 text-[11px] text-slate-300 leading-relaxed">
                 <li>
-                  <strong className="text-white">Who holds payment:</strong> Buyer pays via MoMo to OGYA; OGYA holds the money securely—never sent to the seller upfront.
+                  <strong className="text-white">Who holds payment:</strong> Buyer pays via MoMo to OGYA (FIRE); OGYA (FIRE) holds the money securely—never sent to the seller upfront.
                 </li>
                 <li>
                   <strong className="text-white">When seller gets paid:</strong> Released only after buyer inspects &amp; confirms receipt (or 24h after courier delivery if undisputed).
@@ -133,40 +132,52 @@ export const Footer: React.FC<FooterProps> = ({
             </h4>
             <ul className="space-y-2">
               <li>
-                <button
-                  type="button"
-                  onClick={() => openLegal('privacy')}
-                  className="hover:text-amber-400 transition-colors cursor-pointer text-left"
+                <a
+                  href="/privacy"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    openLegal('privacy');
+                  }}
+                  className="hover:text-amber-400 transition-colors cursor-pointer text-left inline-block"
                 >
                   Privacy Policy
-                </button>
+                </a>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={() => openLegal('terms')}
-                  className="hover:text-amber-400 transition-colors cursor-pointer text-left"
+                <a
+                  href="/terms"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    openLegal('terms');
+                  }}
+                  className="hover:text-amber-400 transition-colors cursor-pointer text-left inline-block"
                 >
-                  Terms of Service
-                </button>
+                  Terms of Use
+                </a>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={() => openLegal('escrow')}
-                  className="hover:text-amber-400 transition-colors cursor-pointer text-left"
+                <a
+                  href="/refund-policy"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    openLegal('escrow');
+                  }}
+                  className="hover:text-amber-400 transition-colors cursor-pointer text-left inline-block"
                 >
                   Refund / Escrow Policy
-                </button>
+                </a>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={() => openLegal('safety')}
-                  className="hover:text-amber-400 transition-colors cursor-pointer text-left"
+                <a
+                  href="/safe-trading"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    openLegal('safety');
+                  }}
+                  className="hover:text-amber-400 transition-colors cursor-pointer text-left inline-block"
                 >
                   Safe Trading Guide
-                </button>
+                </a>
               </li>
             </ul>
           </div>
@@ -213,7 +224,7 @@ export const Footer: React.FC<FooterProps> = ({
                     onClick={onOpenVerifiedSubscription}
                     className="hover:text-emerald-400 text-emerald-400 font-bold transition-colors cursor-pointer flex items-center gap-1 text-left"
                   >
-                    <span>🇬🇭 Verified Badge (100 GHS/mo)</span>
+                    <span>✅ Become Verified - GH₵50</span>
                   </button>
                 </li>
               )}
@@ -256,21 +267,49 @@ export const Footer: React.FC<FooterProps> = ({
         {/* Bottom bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 text-xs">
           <div className="font-semibold text-slate-400">
-            © {new Date().getFullYear()} OGYA Accra, Ghana. All rights reserved.
+            © 2026 OGYA (FIRE)
           </div>
           <div className="flex flex-wrap items-center justify-center gap-5">
-            <button onClick={() => openLegal('privacy')} className="hover:text-slate-300 transition-colors cursor-pointer">
+            <a
+              href="/privacy"
+              onClick={(e) => {
+                e.preventDefault();
+                openLegal('privacy');
+              }}
+              className="hover:text-slate-300 transition-colors cursor-pointer"
+            >
               Privacy Policy
-            </button>
-            <button onClick={() => openLegal('terms')} className="hover:text-slate-300 transition-colors cursor-pointer">
-              Terms of Service
-            </button>
-            <button onClick={() => openLegal('escrow')} className="hover:text-slate-300 transition-colors cursor-pointer">
+            </a>
+            <a
+              href="/terms"
+              onClick={(e) => {
+                e.preventDefault();
+                openLegal('terms');
+              }}
+              className="hover:text-slate-300 transition-colors cursor-pointer"
+            >
+              Terms of Use
+            </a>
+            <a
+              href="/refund-policy"
+              onClick={(e) => {
+                e.preventDefault();
+                openLegal('escrow');
+              }}
+              className="hover:text-slate-300 transition-colors cursor-pointer"
+            >
               Refund / Escrow Policy
-            </button>
-            <button onClick={() => openLegal('safety')} className="hover:text-slate-300 transition-colors cursor-pointer">
+            </a>
+            <a
+              href="/safe-trading"
+              onClick={(e) => {
+                e.preventDefault();
+                openLegal('safety');
+              }}
+              className="hover:text-slate-300 transition-colors cursor-pointer"
+            >
               Safe Trading Guide
-            </button>
+            </a>
           </div>
         </div>
       </div>

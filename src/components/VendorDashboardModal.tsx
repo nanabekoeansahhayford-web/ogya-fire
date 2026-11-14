@@ -24,8 +24,11 @@ import {
 import { Product, ProductCategory, PRODUCT_CATEGORIES, Vendor } from '../types/store';
 import { auth, saveProductToFirestore, deleteProductFromFirestore } from '../utils/firebase';
 import { uploadImageToCloudinary } from '../utils/imageUpload';
+import { HOME_LOCATIONS } from '../utils/marketplaceHelpers';
 import { UserProfile } from '../types/marketplace';
 import vendorStoreShowcaseImg from '../assets/images/vendor_store_showcase_1793870144741.jpg';
+
+const MODAL_LOCATIONS = HOME_LOCATIONS.filter((l) => l !== 'All');
 
 interface VendorDashboardModalProps {
   isOpen: boolean;
@@ -59,6 +62,8 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [stock, setStock] = useState('10');
+  const [location, setLocation] = useState<string>(currentUser?.city || vendor?.location || 'Accra');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -87,6 +92,7 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
     setUploadProgress(0);
     setIsUploadingImage(false);
     setStock('10');
+    setLocation(currentUser?.city || vendor?.location || 'Accra');
     setEditingProduct(null);
     setErrorMessage(null);
   };
@@ -100,6 +106,7 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
     setImageUrl(p.imageUrl);
     setImagePreviewUrl(p.imageUrl || null);
     setStock(String(p.stock));
+    setLocation(p.sellerLocation || p.location || currentUser?.city || vendor?.location || 'Accra');
     setActiveTab('add_product');
   };
 
@@ -152,7 +159,14 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
 
     const finalImage = imageUrl.trim() || defaultImages[category] || defaultImages['Everything'];
     const uid = auth.currentUser.uid;
-    const vendorName = vendor?.shopName || currentUser.businessName || currentUser.name || 'Verified OGYA Seller';
+    const vendorName = vendor?.shopName || currentUser.businessName || currentUser.name || 'OGYA Seller';
+    const resolvedLocation = location.trim() || vendor?.location || currentUser.city || 'Accra';
+    const isSellerVerified = Boolean(
+      currentUser.isSubscribedVerified ||
+        currentUser.isVerified ||
+        currentUser.ghanaCardStatus === 'verified' ||
+        vendor?.isVerified
+    );
 
     const productId = editingProduct ? editingProduct.id : `prod-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
 
@@ -167,6 +181,11 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
       sellerId: uid,
       vendorId: uid,
       vendorName,
+      location: resolvedLocation,
+      sellerLocation: resolvedLocation,
+      sellerPhone: vendor?.phone || currentUser.phone,
+      sellerWhatsapp: currentUser.whatsapp || currentUser.phone || vendor?.phone,
+      isVerified: isSellerVerified,
     };
 
     setIsSaving(true);
@@ -186,12 +205,13 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
   };
 
   const handleDeleteProduct = async (productId: string) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) return;
     try {
       await deleteProductFromFirestore(productId);
+      setDeletingId(null);
       onProductUpdated();
     } catch (err) {
       console.error(err);
+      setErrorMessage('Failed to delete product. Please try again.');
     }
   };
 
@@ -455,14 +475,33 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
                           <Edit3 size={13} />
                           <span>Edit</span>
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteProduct(p.id)}
-                          className="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <Trash2 size={13} />
-                          <span>Delete</span>
-                        </button>
+                        {deletingId === p.id ? (
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteProduct(p.id)}
+                              className="px-2.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black cursor-pointer"
+                            >
+                              Confirm Delete
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeletingId(null)}
+                              className="px-2 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setDeletingId(p.id)}
+                            className="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Trash2 size={13} />
+                            <span>Delete</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -646,6 +685,37 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
                     )}
                   </div>
                 </div>
+              </div>
+
+              {/* Shop / Product Location */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Shop / Seller Location *
+                </label>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {MODAL_LOCATIONS.map((loc) => (
+                    <button
+                      key={loc}
+                      type="button"
+                      onClick={() => setLocation(loc)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                        location === loc
+                          ? 'bg-[#FF6600] text-white border-[#FF6600]'
+                          : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {loc}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="e.g. Accra, Amasaman, Madina, Kasoa, Kumasi, Tema, Legon"
+                  className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-red-500"
+                />
               </div>
 
               {/* Description */}

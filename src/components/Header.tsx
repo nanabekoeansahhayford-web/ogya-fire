@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { UserProfile } from '../types/marketplace';
 import { isUserBuyer, isUserSeller } from '../utils/auth';
+import { PWAInstallButton } from './PWAInstallPrompt';
 
 const POPULAR_SUGGESTIONS = [
   'Jollof Rice',
@@ -168,18 +169,15 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={() => handleNavClick(onGoHome)}
           className="text-lg sm:text-xl md:text-2xl font-black tracking-tight text-slate-950 dark:text-white hover:opacity-90 transition-opacity whitespace-nowrap shrink-0 flex items-center gap-2 cursor-pointer text-left"
-          title="OGYA 🔥 - Shop Local in Accra - Fast Delivery"
+          title="OGYA (FIRE) - Ghana Marketplace"
         >
-          <span className="bg-gradient-to-tr from-[#00875A] via-emerald-600 to-[#FF6600] text-white w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center font-black text-base sm:text-lg shadow-sm">
+          <span className="bg-gradient-to-tr from-orange-600 via-[#FF6600] to-amber-500 text-white w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center font-black text-base sm:text-lg shadow-sm">
             🔥
           </span>
           <span className="tracking-tight flex items-center gap-1 sm:gap-1.5">
             <span className="text-slate-950 dark:text-white">OGYA</span>
             <span className="text-[#FF6600] text-xs sm:text-sm font-black tracking-wider uppercase">
-              FIRE
-            </span>
-            <span aria-hidden="true" className="text-base sm:text-xl">
-              🔥
+              (FIRE)
             </span>
           </span>
         </button>
@@ -220,7 +218,7 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={() => handleTriggerSearch(searchQuery)}
               className="m-1 px-3 py-1.5 bg-[#00875A] hover:bg-[#00704a] active:bg-[#005a3c] text-white font-black text-xs rounded-lg flex items-center gap-1 cursor-pointer shadow-xs transition-all shrink-0 active:scale-95"
-              title="Search OGYA FIRE"
+              title="Search OGYA (FIRE)"
             >
               <span>Search</span>
               <span className="text-[#FF6600]">🔥</span>
@@ -409,6 +407,9 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Zone 3: Global Theme Toggle + Cart + Auth Buttons / Profile + Primary CTA + Hamburger Toggle */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          <div className="hidden xl:flex items-center">
+            <PWAInstallButton />
+          </div>
           {/* Shopping Cart Button */}
           {onOpenCart && (
             <button
@@ -526,7 +527,7 @@ export const Header: React.FC<HeaderProps> = ({
               }
             }}
             className="hidden sm:inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 bg-[#00875A] hover:bg-[#00734c] text-white font-black text-xs sm:text-sm rounded-xl shadow-md hover:shadow-lg transition-all whitespace-nowrap shrink-0 cursor-pointer active:scale-98"
-            title="Post an ad or list product on OGYA 🔥"
+            title="Post an ad or list product on OGYA (FIRE) 🔥"
           >
             <Plus size={15} strokeWidth={2.5} />
             <span className="flex items-center gap-1">
@@ -737,7 +738,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="w-full py-3.5 px-4 bg-[#00875A] hover:bg-[#00734c] active:bg-[#005a3c] text-white font-black text-sm rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-98 transition-all min-h-[48px]"
           >
             <Plus size={18} strokeWidth={3} />
-            <span>Sell Product on OGYA 🔥</span>
+            <span>Sell Product on OGYA (FIRE) 🔥</span>
           </button>
 
           {/* All Navigation Links inside hamburger drawer */}
@@ -843,6 +844,20 @@ export const Header: React.FC<HeaderProps> = ({
                 <ChevronRight size={16} className="text-slate-400" />
               )}
             </button>
+
+            {onOpenVerifiedSubscription && (
+              <button
+                type="button"
+                onClick={() => handleNavClick(onOpenVerifiedSubscription)}
+                className="w-full flex items-center justify-between p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-black text-sm transition-colors text-left min-h-[44px]"
+              >
+                <div className="flex items-center gap-2.5">
+                  <ShieldCheck size={18} className="text-emerald-500" />
+                  <span>✅ Become Verified - GH₵50</span>
+                </div>
+                <ChevronRight size={16} className="text-emerald-500" />
+              </button>
+            )}
 
             {onOpenSettings && (
               <button

@@ -14,7 +14,7 @@ const PAGE_LINKS: {
   icon: React.ComponentType<{ size?: number; className?: string }>;
 }[] = [
   { id: 'privacy', label: 'Privacy Policy', icon: Lock },
-  { id: 'terms', label: 'Terms of Service', icon: FileText },
+  { id: 'terms', label: 'Terms of Use', icon: FileText },
   { id: 'escrow', label: 'Refund / Escrow Policy', icon: Scale },
   { id: 'safety', label: 'Safe Trading Guide', icon: ShieldCheck },
 ];
@@ -43,11 +43,11 @@ export const LegalPageView: React.FC<LegalPageViewProps> = ({
             onClick={onNavigateHome}
             className="flex items-center gap-2 cursor-pointer"
           >
-            <span className="bg-gradient-to-tr from-[#00875A] via-emerald-600 to-[#FF6600] text-white w-8 h-8 rounded-xl flex items-center justify-center font-black text-base shadow-sm">
+            <span className="bg-gradient-to-tr from-orange-600 via-[#FF6600] to-amber-500 text-white w-8 h-8 rounded-xl flex items-center justify-center font-black text-base shadow-sm">
               🔥
             </span>
             <span className="text-base sm:text-lg font-black tracking-tight text-slate-950 dark:text-white">
-              OGYA <span className="text-[#FF6600] text-xs font-extrabold uppercase">FIRE</span>
+              OGYA <span className="text-[#FF6600] text-xs font-black uppercase">(FIRE)</span>
             </span>
           </button>
         </div>
@@ -77,14 +77,14 @@ export const LegalPageView: React.FC<LegalPageViewProps> = ({
       </header>
 
       {/* Main Document Card */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-10 shadow-sm text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed space-y-6">
+      <main className="flex-1 max-w-4xl w-full mx-auto px-3 sm:px-6 py-5 sm:py-8 overflow-y-auto">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-8 shadow-sm text-sm text-slate-700 dark:text-slate-300 leading-relaxed space-y-6">
           <LegalDocumentContent activePage={page} onSelectPage={onSelectPage} />
         </div>
       </main>
 
       <footer className="border-t border-slate-200 dark:border-slate-800 py-6 text-center text-xs text-slate-500 dark:text-slate-400">
-        © {new Date().getFullYear()} OGYA Accra, Ghana · Verified Ghana Vendors &amp; Doorstep Escrow Protection
+        © 2026 OGYA (FIRE) · Verified Ghana Vendors &amp; Doorstep Escrow Protection
       </footer>
     </div>
   );

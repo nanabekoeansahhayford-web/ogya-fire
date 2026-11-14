@@ -1,26 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   X,
   ShoppingCart,
   ShieldCheck,
-  CheckCircle2,
-  AlertTriangle,
   Store,
-  Flame,
   Truck,
   Plus,
   Minus,
-  Phone,
   Flag,
+  MapPin,
+  Star,
+  MessageCircle,
 } from 'lucide-react';
-import { Product } from '../types/store';
+import { Product, Review } from '../types/store';
+import { isProductSellerVerified, getReviewSummary } from '../utils/marketplaceHelpers';
 
 interface ProductDetailModalProps {
   product: Product | null;
   isOpen: boolean;
   onClose: () => void;
   onAddToCart: (product: Product, quantity: number) => void;
+  onOrderWhatsApp?: (product: Product) => void;
   onReportProduct?: (product: Product) => void;
+  reviews?: Review[];
 }
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
@@ -28,14 +30,31 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   isOpen,
   onClose,
   onAddToCart,
+  onOrderWhatsApp,
   onReportProduct,
+  reviews = [],
 }) => {
   const [quantity, setQuantity] = useState(1);
+
+  const reviewSummary = useMemo(() => {
+    if (!product) {
+      return { avgRating: 0, count: 0, matchingReviews: [], hasRealReviews: false };
+    }
+    return getReviewSummary(reviews, {
+      productId: product.id,
+      sellerId: product.sellerId || product.vendorId,
+      sellerName: product.vendorName,
+      fallbackRating: product.rating || 4.9,
+      fallbackCount: product.reviewCount || 0,
+    });
+  }, [reviews, product]);
 
   if (!isOpen || !product) return null;
 
   const inStock = product.stock > 0;
   const maxQty = Math.max(1, product.stock);
+  const isVerified = isProductSellerVerified(product);
+  const displayLocation = product.sellerLocation || product.location || 'Accra, Ghana';
 
   const handleIncrement = () => {
     if (quantity < maxQty) {
@@ -56,11 +75,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-8 animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-4 sm:my-8 animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -85,20 +104,27 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <span className="px-2.5 py-1 rounded-lg bg-black/80 backdrop-blur-md text-[11px] font-black uppercase tracking-wider text-white">
                 {product.category}
               </span>
-              <span className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-[11px] font-black uppercase">
-                ✅ OGYA Verified
-              </span>
+              {isVerified && (
+                <span className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-[11px] font-black uppercase">
+                  ✅ VERIFIED
+                </span>
+              )}
             </div>
           </div>
 
           {/* Details & Purchase Column */}
-          <div className="p-6 flex flex-col justify-between">
+          <div className="p-5 sm:p-6 flex flex-col justify-between">
             <div className="space-y-3">
               {/* Vendor & Stock Status */}
-              <div className="flex items-center justify-between gap-2 text-xs">
+              <div className="flex items-center justify-between gap-2 text-xs flex-wrap">
                 <div className="flex items-center gap-1.5 font-bold text-slate-600 dark:text-slate-300">
                   <Store size={14} className="text-amber-500" />
                   <span>{product.vendorName}</span>
+                  {isVerified && (
+                    <span className="px-1.5 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-black">
+                      ✅ VERIFIED
+                    </span>
+                  )}
                 </div>
                 <span
                   className={`px-2 py-0.5 rounded-md font-bold text-[11px] ${
@@ -107,7 +133,22 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       : 'bg-rose-50 text-rose-700 border border-rose-200'
                   }`}
                 >
-                  {inStock ? `${product.stock} Available in Ghana` : 'Out of Stock'}
+                  {inStock ? `${product.stock} Available` : 'Out of Stock'}
+                </span>
+              </div>
+
+              {/* Location + Rating row */}
+              <div className="flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
+                <span className="flex items-center gap-1 font-semibold">
+                  <MapPin size={13} className="text-[#FF6600]" />
+                  <span>{displayLocation}</span>
+                </span>
+                <span className="flex items-center gap-1 font-bold text-slate-800 dark:text-amber-300">
+                  <Star size={13} className="fill-amber-400 text-amber-400" />
+                  <span>{reviewSummary.avgRating > 0 ? reviewSummary.avgRating.toFixed(1) : 'New'}</span>
+                  <span className="text-slate-400 font-normal">
+                    ({reviewSummary.count} {reviewSummary.count === 1 ? 'review' : 'reviews'})
+                  </span>
                 </span>
               </div>
 
@@ -117,12 +158,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </h3>
 
               {/* Price */}
-              <div className="p-3 bg-red-500/5 dark:bg-red-950/30 border border-red-500/20 rounded-2xl flex items-baseline justify-between">
+              <div className="p-3 bg-orange-500/10 dark:bg-orange-950/30 border border-orange-500/25 rounded-2xl flex items-baseline justify-between">
                 <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                     Price in Ghana Cedis
                   </span>
-                  <span className="text-2xl font-black text-red-600 dark:text-red-400">
+                  <span className="text-2xl font-black text-[#FF6600] dark:text-amber-400">
                     GH₵ {product.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
@@ -137,16 +178,34 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <span className="text-xs font-black uppercase tracking-wider text-slate-400 block">
                   Product Overview
                 </span>
-                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-h-36 overflow-y-auto">
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-h-28 overflow-y-auto">
                   {product.description}
                 </p>
               </div>
 
+              {/* Real Buyer Reviews Preview */}
+              {reviewSummary.matchingReviews.length > 0 && (
+                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 space-y-1.5 max-h-32 overflow-y-auto">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 block">
+                    Buyer Reviews ({reviewSummary.matchingReviews.length})
+                  </span>
+                  {reviewSummary.matchingReviews.slice(0, 3).map((rev) => (
+                    <div key={rev.id} className="text-[11px] border-t border-slate-200/70 dark:border-slate-700 pt-1 first:border-0 first:pt-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-bold text-slate-900 dark:text-white">{rev.buyerName}</span>
+                        <span className="text-amber-500 font-black">{'★'.repeat(rev.rating)}</span>
+                      </div>
+                      <p className="text-slate-600 dark:text-slate-300 leading-snug">{rev.comment}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Quick Perks */}
-              <div className="grid grid-cols-2 gap-2 pt-2 text-[11px] text-slate-600 dark:text-slate-400">
+              <div className="grid grid-cols-2 gap-2 pt-1 text-[11px] text-slate-600 dark:text-slate-400">
                 <div className="flex items-center gap-1.5">
                   <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
-                  <span>Verified Original</span>
+                  <span>Verified Quality</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Truck size={14} className="text-sky-600 shrink-0" />
@@ -155,10 +214,24 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
             </div>
 
-            {/* Bottom Actions: Quantity + Big Add to Cart */}
-            <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+            {/* Bottom Actions: Big Green Order on WhatsApp + Add to Cart */}
+            <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
+              {onOrderWhatsApp && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOrderWhatsApp(product);
+                  }}
+                  className="w-full py-3.5 px-4 rounded-xl bg-[#25D366] hover:bg-[#1ebe5d] active:scale-[0.99] text-slate-950 font-black text-sm shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all"
+                >
+                  <MessageCircle size={18} />
+                  <span>Order on WhatsApp</span>
+                </button>
+              )}
+
               {inStock && (
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between pt-1">
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                     Quantity:
                   </span>
@@ -190,9 +263,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 type="button"
                 disabled={!inStock}
                 onClick={handleAdd}
-                className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 hover:opacity-95 active:scale-[0.99] text-white font-black text-sm shadow-lg shadow-red-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#FF6600] to-amber-500 hover:opacity-95 active:scale-[0.99] text-slate-950 font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <ShoppingCart size={18} />
+                <ShoppingCart size={16} />
                 <span>
                   {inStock
                     ? `Add ${quantity} to Cart (GH₵ ${(product.price * quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })})`
@@ -217,3 +290,4 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     </div>
   );
 };
+

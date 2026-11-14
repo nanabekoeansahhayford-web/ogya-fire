@@ -30,7 +30,7 @@ export const BuyersWantFeed: React.FC<BuyersWantFeedProps> = ({
 
   const getWhatsAppLink = (item: WantedItem) => {
     const cleanNumber = item.whatsapp.replace(/[^0-9]/g, '');
-    const message = `Hello! I saw your request on OGYA FIRE that you want "${item.item}" with a budget of GH₵ ${item.budget.toLocaleString()}. I have this available. Are you ready to deal?`;
+    const message = `Hello! I saw your request on OGYA (FIRE) that you want "${item.item}" with a budget of GH₵ ${item.budget.toLocaleString()}. I have this available. Are you ready to deal?`;
     return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`;
   };
 

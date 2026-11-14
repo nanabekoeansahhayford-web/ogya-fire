@@ -33,8 +33,10 @@ import {
   Maximize2,
   ZoomIn,
   ShoppingCart,
+  Star,
 } from 'lucide-react';
 import { Listing, SellerInfo } from '../types/marketplace';
+import { Review } from '../types/store';
 import { formatPrice, getListingReport, AdReportRecord, getStoredListings } from '../utils/storage';
 import { CategoryIcon } from './CategoryIcon';
 import { PriceTrendChart } from './PriceTrendChart';
@@ -52,6 +54,7 @@ import {
   generateGhanaCallUrl,
   recordWhatsAppClick,
 } from '../utils/whatsapp';
+import { isListingSellerVerified, getReviewSummary } from '../utils/marketplaceHelpers';
 
 interface ListingDetailModalProps {
   listing: Listing | null;
@@ -69,6 +72,8 @@ interface ListingDetailModalProps {
   allListings?: Listing[];
   onSelectListing?: (listing: Listing) => void;
   onAddToCart?: (listing: Listing) => void;
+  onOrderWhatsApp?: (listing: Listing) => void;
+  reviews?: Review[];
 }
 
 export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
@@ -87,6 +92,8 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
   allListings,
   onSelectListing,
   onAddToCart,
+  onOrderWhatsApp,
+  reviews = [],
 }) => {
   const [showPhone, setShowPhone] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
@@ -248,6 +255,20 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
       });
   };
 
+  const reviewSummary = React.useMemo(() => {
+    if (!listing) {
+      return { avgRating: 0, count: 0, matchingReviews: [], hasRealReviews: false };
+    }
+    return getReviewSummary(reviews, {
+      listingId: listing.id,
+      productId: listing.id,
+      sellerId: listing.sellerId || listing.userId,
+      sellerName: listing.seller?.name,
+      fallbackRating: listing.seller?.rating || 4.8,
+      fallbackCount: listing.seller?.reviewCount || 0,
+    });
+  }, [reviews, listing]);
+
   if (!isOpen || !listing) return null;
 
   const isCV = listing.categoryId === 'seeking-work-cvs';
@@ -256,6 +277,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
   const reputation = getSellerReputation(listing.seller);
 
   // Trust & MoMo Verification
+  const isVerifiedBadge = isListingSellerVerified(listing);
   const isMoMoVerified = Boolean(
     listing.seller?.momoVerified ||
     listing.seller?.momoStatus === 'verified' ||
@@ -391,6 +413,10 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
 
   const handleWhatsApp = () => {
     recordWhatsAppClick(listing.id);
+    if (onOrderWhatsApp) {
+      onOrderWhatsApp(listing);
+      return;
+    }
     const isDaniel = listing.seller?.name?.includes('Daniel Arnan Aboagye') || listing.id?.startsWith('daniel-');
     const targetUrl = isDaniel
       ? 'https://wa.me/233549769720?text=Hello%20Daniel%20I%20saw%20your%20accessories%20on%20OGYA%20FIRE'
@@ -850,6 +876,39 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                 />
               </div>
 
+              {/* Buyer Reviews & Ratings */}
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="text-sm font-black text-slate-950 dark:text-white flex items-center gap-1.5">
+                    <Star size={15} className="text-amber-500 fill-amber-500" />
+                    <span>Customer Reviews ({reviewSummary.count})</span>
+                  </h4>
+                  <div className="flex items-center gap-1 text-xs font-black text-amber-600 dark:text-amber-400">
+                    <span>★ {reviewSummary.avgRating.toFixed(1)}</span>
+                    <span className="text-slate-400 font-normal">/ 5.0</span>
+                  </div>
+                </div>
+                {reviewSummary.matchingReviews.length === 0 ? (
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    No buyer reviews written yet. Order on WhatsApp &amp; leave a verified review once delivered!
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {reviewSummary.matchingReviews.slice(0, 6).map((rev) => (
+                      <div key={rev.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70 dark:border-slate-700/70 text-xs">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="font-bold text-slate-900 dark:text-white">{rev.buyerName}</span>
+                          <span className="text-amber-500 font-bold">
+                            {'★'.repeat(Math.max(1, Math.min(5, rev.rating)))}
+                          </span>
+                        </div>
+                        <p className="text-slate-700 dark:text-slate-300">{rev.comment}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Safe Trade Advisory */}
               <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-900/50 rounded-xl p-4 flex flex-col gap-2.5 text-xs text-emerald-950 dark:text-emerald-200">
                 <div className="flex items-start gap-3">
@@ -1075,8 +1134,8 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                       <ChevronRight size={15} className="text-slate-400 group-hover:text-amber-600 dark:group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all" />
                     </button>
                     <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex-wrap">
-                      <span className="font-semibold text-slate-800 dark:text-slate-200">★ {listing.seller.rating.toFixed(1)}</span>
-                      <span>({listing.seller.reviewCount} reviews)</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">★ {reviewSummary.avgRating.toFixed(1)}</span>
+                      <span>({reviewSummary.count} reviews)</span>
                       <span>·</span>
                       <span className="font-bold text-emerald-700 dark:text-emerald-400">{salesCount} sales</span>
                       <span>·</span>
@@ -1085,10 +1144,10 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                   </div>
 
                   <div className="flex flex-col items-end gap-1.5 shrink-0">
-                    {isMoMoVerified && (
-                      <span className="flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/90 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shadow-2xs" title="MoMo KYC Verified (Phone & legal identity confirmed on Mobile Money)">
+                    {(isVerifiedBadge || isMoMoVerified) && (
+                      <span className="flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-md bg-emerald-600 text-white border border-emerald-500 shadow-2xs" title="Verified OGYA Seller">
                         <span>✅</span>
-                        <span>MoMo Verified</span>
+                        <span>VERIFIED</span>
                       </span>
                     )}
                     {isTrustedSeller && (
@@ -1097,7 +1156,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                         <span>Trusted Seller</span>
                       </span>
                     )}
-                    {(listing.seller.isSubscribedVerified || listing.seller.isVerified || listing.seller.ghanaCardVerified) && !isMoMoVerified && (
+                    {(listing.seller.isSubscribedVerified || listing.seller.isVerified || listing.seller.ghanaCardVerified) && !isMoMoVerified && !isVerifiedBadge && (
                       <span className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-md border shadow-2xs ${
                         listing.seller.isSubscribedVerified
                           ? 'text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/70 border-amber-300 dark:border-amber-700/80'
@@ -1140,16 +1199,27 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
 
                 {/* Primary Action Buttons */}
                 <div className="space-y-2.5">
+                  {/* Order on WhatsApp (Primary Big Green CTA) */}
+                  <button
+                    type="button"
+                    onClick={handleWhatsApp}
+                    className="w-full py-3.5 px-4 bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-slate-950 font-black text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2.5 cursor-pointer border border-[#20ba59] group"
+                    title={`Order ${listing.title} on WhatsApp`}
+                  >
+                    <MessageCircle size={19} className="fill-current shrink-0 group-hover:scale-110 transition-transform" />
+                    <span>{isCV || isJob ? 'Contact Seller on WhatsApp' : 'Order on WhatsApp'}</span>
+                  </button>
+
                   {/* Small items: Add to Cart & Pay with Paystack MoMo button */}
                   {!isBigItem && listing.categoryId !== 'seeking-work-cvs' && listing.categoryId !== 'jobs' && !isSold && (
                     <button
                       type="button"
                       onClick={() => onAddToCart?.(listing)}
-                      className="w-full py-3.5 px-4 bg-[#FF6600] hover:bg-[#e65c00] active:scale-98 text-white font-black text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2.5 cursor-pointer border border-orange-500 hover:shadow-lg group"
-                      title="Add to Cart and Pay with Paystack MoMo or Cash on Delivery"
+                      className="w-full py-3 px-4 bg-[#FF6600] hover:bg-[#e65c00] active:scale-98 text-white font-black text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2.5 cursor-pointer border border-orange-500 hover:shadow-lg group"
+                      title="Add to Cart and Pay with MoMo or Cash on Delivery"
                     >
-                      <ShoppingCart size={19} className="shrink-0 group-hover:scale-110 transition-transform" />
-                      <span>Add to Cart (Pay with Paystack MoMo)</span>
+                      <ShoppingCart size={18} className="shrink-0 group-hover:scale-110 transition-transform" />
+                      <span>Add to Cart (MoMo / COD)</span>
                     </button>
                   )}
 
@@ -1165,17 +1235,6 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                       </p>
                     </div>
                   )}
-
-                  {/* WhatsApp Direct Chat */}
-                  <button
-                    type="button"
-                    onClick={handleWhatsApp}
-                    className="w-full py-3.5 px-4 bg-[#25D366] hover:bg-[#20ba59] active:bg-[#1da850] text-white font-extrabold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2.5 cursor-pointer border border-[#20ba59] group"
-                    title={`Chat Seller on WhatsApp: wa.me/${(listing.seller.whatsapp || listing.seller.phone).replace(/[^0-9]/g, '')}`}
-                  >
-                    <MessageCircle size={19} className="fill-current text-white shrink-0 group-hover:scale-110 transition-transform" />
-                    <span>{isBigItem ? 'Contact Seller on WhatsApp' : 'Chat Seller on WhatsApp'}</span>
-                  </button>
 
                   {/* Ghana Door-to-Door Courier Dispatch Button (for small/medium deliverable items) */}
                   {!isBigItem && listing.categoryId !== 'seeking-work-cvs' && listing.categoryId !== 'jobs' && (

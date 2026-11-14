@@ -51,9 +51,10 @@ import { updateListingStatusInFirestore, fetchOrdersByUserId, subscribeToOrdersB
 import { REGIONS } from '../data/categories';
 import { getSellerReputation, BADGE_DEFINITIONS } from '../utils/reputation';
 import { ReputationBadge } from './ReputationBadge';
-import { Order, CartItem, OrderStatus } from '../types/store';
-import { getLocalPlacedOrders, addToCart } from '../utils/cartStorage';
+import { Order, CartItem, OrderStatus, Review, normalizeOrderStatus } from '../types/store';
+import { getLocalPlacedOrders, addToCart, updateLocalOrder } from '../utils/cartStorage';
 import type { LegalPageId } from './LegalPagesModal';
+import { OrderPipelineAndReview } from './OrderPipelineAndReview';
 import mamaEfuaImg from '../assets/images/food_mama_efua_jollof_1793886043512.jpg';
 import accraGrillImg from '../assets/images/food_accra_grill_tilapia_1793886043887.jpg';
 import auntieMuniImg from '../assets/images/food_auntie_muni_waakye_1793886045717.jpg';
@@ -217,6 +218,7 @@ interface UserProfileModalProps {
   onOpenCart?: () => void;
   onOpenLegalPage?: (page: LegalPageId) => void;
   onAccountDeleted?: (deletedUserId: string) => void;
+  onReviewCreated?: (review: Review) => void;
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({
@@ -236,6 +238,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   onOpenCart,
   onOpenLegalPage,
   onAccountDeleted,
+  onReviewCreated,
 }) => {
   const [activeTab, setActiveTab] = useState<'profile' | 'my-ads' | 'orders' | 'reputation' | 'settings' | 'security'>(
     initialTab === 'security' ? 'settings' : (initialTab || 'profile')
@@ -411,10 +414,11 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const filteredOrders = useMemo(() => {
     return orders.filter((o) => {
       const isFood = isFoodOrder(o);
+      const canonical = normalizeOrderStatus(o.status);
       if (ordersFilter === 'food' && !isFood) return false;
       if (ordersFilter === 'products' && isFood) return false;
-      if (ordersFilter === 'pending' && o.status !== 'pending' && o.status !== 'pending_payment') return false;
-      if (ordersFilter === 'delivered' && o.status !== 'delivered' && o.status !== 'paid') return false;
+      if (ordersFilter === 'pending' && canonical !== 'Pending' && canonical !== 'Confirmed' && canonical !== 'On Delivery') return false;
+      if (ordersFilter === 'delivered' && canonical !== 'Delivered') return false;
 
       if (orderSearchQuery.trim()) {
         const q = orderSearchQuery.toLowerCase();
@@ -568,9 +572,9 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   };
 
   const renderOrderStatusBadge = (status: OrderStatus | string) => {
-    const norm = String(status).toLowerCase();
+    const canonical = normalizeOrderStatus(status);
 
-    if (norm === 'delivered') {
+    if (canonical === 'Delivered') {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 shadow-2xs">
           <CheckCircle2 size={12} className="text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
@@ -579,54 +583,36 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       );
     }
 
-    if (norm === 'shipped') {
+    if (canonical === 'On Delivery') {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-300 dark:border-blue-800 shadow-2xs">
           <Truck size={12} className="text-blue-600 dark:text-blue-400" />
-          <span>In Transit</span>
+          <span>On Delivery</span>
         </span>
       );
     }
 
-    if (norm === 'paid') {
+    if (canonical === 'Confirmed') {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 shadow-2xs">
-          <CheckCircle2 size={12} className="text-emerald-600 dark:text-emerald-400" />
-          <span>Paid</span>
-        </span>
-      );
-    }
-
-    if (norm === 'pending_payment') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-800 shadow-2xs">
-          <Clock size={12} className="text-amber-600 animate-spin" />
-          <span>Pending Payment</span>
-        </span>
-      );
-    }
-
-    if (norm === 'pending') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-800 shadow-2xs">
-          <Clock size={12} className="text-amber-600" />
-          <span>Pending Delivery</span>
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-orange-100 text-[#FF6600] dark:bg-orange-950/80 dark:text-orange-300 border border-orange-300 dark:border-orange-800 shadow-2xs">
+          <CheckCircle2 size={12} className="text-[#FF6600]" />
+          <span>Confirmed</span>
         </span>
       );
     }
 
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700 shadow-2xs">
-        <Clock size={12} />
-        <span className="capitalize">{status}</span>
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-800 shadow-2xs">
+        <Clock size={12} className="text-amber-600" />
+        <span>Pending</span>
       </span>
     );
   };
 
   const foodOrdersCount = orders.filter(isFoodOrder).length;
   const productOrdersCount = orders.filter((o) => !isFoodOrder(o)).length;
-  const deliveredOrdersCount = orders.filter((o) => o.status === 'delivered' || o.status === 'paid').length;
-  const pendingOrdersCount = orders.filter((o) => o.status === 'pending' || o.status === 'pending_payment').length;
+  const deliveredOrdersCount = orders.filter((o) => normalizeOrderStatus(o.status) === 'Delivered').length;
+  const pendingOrdersCount = orders.filter((o) => normalizeOrderStatus(o.status) !== 'Delivered' && normalizeOrderStatus(o.status) !== 'Cancelled').length;
 
   return (
     <div
@@ -1305,6 +1291,20 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                                   </span>
                                 </div>
                               </div>
+
+                              {/* Interactive Order Pipeline, MoMo Proof Upload & Post-Delivery Star Review */}
+                              <OrderPipelineAndReview
+                                order={order}
+                                currentUserId={user.id}
+                                currentUserName={user.name}
+                                onOrderUpdated={(orderId, updates) => {
+                                  updateLocalOrder(orderId, updates);
+                                  setOrders((prev) =>
+                                    prev.map((item) => (item.id === orderId ? { ...item, ...updates } : item))
+                                  );
+                                }}
+                                onReviewCreated={onReviewCreated}
+                              />
                             </div>
                           )}
 
@@ -1728,7 +1728,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       <FileText size={15} className="text-amber-500 shrink-0" />
                       <div className="min-w-0">
                         <div className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 truncate">
-                          Terms of Service
+                          Terms of Use
                         </div>
                         <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
                           Marketplace rules &amp; seller obligations

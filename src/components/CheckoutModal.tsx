@@ -558,7 +558,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   Sign In Required to Complete Order
                 </h4>
                 <p className="text-xs text-slate-600 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-                  You can browse OGYA FIRE freely as a guest, and your cart ({cart.length} {cart.length === 1 ? 'item' : 'items'} · <strong className="text-red-600 dark:text-red-400">GHS {total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong>) is saved. Sign in quickly with Google, Email, or Phone OTP to place your order securely.
+                  You can browse OGYA (FIRE) freely as a guest, and your cart ({cart.length} {cart.length === 1 ? 'item' : 'items'} · <strong className="text-red-600 dark:text-red-400">GHS {total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong>) is saved. Sign in quickly with Google, Email, or Phone OTP to place your order securely.
                 </p>
               </div>
 

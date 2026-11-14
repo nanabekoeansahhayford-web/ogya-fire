@@ -297,7 +297,7 @@ export const BoostAdModal: React.FC<BoostAdModalProps> = ({
                       Secured
                     </span>
                   </div>
-                  <span className="text-[10px] text-slate-400">Merchant: OGYA FIRE Classifieds</span>
+                  <span className="text-[10px] text-slate-400">Merchant: OGYA (FIRE) Classifieds</span>
                 </div>
               </div>
 
@@ -489,7 +489,7 @@ export const BoostAdModal: React.FC<BoostAdModalProps> = ({
                     <div className="p-2.5 bg-white dark:bg-slate-900 rounded-lg font-mono text-[11px] text-slate-600 dark:text-slate-300">
                       Bank: Paystack Titan / GCB Ghana<br />
                       Account: 9920148912<br />
-                      Beneficiary: OGYA FIRE Boost Services
+                      Beneficiary: OGYA (FIRE) Boost Services
                     </div>
                   </div>
                 )}

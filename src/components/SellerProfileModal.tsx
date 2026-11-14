@@ -23,11 +23,13 @@ import {
   Flag,
 } from 'lucide-react';
 import { Listing, SellerInfo, SellerBadgeId } from '../types/marketplace';
+import { Review } from '../types/store';
 import { ListingCard } from './ListingCard';
 import { getSellerReputation, computeSellerResponseMetrics, BadgeStyleConfig } from '../utils/reputation';
 import { ReputationBadge } from './ReputationBadge';
 import { ReputationDetailsModal } from './ReputationDetailsModal';
 import { generateGhanaWhatsAppUrl, generateGhanaCallUrl } from '../utils/whatsapp';
+import { getReviewSummary } from '../utils/marketplaceHelpers';
 
 interface SellerProfileModalProps {
   seller: SellerInfo | null;
@@ -42,6 +44,9 @@ interface SellerProfileModalProps {
   onOpenChatWithSeller?: (listing: Listing) => void;
   onReportListing?: (listing: Listing, e?: React.MouseEvent) => void;
   onReportSeller?: (seller: SellerInfo, sampleListing?: Listing) => void;
+  onOrderWhatsApp?: (listing: Listing) => void;
+  onOpenBecomeVerified?: () => void;
+  reviews?: Review[];
 }
 
 export const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
@@ -57,11 +62,25 @@ export const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
   onOpenChatWithSeller,
   onReportListing,
   onReportSeller,
+  onOrderWhatsApp,
+  onOpenBecomeVerified,
+  reviews = [],
 }) => {
   const [showPhone, setShowPhone] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [isReputationModalOpen, setIsReputationModalOpen] = useState(false);
   const [activeBadgeId, setActiveBadgeId] = useState<string | null>(null);
+
+  const reviewSummary = React.useMemo(() => {
+    if (!seller) {
+      return { avgRating: 0, count: 0, matchingReviews: [], hasRealReviews: false };
+    }
+    return getReviewSummary(reviews, {
+      sellerName: seller.name,
+      fallbackRating: seller.rating || 4.8,
+      fallbackCount: seller.reviewCount || 0,
+    });
+  }, [reviews, seller]);
 
   if (!isOpen || !seller) return null;
 
@@ -164,22 +183,29 @@ export const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
                       <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
                         {seller.name}
                       </h2>
-                      {isMoMoVerified && (
-                        <span className="text-xs font-black text-emerald-300 bg-emerald-950/90 border border-emerald-600 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs" title="MoMo KYC Verified: Official MTN / Telecel account verified">
+                      {(isMoMoVerified || seller.isVerified || seller.isSubscribedVerified || seller.ghanaCardVerified) ? (
+                        <span className="text-xs font-black text-white bg-emerald-600 border border-emerald-400 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs" title="Verified OGYA Seller">
                           <span>✅</span>
-                          <span>MoMo Verified</span>
+                          <span>VERIFIED</span>
                         </span>
+                      ) : (
+                        onOpenBecomeVerified && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onClose();
+                              onOpenBecomeVerified();
+                            }}
+                            className="text-xs font-black text-slate-950 bg-amber-400 hover:bg-amber-300 px-2.5 py-0.5 rounded-full cursor-pointer transition-colors"
+                          >
+                            Become Verified - GH₵50
+                          </button>
+                        )
                       )}
                       {isTrustedSeller && (
                         <span className="text-xs font-black text-amber-300 bg-amber-950/90 border border-amber-500 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs" title={`⭐ Trusted Seller: Over ${salesCount} successful transactions on OGYA`}>
                           <span>⭐</span>
                           <span>Trusted Seller</span>
-                        </span>
-                      )}
-                      {(seller.isVerified || seller.ghanaCardVerified) && (
-                        <span className="text-xs font-black text-emerald-300 bg-emerald-950/80 border border-emerald-700 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
-                          <ShieldCheck size={13} className="text-emerald-400" />
-                          <span>🇬🇭 Ghana Card Verified</span>
                         </span>
                       )}
                       <span className="text-xs font-bold text-amber-400 bg-amber-950/70 border border-amber-800/80 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
@@ -297,13 +323,13 @@ export const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
                     <div className="flex items-center gap-1.5">
                       <Star size={18} className="text-amber-400 fill-amber-400 shrink-0" />
                       <span className="text-lg font-black text-white tabular-nums">
-                        {seller.rating.toFixed(1)}
+                        {reviewSummary.avgRating.toFixed(1)}
                       </span>
                       <span className="text-xs text-slate-400 font-normal">/ 5.0</span>
                     </div>
                   </div>
                   <span className="text-[10px] text-slate-400 mt-2 block">
-                    Based on {seller.reviewCount} customer reviews
+                    Based on {reviewSummary.count} buyer reviews
                   </span>
                 </div>
 
@@ -684,41 +710,55 @@ export const SellerProfileModal: React.FC<SellerProfileModalProps> = ({
                     hasPriceAlert={priceAlerts.includes(listing.id)}
                     onTogglePriceAlert={onTogglePriceAlert}
                     onReportListing={onReportListing}
+                    onOrderWhatsApp={(item) => {
+                      onClose();
+                      onOrderWhatsApp?.(item);
+                    }}
+                    reviews={reviews}
                   />
                 ))}
               </div>
             )}
           </div>
 
-          {/* Verified Customer Feedback Highlights */}
+          {/* Real Buyer Reviews Section */}
           <div className="bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
-              <Star size={14} className="text-amber-500 fill-amber-500" />
-              <span>Verified Customer Feedback</span>
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-              <div className="p-3.5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700 shadow-2xs">
-                <div className="flex items-center gap-1 text-amber-500 mb-1.5">
-                  {'★'.repeat(5)}
-                  <span className="text-slate-400 dark:text-slate-400 text-[10px] ml-1">· Verified Purchase</span>
-                </div>
-                <p className="text-slate-700 dark:text-slate-300 italic">
-                  "Smooth transaction and prompt inspection. Seller met at an agreed bank parking lot in Airport Residential. Genuine item with receipt."
-                </p>
-                <span className="text-[11px] font-bold text-slate-900 dark:text-slate-100 block mt-2">— Kofi A., Accra</span>
-              </div>
-
-              <div className="p-3.5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700 shadow-2xs">
-                <div className="flex items-center gap-1 text-amber-500 mb-1.5">
-                  {'★'.repeat(5)}
-                  <span className="text-slate-400 dark:text-slate-400 text-[10px] ml-1">· Verified Inquiry</span>
-                </div>
-                <p className="text-slate-700 dark:text-slate-300 italic">
-                  "Replies within minutes on WhatsApp and on OGYA chat. Helpful details on vehicle documentation and custom clearing."
-                </p>
-                <span className="text-[11px] font-bold text-slate-900 dark:text-slate-100 block mt-2">— Emmanuel O., Kumasi</span>
-              </div>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                <Star size={14} className="text-amber-500 fill-amber-500" />
+                <span>Verified Buyer Reviews ({reviewSummary.count})</span>
+              </h4>
+              <span className="text-xs font-black text-amber-600 dark:text-amber-400">
+                Average: ★ {reviewSummary.avgRating.toFixed(1)} / 5.0
+              </span>
             </div>
+
+            {reviewSummary.matchingReviews.length === 0 ? (
+              <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 text-center">
+                No written reviews yet for {seller.name}. Once a buyer&apos;s order is marked as <strong>Delivered</strong>, their rating &amp; comment appear here.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                {reviewSummary.matchingReviews.map((rev) => (
+                  <div key={rev.id} className="p-3.5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700 shadow-2xs">
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <div className="text-amber-500 font-bold">
+                        {'★'.repeat(Math.max(1, Math.min(5, rev.rating)))}
+                      </div>
+                      <span className="text-slate-400 text-[10px]">
+                        {rev.createdAt ? new Date(rev.createdAt).toLocaleDateString('en-GB') : 'Verified Order'}
+                      </span>
+                    </div>
+                    <p className="text-slate-700 dark:text-slate-300 italic">
+                      "{rev.comment}"
+                    </p>
+                    <span className="text-[11px] font-bold text-slate-900 dark:text-slate-100 block mt-2">
+                      — {rev.buyerName}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           </div>
         </div>

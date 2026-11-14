@@ -13,16 +13,18 @@ import {
   ChevronUp,
   RefreshCw,
 } from 'lucide-react';
-import { Order, OrderStatus } from '../types/store';
+import { Order, OrderStatus, Review, normalizeOrderStatus } from '../types/store';
 import { fetchOrdersByUserId, subscribeToOrdersByUserId, updateOrderStatusInFirestore } from '../utils/firebase';
-import { getLocalPlacedOrders } from '../utils/cartStorage';
+import { getLocalPlacedOrders, updateLocalOrder } from '../utils/cartStorage';
 import { UserProfile } from '../types/marketplace';
+import { OrderPipelineAndReview } from './OrderPipelineAndReview';
 
 interface MyOrdersModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser: UserProfile | null;
   onOpenStore: () => void;
+  onReviewCreated?: (review: Review) => void;
 }
 
 export const MyOrdersModal: React.FC<MyOrdersModalProps> = ({
@@ -30,6 +32,7 @@ export const MyOrdersModal: React.FC<MyOrdersModalProps> = ({
   onClose,
   currentUser,
   onOpenStore,
+  onReviewCreated,
 }) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -98,66 +101,56 @@ export const MyOrdersModal: React.FC<MyOrdersModalProps> = ({
     }
   };
 
+  const handleOrderUpdated = (orderId: string, updates: Partial<Order>) => {
+    updateLocalOrder(orderId, updates);
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, ...updates } : o)));
+  };
+
   // Helper to get formatted payment status text
   const getPaymentStatusText = (order: Order): string => {
+    const canonical = normalizeOrderStatus(order.status);
+    if (order.proofUrl) return 'MoMo Proof Uploaded';
     if (order.status === 'paid') return 'Paid';
+    if (canonical === 'Delivered') return 'Delivered';
     if (order.paymentMethod === 'Cash on Delivery') return 'Pay on Delivery';
     if (order.status === 'pending_payment') return 'Pending Payment';
-    return order.status;
+    return canonical;
   };
 
   const getStatusBadge = (order: Order) => {
-    const { status, paymentMethod } = order;
+    const canonical = normalizeOrderStatus(order.status);
 
-    if (status === 'paid') {
+    if (canonical === 'Delivered') {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-          <CheckCircle2 size={12} />
-          <span>Paid</span>
-        </span>
-      );
-    }
-
-    if (paymentMethod === 'Cash on Delivery' || status === 'pending') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
-          <Banknote size={12} />
-          <span>Pay on Delivery</span>
-        </span>
-      );
-    }
-
-    if (status === 'pending_payment') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
-          <Clock size={12} className="animate-spin" />
-          <span>Pending Payment</span>
-        </span>
-      );
-    }
-
-    if (status === 'shipped') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800">
-          <Truck size={12} />
-          <span>Shipped</span>
-        </span>
-      );
-    }
-
-    if (status === 'delivered') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-800">
           <PackageCheck size={12} />
           <span>Delivered</span>
         </span>
       );
     }
 
+    if (canonical === 'On Delivery') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800">
+          <Truck size={12} />
+          <span>On Delivery</span>
+        </span>
+      );
+    }
+
+    if (canonical === 'Confirmed') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-orange-100 dark:bg-orange-950/60 text-[#FF6600] border border-orange-300 dark:border-orange-800">
+          <CheckCircle2 size={12} />
+          <span>Confirmed</span>
+        </span>
+      );
+    }
+
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
         <Clock size={12} />
-        <span>{status}</span>
+        <span>Pending</span>
       </span>
     );
   };
@@ -174,17 +167,17 @@ export const MyOrdersModal: React.FC<MyOrdersModalProps> = ({
         aria-label="My Orders"
       >
         {/* Header */}
-        <div className="p-4 sm:p-6 bg-gradient-to-r from-red-600 via-orange-600 to-amber-600 text-white flex items-center justify-between gap-3">
+        <div className="p-4 sm:p-6 bg-gradient-to-r from-slate-950 via-slate-900 to-orange-950 text-white border-b border-orange-500/40 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-[#FF6600] text-white flex items-center justify-center shrink-0">
               <PackageCheck size={20} />
             </div>
             <div>
               <h3 className="text-xl font-black tracking-tight leading-tight">
                 My Orders
               </h3>
-              <p className="text-xs text-white/90">
-                Track your deliveries & Mobile Money payments in Ghana
+              <p className="text-xs text-amber-300">
+                Track status (Pending → Confirmed → On Delivery → Delivered), upload MoMo proof &amp; leave reviews
               </p>
             </div>
           </div>
@@ -361,6 +354,15 @@ export const MyOrdersModal: React.FC<MyOrdersModalProps> = ({
                           </span>
                         </div>
                       </div>
+
+                      {/* Interactive 4-Step Pipeline + MoMo Proof Upload + Post-Delivery 1-5 Star Review */}
+                      <OrderPipelineAndReview
+                        order={order}
+                        currentUserId={currentUser?.id}
+                        currentUserName={currentUser?.name}
+                        onOrderUpdated={handleOrderUpdated}
+                        onReviewCreated={onReviewCreated}
+                      />
 
                       {/* If still pending MoMo payment, offer instant prompt approval */}
                       {isPendingPayment && (

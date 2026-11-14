@@ -32,6 +32,10 @@ import {
   Lock,
   LogIn,
   Upload,
+  BadgeCheck,
+  ExternalLink,
+  Receipt,
+  MessageCircle,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -44,7 +48,16 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
 } from 'recharts';
-import { Product, ProductCategory, PRODUCT_CATEGORIES, Order, OrderStatus, Vendor, normalizeProductCategory } from '../types/store';
+import {
+  Product,
+  ProductCategory,
+  PRODUCT_CATEGORIES,
+  Order,
+  OrderStatus,
+  Vendor,
+  normalizeProductCategory,
+  normalizeOrderStatus,
+} from '../types/store';
 import { UserProfile } from '../types/marketplace';
 import {
   auth,
@@ -61,6 +74,8 @@ import {
   getExactDuplicateProductIds,
 } from '../utils/firebase';
 import { uploadImageToCloudinary } from '../utils/imageUpload';
+import { HOME_LOCATIONS } from '../utils/marketplaceHelpers';
+import { generateOrderStatusWhatsAppUrl } from '../utils/whatsapp';
 import vendorStoreShowcaseImg from '../assets/images/vendor_store_showcase_1793870144741.jpg';
 
 interface VendorDashboardPageProps {
@@ -68,13 +83,17 @@ interface VendorDashboardPageProps {
   vendor: Vendor | null;
   onNavigateHome: () => void;
   onOpenAuth: (mode?: 'signin' | 'register', defaultRole?: 'buyer' | 'seller') => void;
+  onOpenBecomeVerified?: () => void;
 }
+
+const VENDOR_LOCATIONS = HOME_LOCATIONS.filter((l) => l !== 'All');
 
 export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
   currentUser,
   vendor,
   onNavigateHome,
   onOpenAuth,
+  onOpenBecomeVerified,
 }) => {
   const activeUid = auth.currentUser?.uid || currentUser?.id || '';
   const selectedVendorId = activeUid;
@@ -97,6 +116,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
   const [stock, setStock] = useState('15');
   const [category, setCategory] = useState<string>('');
+  const [productLocation, setProductLocation] = useState<string>(currentUser?.city || 'Accra');
   const [description, setDescription] = useState('');
   const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -104,8 +124,15 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
   const [isClearingTestData, setIsClearingTestData] = useState(false);
   const [adminCleanupResult, setAdminCleanupResult] = useState<string | null>(null);
 
-  // Status update loading state per order ID
+  // Status update loading state & WhatsApp notification banner
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
+  const [statusNotifyLink, setStatusNotifyLink] = useState<{
+    orderId: string;
+    status: string;
+    url: string;
+    buyerName: string;
+  } | null>(null);
 
   // Order search & filter
   const [orderSearch, setOrderSearch] = useState('');
@@ -166,6 +193,13 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
 
   const [chartMetric, setChartMetric] = useState<'sales' | 'orders'>('sales');
 
+  const isSellerVerified = Boolean(
+    currentUser?.isSubscribedVerified ||
+      currentUser?.isVerified ||
+      currentUser?.ghanaCardStatus === 'verified' ||
+      vendor?.isVerified
+  );
+
   // Vendor display info
   const vendorInfo = useMemo(() => {
     if (vendor && vendor.id === selectedVendorId) {
@@ -177,7 +211,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
         logoUrl: vendor.logoUrl || vendorStoreShowcaseImg,
         rating: vendor.rating || 4.9,
         ratingCount: vendor.ratingCount || 148,
-        isVerified: true,
+        isVerified: isSellerVerified,
         dispatchSpeed: '1–2 hr Fast Delivery in Accra',
       };
     }
@@ -190,48 +224,22 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
         logoUrl: currentUser.avatarUrl || vendorStoreShowcaseImg,
         rating: 4.9,
         ratingCount: 86,
-        isVerified: true,
+        isVerified: isSellerVerified,
         dispatchSpeed: 'Same-day Courier Dispatch',
-      };
-    }
-    if (selectedVendorId === 'vnd-ogya-central') {
-      return {
-        id: 'vnd-ogya-central',
-        name: 'OGYA Fire Direct Ltd (Accra)',
-        phone: '+233 24 412 3456',
-        location: 'Ring Road Central, Accra',
-        logoUrl: vendorStoreShowcaseImg,
-        rating: 4.9,
-        ratingCount: 148,
-        isVerified: true,
-        dispatchSpeed: '1–2 hr Fast Delivery across Accra',
-      };
-    }
-    if (selectedVendorId === 'vnd-safeguard-gh') {
-      return {
-        id: 'vnd-safeguard-gh',
-        name: 'SafeGuard Fire Solutions Ghana',
-        phone: '+233 20 890 1234',
-        location: 'Spintex Road, Accra',
-        logoUrl: vendorStoreShowcaseImg,
-        rating: 4.8,
-        ratingCount: 112,
-        isVerified: true,
-        dispatchSpeed: 'Express Door Dispatch',
       };
     }
     return {
       id: selectedVendorId,
-      name: 'Certified OGYA Fire Vendor',
-      phone: '+233 24 000 0000',
-      location: 'Accra, Ghana',
+      name: currentUser?.businessName || currentUser?.name || 'OGYA Fire Vendor',
+      phone: currentUser?.phone || '+233 24 000 0000',
+      location: currentUser?.city || 'Accra, Ghana',
       logoUrl: vendorStoreShowcaseImg,
       rating: 4.9,
       ratingCount: 94,
-      isVerified: true,
+      isVerified: isSellerVerified,
       dispatchSpeed: 'Doorstep Courier Verified',
     };
-  }, [selectedVendorId, vendor, currentUser]);
+  }, [selectedVendorId, vendor, currentUser, isSellerVerified]);
 
   // Only show orders matching logged-in seller's UID
   const vendorOrders = useMemo(() => {
@@ -271,8 +279,12 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
   // Filtered orders for table/list search
   const filteredOrders = useMemo(() => {
     return vendorOrders.filter((order) => {
-      if (orderStatusFilter !== 'all' && order.status !== orderStatusFilter) {
-        return false;
+      if (orderStatusFilter !== 'all') {
+        const canonicalOrderStatus = normalizeOrderStatus(order.status);
+        const canonicalFilter = normalizeOrderStatus(orderStatusFilter);
+        if (order.status !== orderStatusFilter && canonicalOrderStatus !== canonicalFilter) {
+          return false;
+        }
       }
       if (orderSearch.trim()) {
         const q = orderSearch.toLowerCase();
@@ -303,27 +315,47 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
   const totalOrdersCount = vendorOrders.length;
 
   const shippedOrdersCount = useMemo(() => {
-    return vendorOrders.filter((o) => o.status === 'shipped').length;
+    return vendorOrders.filter((o) => normalizeOrderStatus(o.status) === 'On Delivery').length;
   }, [vendorOrders]);
 
   const deliveredOrdersCount = useMemo(() => {
-    return vendorOrders.filter((o) => o.status === 'delivered').length;
+    return vendorOrders.filter((o) => normalizeOrderStatus(o.status) === 'Delivered').length;
   }, [vendorOrders]);
 
   const pendingOrdersCount = useMemo(() => {
-    return vendorOrders.filter((o) => o.status === 'pending' || o.status === 'pending_payment').length;
+    return vendorOrders.filter((o) => {
+      const st = normalizeOrderStatus(o.status);
+      return st === 'Pending' || st === 'Confirmed';
+    }).length;
   }, [vendorOrders]);
 
-  // "Add buttons: Mark as Shipped, Mark as Delivered"
+  // One-tap status progression + WhatsApp notification link to buyer
   const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
     setUpdatingOrderId(orderId);
     try {
       await updateOrderStatusInFirestore(orderId, newStatus);
-      // Optimistic state update
+      const targetOrder = vendorOrders.find((o) => o.id === orderId);
       setOrders((prev) =>
         prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
       );
-      showToast(`Order #${orderId.slice(-6).toUpperCase()} marked as ${newStatus}!`);
+      showToast(`Order #${orderId.slice(-6).toUpperCase()} updated to ${newStatus}!`);
+
+      if (targetOrder && targetOrder.phone) {
+        const productSummary =
+          (targetOrder.items || []).map((it) => `${it.quantity}x ${it.name}`).join(', ') || 'your OGYA item';
+        const waUrl = generateOrderStatusWhatsAppUrl(
+          targetOrder.phone,
+          orderId,
+          productSummary,
+          newStatus
+        );
+        setStatusNotifyLink({
+          orderId,
+          status: String(newStatus),
+          url: waUrl,
+          buyerName: targetOrder.buyerName || 'Buyer',
+        });
+      }
     } catch (err: any) {
       console.error(`Failed to update order ${orderId} status:`, err);
       showToast(`Error updating order status: ${err?.message || 'Please try again'}`);
@@ -383,11 +415,12 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
     const finalImage = image.trim() || defaultImages[category] || defaultImages['Everything'];
     const newProductId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const sellerUid = auth.currentUser.uid;
+    const resolvedLocation = productLocation.trim() || vendorInfo.location || 'Accra';
 
     const newProduct: Product = {
       id: newProductId,
       name: name.trim(),
-      description: description.trim() || `${name.trim()} - Quality product from ${vendorInfo.name} for Ghanaian customers.`,
+      description: description.trim() || `${name.trim()} - Quality product from ${vendorInfo.name} in ${resolvedLocation}.`,
       price: numPrice,
       category: category as ProductCategory,
       imageUrl: finalImage,
@@ -395,6 +428,11 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
       sellerId: sellerUid,
       vendorId: sellerUid,
       vendorName: vendorInfo.name,
+      location: resolvedLocation,
+      sellerLocation: resolvedLocation,
+      sellerPhone: vendorInfo.phone,
+      sellerWhatsapp: currentUser?.whatsapp || vendorInfo.phone,
+      isVerified: isSellerVerified,
     };
 
     setIsSubmittingProduct(true);
@@ -423,13 +461,14 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
   };
 
   const handleDeleteProduct = async (productId: string) => {
-    if (!window.confirm('Are you sure you want to delete this product from your inventory?')) return;
     try {
       await deleteProductFromFirestore(productId);
       setProducts((prev) => prev.filter((p) => p.id !== productId));
+      setDeletingProductId(null);
       showToast('Product deleted from Firestore.');
     } catch (err) {
       console.error('Error deleting product:', err);
+      showToast('Failed to delete product. Please try again.');
     }
   };
 
@@ -506,12 +545,14 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
 
             {/* Logo / Brand */}
             <div className="flex items-center gap-2">
-              <span className="bg-gradient-to-tr from-amber-600 via-orange-500 to-red-600 text-white w-8 h-8 rounded-xl flex items-center justify-center font-black text-base shadow-sm">
+              <span className="bg-gradient-to-tr from-orange-600 via-[#FF6600] to-amber-500 text-white w-8 h-8 rounded-xl flex items-center justify-center font-black text-base shadow-sm">
                 🔥
               </span>
               <div>
                 <div className="flex items-center gap-1.5 leading-tight">
-                  <span className="font-black text-base tracking-tight text-slate-950 dark:text-white">OGYA</span>
+                  <span className="font-black text-base tracking-tight text-slate-950 dark:text-white">
+                    OGYA <span className="text-[#FF6600]">(FIRE)</span>
+                  </span>
                   <span className="text-[10px] font-black uppercase text-amber-600 bg-amber-500/10 dark:bg-amber-500/20 px-1.5 py-0.5 rounded">
                     Vendor Portal
                   </span>
@@ -602,11 +643,21 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
                 <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight truncate">
                   {vendorInfo.name}
                 </h1>
-                {/* Verified Badge */}
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#e6f7f0] dark:bg-emerald-950/60 text-[#00875A] dark:text-emerald-400 font-extrabold text-[11px] border border-[#00875A]/25">
-                  <ShieldCheck size={13} className="text-[#00875A]" />
-                  <span>🇬🇭 Verified Vendor</span>
-                </span>
+                {/* Verified Badge or Upgrade CTA */}
+                {vendorInfo.isVerified ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500 text-white font-black text-[11px] shadow-xs">
+                    <span>✅ VERIFIED</span>
+                  </span>
+                ) : onOpenBecomeVerified ? (
+                  <button
+                    type="button"
+                    onClick={onOpenBecomeVerified}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FF6600] hover:bg-orange-600 text-white font-black text-[11px] shadow-xs cursor-pointer transition-colors"
+                  >
+                    <BadgeCheck size={13} />
+                    <span>Become Verified - GH₵50</span>
+                  </button>
+                ) : null}
               </div>
 
               {/* Ratings Stars */}
@@ -953,14 +1004,45 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
                   className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-red-500 cursor-pointer"
                 >
                   <option value="all">All Statuses ({vendorOrders.length})</option>
-                  <option value="pending">Pending</option>
-                  <option value="pending_payment">Pending Payment</option>
-                  <option value="shipped">Shipped</option>
-                  <option value="delivered">Delivered</option>
-                  <option value="paid">Paid</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Confirmed">Confirmed</option>
+                  <option value="On Delivery">On Delivery</option>
+                  <option value="Delivered">Delivered</option>
                 </select>
               </div>
             </div>
+
+            {/* One-tap WhatsApp Buyer Notification Banner */}
+            {statusNotifyLink && (
+              <div className="p-3.5 rounded-2xl bg-emerald-950 text-white border border-emerald-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="text-xs">
+                  <span className="font-black text-emerald-300 block">
+                    Order #{statusNotifyLink.orderId.slice(-6).toUpperCase()} → {statusNotifyLink.status}
+                  </span>
+                  <span className="text-slate-200">
+                    Notify {statusNotifyLink.buyerName} immediately on WhatsApp about this status update.
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <a
+                    href={statusNotifyLink.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 rounded-xl bg-[#25D366] hover:bg-[#1ebd5a] text-white font-black text-xs flex items-center gap-1.5 shadow-sm"
+                  >
+                    <MessageCircle size={14} />
+                    <span>Notify Buyer on WhatsApp</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setStatusNotifyLink(null)}
+                    className="px-2.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold cursor-pointer"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Orders List */}
             {filteredOrders.length === 0 ? (
@@ -972,7 +1054,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
                   No orders found for this vendor
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                  Only orders matching <strong className="text-slate-700 dark:text-slate-300">{vendorInfo.name}</strong> ({selectedVendorId}) appear in this list.
+                  Only orders matching <strong className="text-slate-700 dark:text-slate-300">{vendorInfo.name}</strong> appear in this list.
                 </p>
               </div>
             ) : (
@@ -980,11 +1062,42 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
                 {filteredOrders.map((order) => {
                   const buyerName = order.buyerName || order.userId || 'Ghana Buyer';
                   const isUpdating = updatingOrderId === order.id;
+                  const canonicalStatus = normalizeOrderStatus(order.status);
 
                   // Product string representation
                   const productNames = (order.items || [])
                     .map((it) => `${it.quantity}x ${it.name}`)
                     .join(' · ');
+
+                  const nextStepAction: { label: string; nextStatus: OrderStatus; colorClass: string } | null =
+                    canonicalStatus === 'Pending'
+                      ? {
+                          label: '✅ Confirm Order',
+                          nextStatus: 'Confirmed',
+                          colorClass: 'bg-[#FF6600] hover:bg-orange-600 text-white',
+                        }
+                      : canonicalStatus === 'Confirmed'
+                      ? {
+                          label: '🚚 Mark On Delivery',
+                          nextStatus: 'On Delivery',
+                          colorClass: 'bg-blue-600 hover:bg-blue-700 text-white',
+                        }
+                      : canonicalStatus === 'On Delivery'
+                      ? {
+                          label: '📦 Mark Delivered',
+                          nextStatus: 'Delivered',
+                          colorClass: 'bg-emerald-600 hover:bg-emerald-700 text-white',
+                        }
+                      : null;
+
+                  const buyerWaNotifyUrl = order.phone
+                    ? generateOrderStatusWhatsAppUrl(
+                        order.phone,
+                        order.id,
+                        productNames || 'your OGYA order',
+                        canonicalStatus
+                      )
+                    : null;
 
                   return (
                     <div
@@ -1002,16 +1115,16 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
                           {/* Status Badge */}
                           <span
                             className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                              order.status === 'delivered'
+                              canonicalStatus === 'Delivered'
                                 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300'
-                                : order.status === 'shipped'
+                                : canonicalStatus === 'On Delivery'
                                 ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300'
-                                : order.status === 'paid'
-                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                : canonicalStatus === 'Confirmed'
+                                ? 'bg-orange-100 text-orange-800 dark:bg-orange-950/80 dark:text-orange-300'
                                 : 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300'
                             }`}
                           >
-                            {order.status}
+                            {canonicalStatus}
                           </span>
 
                           {/* Payment Method Badge */}
@@ -1034,7 +1147,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
                             </span>
                           </div>
                           <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 font-medium" data-testid="order-product-names">
-                            <strong className="text-red-600 dark:text-red-400">Product:</strong> {productNames || 'Fire Equipment'}
+                            <strong className="text-[#FF6600]">Product:</strong> {productNames || 'OGYA Product'}
                           </p>
                         </div>
 
@@ -1049,9 +1162,25 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
                             <span>{order.phone}</span>
                           </span>
                         </div>
+
+                        {/* Buyer MoMo Payment Proof */}
+                        {order.proofUrl && (
+                          <div className="pt-1 flex items-center gap-2.5">
+                            <a
+                              href={order.proofUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold hover:underline"
+                            >
+                              <Receipt size={12} />
+                              <span>MoMo Payment Proof Uploaded · View</span>
+                              <ExternalLink size={11} />
+                            </a>
+                          </div>
+                        )}
                       </div>
 
-                      {/* Right: Amount & Actions (Mark as Shipped, Mark as Delivered) */}
+                      {/* Right: Amount & One-tap Order Status Progression */}
                       <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between gap-3 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100 dark:border-slate-800">
                         {/* Amount */}
                         <div className="text-left lg:text-right">
@@ -1067,39 +1196,37 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
                           </div>
                         </div>
 
-                        {/* Action buttons: Mark as Shipped, Mark as Delivered */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <button
-                            type="button"
-                            disabled={isUpdating || order.status === 'shipped'}
-                            onClick={() => handleUpdateStatus(order.id, 'shipped')}
-                            className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
-                              order.status === 'shipped'
-                                ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900/60 opacity-90'
-                                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs active:scale-95'
-                            }`}
-                            aria-label="Mark as Shipped"
-                            data-testid={`mark-shipped-btn-${order.id}`}
-                          >
-                            <Truck size={13} />
-                            <span>{order.status === 'shipped' ? 'Shipped ✓' : 'Mark as Shipped'}</span>
-                          </button>
+                        {/* One-tap progression + WhatsApp buyer notify */}
+                        <div className="flex items-center gap-2 flex-wrap justify-end">
+                          {nextStepAction ? (
+                            <button
+                              type="button"
+                              disabled={isUpdating}
+                              onClick={() => handleUpdateStatus(order.id, nextStepAction.nextStatus)}
+                              className={`px-3.5 py-2 rounded-xl font-black text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50 ${nextStepAction.colorClass}`}
+                              data-testid={`advance-status-btn-${order.id}`}
+                            >
+                              <span>{isUpdating ? 'Updating...' : nextStepAction.label}</span>
+                            </button>
+                          ) : (
+                            <span className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/60 font-bold text-xs flex items-center gap-1">
+                              <CheckCircle2 size={13} />
+                              <span>Delivered ✓</span>
+                            </span>
+                          )}
 
-                          <button
-                            type="button"
-                            disabled={isUpdating || order.status === 'delivered'}
-                            onClick={() => handleUpdateStatus(order.id, 'delivered')}
-                            className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
-                              order.status === 'delivered'
-                                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/60 opacity-90'
-                                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs active:scale-95'
-                            }`}
-                            aria-label="Mark as Delivered"
-                            data-testid={`mark-delivered-btn-${order.id}`}
-                          >
-                            <CheckCircle2 size={13} />
-                            <span>{order.status === 'delivered' ? 'Delivered ✓' : 'Mark as Delivered'}</span>
-                          </button>
+                          {buyerWaNotifyUrl && (
+                            <a
+                              href={buyerWaNotifyUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-2 rounded-xl bg-[#25D366] hover:bg-[#1ebd5a] text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all"
+                              title="Message buyer on WhatsApp"
+                            >
+                              <MessageCircle size={13} />
+                              <span>WhatsApp Buyer</span>
+                            </a>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1187,19 +1314,38 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
-                      <span className="text-[10px] font-mono text-slate-400 truncate max-w-[150px]">
-                        ID: {p.id}
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 gap-2">
+                      <span className="text-[10px] font-mono text-slate-400 truncate max-w-[140px]">
+                        📍 {p.sellerLocation || p.location || 'Accra'}
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteProduct(p.id)}
-                        className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer text-xs flex items-center gap-1"
-                        title="Delete product"
-                      >
-                        <Trash2 size={13} />
-                        <span>Delete</span>
-                      </button>
+                      {deletingProductId === p.id ? (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteProduct(p.id)}
+                            className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-black cursor-pointer"
+                          >
+                            Confirm Delete
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeletingProductId(null)}
+                            className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-bold cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setDeletingProductId(p.id)}
+                          className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer text-xs flex items-center gap-1"
+                          title="Delete product"
+                        >
+                          <Trash2 size={13} />
+                          <span>Delete</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1402,6 +1548,37 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
                     )}
                   </div>
                 </div>
+              </div>
+
+              {/* Seller Shop Location (Saved with Product for Home Location Filter) */}
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                  Shop / Product Location *
+                </label>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {VENDOR_LOCATIONS.map((loc) => (
+                    <button
+                      key={loc}
+                      type="button"
+                      onClick={() => setProductLocation(loc)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                        productLocation === loc
+                          ? 'bg-[#FF6600] text-white border-[#FF6600]'
+                          : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {loc}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={productLocation}
+                  onChange={(e) => setProductLocation(e.target.value)}
+                  placeholder="e.g. Accra, Madina, Amasaman, Kasoa, Kumasi, Tema, Legon"
+                  className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-red-500"
+                />
               </div>
 
               {/* Description */}

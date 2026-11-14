@@ -34,8 +34,12 @@ import { IWantThisModal } from './components/IWantThisModal';
 import { BuyersWantFeed } from './components/BuyersWantFeed';
 import { LegalPagesModal, LegalPageId } from './components/LegalPagesModal';
 import { LegalPageView } from './components/LegalPageView';
+import { WhatsAppOrderModal, WhatsAppOrderTarget } from './components/WhatsAppOrderModal';
+import { BecomeVerifiedPage } from './components/BecomeVerifiedPage';
+import { SplashScreen } from './components/SplashScreen';
+import { PWAInstallBanner } from './components/PWAInstallPrompt';
 import { FoodVendor, FoodMenuItem } from './data/foodVendors';
-import { Product, Vendor, Order, CartItem, matchesProductCategoryFilter } from './types/store';
+import { Product, Vendor, Order, CartItem, Review, matchesProductCategoryFilter } from './types/store';
 import { SEED_PRODUCTS } from './data/seedProducts';
 import {
   getCart,
@@ -71,14 +75,22 @@ import {
   fetchVendorByOwnerId,
   subscribeToWantedItemsFromFirestore,
   getLocalWantedItems,
+  subscribeToReviewsFromFirestore,
 } from './utils/firebase';
-import { SlidersHorizontal, CheckCircle2, ShieldCheck, Sparkles, Plus, AlertCircle, BellRing, Zap, UserPlus, Award, Home, Store, ShoppingCart, Flame } from 'lucide-react';
+import {
+  HOME_LOCATIONS,
+  matchesLocationFilter,
+  isListingSellerVerified,
+} from './utils/marketplaceHelpers';
+import { SlidersHorizontal, CheckCircle2, ShieldCheck, Sparkles, Plus, AlertCircle, BellRing, Zap, UserPlus, Award, Home, Store, ShoppingCart, Flame, MapPin } from 'lucide-react';
 
 export default function App() {
   const { isDark, toggleTheme } = useDarkMode();
   const [listings, setListings] = useState<Listing[]>(() => getStoredListings());
   const [savedIds, setSavedIds] = useState<string[]>(() => getSavedListingIds());
   const [priceAlerts, setPriceAlerts] = useState<string[]>(() => getPriceAlertIds());
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [whatsAppOrderTarget, setWhatsAppOrderTarget] = useState<WhatsAppOrderTarget | null>(null);
 
   // "I WANT THIS" Buyer requests state
   const [wantedItems, setWantedItems] = useState<WantedItem[]>(() => getLocalWantedItems());
@@ -114,9 +126,15 @@ export default function App() {
       }
     });
 
+    // Real-time listener for buyer reviews
+    const unsubscribeReviews = subscribeToReviewsFromFirestore((remoteReviews) => {
+      setReviews(remoteReviews);
+    });
+
     return () => {
       unsubscribe();
       unsubscribeWanted();
+      unsubscribeReviews();
     };
   }, []);
 
@@ -383,6 +401,38 @@ export default function App() {
     showToast('Order Placed');
   };
 
+  const openWhatsAppOrderForProduct = (product: Product) => {
+    setWhatsAppOrderTarget({
+      productId: product.id,
+      productName: product.name,
+      price: product.price,
+      category: product.category,
+      imageUrl: product.imageUrl,
+      sellerId: product.sellerId || product.vendorId,
+      vendorId: product.vendorId || product.sellerId || 'vnd-ogya',
+      sellerName: product.vendorName || 'OGYA Verified Seller',
+      sellerPhone: product.sellerWhatsapp || product.sellerPhone || '+233 24 412 3456',
+      sellerLocation: product.sellerLocation || product.location || 'Accra',
+      isVerified: product.isVerified,
+    });
+  };
+
+  const openWhatsAppOrderForListing = (listing: Listing) => {
+    setWhatsAppOrderTarget({
+      productId: listing.id,
+      productName: listing.title,
+      price: listing.price,
+      category: listing.categoryName,
+      imageUrl: listing.images?.[0] || listing.imageUrl || '',
+      sellerId: listing.sellerId || listing.userId,
+      vendorId: listing.userId || listing.sellerId || 'vnd-ogya',
+      sellerName: listing.seller?.name || 'OGYA Seller',
+      sellerPhone: listing.seller?.whatsapp || listing.seller?.phone || '+233 24 412 3456',
+      sellerLocation: listing.location || listing.seller?.location || 'Accra',
+      isVerified: isListingSellerVerified(listing),
+    });
+  };
+
   const resolveRouteFromWindow = (): string => {
     if (typeof window === 'undefined') return '/';
     const path = window.location.pathname.toLowerCase();
@@ -392,6 +442,14 @@ export default function App() {
 
     if (path === '/vendor' || path === '/vendor/' || hash === '#vendor' || pageParam === 'vendor') {
       return '/vendor';
+    }
+    if (
+      path === '/become-verified' ||
+      path === '/become-verified/' ||
+      hash === '#become-verified' ||
+      pageParam === 'become-verified'
+    ) {
+      return '/become-verified';
     }
     if (path === '/privacy' || path === '/privacy-policy' || hash === '#privacy' || pageParam === 'privacy') {
       return '/privacy';
@@ -416,13 +474,21 @@ export default function App() {
     return '/';
   };
 
-  // Routing state for /vendor, /privacy, /terms, /refund-policy, or marketplace /
+  // Routing state for /vendor, /become-verified, /privacy, /terms, /refund-policy, or marketplace /
   const [currentPath, setCurrentPath] = useState<string>(() => resolveRouteFromWindow());
 
   const navigateToVendor = () => {
     setCurrentPath('/vendor');
     if (typeof window !== 'undefined') {
       window.history.pushState(null, '', '/vendor');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const navigateToBecomeVerified = () => {
+    setCurrentPath('/become-verified');
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', '/become-verified');
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -520,6 +586,7 @@ export default function App() {
       prev.map((item) => {
         if (
           item.userId === updatedUser.id ||
+          item.sellerId === updatedUser.id ||
           item.seller.name.toLowerCase().trim() === updatedUser.name.toLowerCase().trim()
         ) {
           return {
@@ -529,11 +596,19 @@ export default function App() {
               isVerified: true,
               isSubscribedVerified: true,
               ghanaCardVerified: true,
-              verifiedPlan: 'Verified Pro (100 GHS/mo)',
+              verifiedPlan: 'Verified Seller (GH₵50)',
             },
           };
         }
         return item;
+      })
+    );
+    setProducts((prev) =>
+      prev.map((p) => {
+        if (p.sellerId === updatedUser.id || p.vendorId === updatedUser.id) {
+          return { ...p, isVerified: true };
+        }
+        return p;
       })
     );
     showToast(msg);
@@ -812,44 +887,9 @@ export default function App() {
           return false;
         }
 
-        // Location filter: supports Accra, Kumasi, Tema, Takoradi, Tamale, Cape Coast & all 16 Ghana regions
-        if (filters.region && filters.region !== 'all' && filters.region !== 'All Regions' && filters.region !== 'All Ghana') {
-          const selectedLoc = filters.region.trim().toLowerCase();
-          const itemRegion = item.region.toLowerCase();
-          const itemLocation = item.location.toLowerCase();
-
-          // Direct city check
-          const directCityMatch = itemLocation.includes(selectedLoc) || itemRegion.includes(selectedLoc);
-
-          // 1. Direct region name match
-          const mainRegionKey = filters.region.split('(')[0].trim().toLowerCase();
-          const matchRegion = itemRegion.includes(mainRegionKey) || mainRegionKey.includes(itemRegion.split('(')[0].trim());
-          const matchLocation = itemLocation.includes(mainRegionKey);
-
-          // 2. Parenthesized principal towns/cities
-          const bracketContent = filters.region.includes('(')
-            ? filters.region.replace(/^[^(]*\(([^)]*)\).*$/, '$1').toLowerCase()
-            : '';
-          const matchTown = bracketContent
-            ? bracketContent.split(',').some((town) => {
-                const t = town.trim();
-                return t.length > 2 && (itemLocation.includes(t) || itemRegion.includes(t));
-              })
-            : false;
-
-          // 3. Known Ghana town & municipality synonyms
-          const aliasMatch = (
-            (selectedLoc.includes('accra') && ['accra', 'legon', 'madina', 'osu', 'spintex', 'cantonments', 'east legon', 'dansoman', 'circle'].some(k => itemLocation.includes(k))) ||
-            (selectedLoc.includes('tema') && ['tema', 'afienya', 'dawhenya'].some(k => itemLocation.includes(k))) ||
-            (selectedLoc.includes('kumasi') && ['kumasi', 'kejetia', 'bantama', 'ahodwo', 'anloga', 'knust', 'adum', 'bonwire', 'obuasi'].some(k => itemLocation.includes(k))) ||
-            (selectedLoc.includes('takoradi') && ['takoradi', 'sekondi', 'tarkwa', 'harbor'].some(k => itemLocation.includes(k))) ||
-            (selectedLoc.includes('tamale') && ['tamale', 'aboabo', 'savelugu', 'yendi'].some(k => itemLocation.includes(k))) ||
-            (selectedLoc.includes('cape coast') && ['cape coast', 'kotokuraba', 'elmina', 'kasoa'].some(k => itemLocation.includes(k)))
-          );
-
-          if (!directCityMatch && !matchRegion && !matchLocation && !matchTown && !aliasMatch) {
-            return false;
-          }
+        // Location filter across Ghana (All, Accra, Amasaman, Madina, Kasoa, Kumasi, Tema, Legon & 16 regions)
+        if (!matchesLocationFilter(item.location, item.region, filters.region)) {
+          return false;
         }
 
         // Price range
@@ -865,8 +905,8 @@ export default function App() {
           return false;
         }
 
-        // Only verified (Supports Ghana Card verified or 100 GHS/mo subscribed verified)
-        if (filters.onlyVerified && !item.seller.isVerified && !item.seller.isSubscribedVerified && !item.seller.ghanaCardVerified) {
+        // Only verified (Supports Ghana Card verified or GH₵50 subscribed verified)
+        if (filters.onlyVerified && !isListingSellerVerified(item)) {
           return false;
         }
 
@@ -881,9 +921,14 @@ export default function App() {
         return true;
       })
       .sort((a, b) => {
-        // Pinned promoted listings always rank first!
+        // 1. Pinned promoted listings always rank first
         if (a.isPromoted && !b.isPromoted) return -1;
         if (!a.isPromoted && b.isPromoted) return 1;
+
+        // 2. Verified sellers always rank before unverified sellers
+        const aVerified = isListingSellerVerified(a) ? 1 : 0;
+        const bVerified = isListingSellerVerified(b) ? 1 : 0;
+        if (aVerified !== bVerified) return bVerified - aVerified;
 
         if (filters.sortBy === 'top-rated') {
           return b.seller.rating - a.seller.rating || b.seller.reviewCount - a.seller.reviewCount;
@@ -926,23 +971,30 @@ export default function App() {
         : 'privacy';
 
     return (
-      <LegalPageView
-        page={activeLegalPage}
-        onSelectPage={navigateToLegalPage}
-        onNavigateHome={navigateToHome}
-      />
+      <>
+        <SplashScreen />
+        <LegalPageView
+          page={activeLegalPage}
+          onSelectPage={navigateToLegalPage}
+          onNavigateHome={navigateToHome}
+        />
+        <PWAInstallBanner />
+      </>
     );
   }
 
-  // If on /vendor page, render the full-page Vendor Dashboard + AuthModal so sellers can sign in directly
-  if (currentPath === '/vendor') {
+  // Dedicated Become Verified - GH₵50 Page (/become-verified)
+  if (currentPath === '/become-verified') {
     return (
       <>
-        <VendorDashboardPage
+        <SplashScreen />
+        <BecomeVerifiedPage
           currentUser={currentUser}
-          vendor={currentVendor}
           onNavigateHome={navigateToHome}
           onOpenAuth={handleOpenAuth}
+          onVerificationSuccess={(updatedUser, message) => {
+            handleSubscriptionSuccess(updatedUser, message);
+          }}
         />
         <AuthModal
           isOpen={isAuthOpen}
@@ -957,12 +1009,45 @@ export default function App() {
           initialPage={legalModalPage}
           onClose={() => setIsLegalModalOpen(false)}
         />
+        <PWAInstallBanner />
+      </>
+    );
+  }
+
+  // If on /vendor page, render the full-page Vendor Dashboard + AuthModal so sellers can sign in directly
+  if (currentPath === '/vendor') {
+    return (
+      <>
+        <SplashScreen />
+        <VendorDashboardPage
+          currentUser={currentUser}
+          vendor={currentVendor}
+          onNavigateHome={navigateToHome}
+          onOpenAuth={handleOpenAuth}
+          onOpenBecomeVerified={navigateToBecomeVerified}
+        />
+        <AuthModal
+          isOpen={isAuthOpen}
+          onClose={() => setIsAuthOpen(false)}
+          initialMode={authMode}
+          defaultRole={authDefaultRole}
+          onAuthSuccess={handleAuthSuccess}
+          onOpenLegalPage={openLegalPage}
+        />
+        <LegalPagesModal
+          isOpen={isLegalModalOpen}
+          initialPage={legalModalPage}
+          onClose={() => setIsLegalModalOpen(false)}
+        />
+        <PWAInstallBanner />
       </>
     );
   }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8F9FA] dark:bg-[#0b0f19] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200 pb-20 md:pb-0">
+      <SplashScreen />
+      <PWAInstallBanner />
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-950 dark:bg-slate-900 text-white text-xs sm:text-sm font-semibold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 animate-in slide-in-from-bottom-3 duration-200 border border-slate-800 dark:border-slate-700">
@@ -1003,14 +1088,13 @@ export default function App() {
             setIsSellerDashboardOpen(true);
           }
         }}
-        onOpenVerifiedSubscription={() => setIsVerifiedModalOpen(true)}
+        onOpenVerifiedSubscription={navigateToBecomeVerified}
         onLogout={handleLogout}
         cartCount={getCartItemCount(cart)}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenMyOrders={() => {
           if (!currentUser || !auth.currentUser) {
-            handleOpenAuth('signin', 'buyer');
-            showToast('Sign in to view your orders.');
+            setIsMyOrdersOpen(true);
           } else {
             handleOpenProfile('orders');
           }
@@ -1118,13 +1202,53 @@ export default function App() {
         />
       )}
 
+      {/* Home Location Filter Bar (All, Accra, Amasaman, Madina, Kasoa, Kumasi, Tema, Legon) */}
+      <section className="bg-slate-950 border-b border-slate-800/90 py-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2 shrink-0">
+            <MapPin size={15} className="text-[#FF6600]" />
+            <span className="text-xs font-black uppercase tracking-wider text-white">
+              Shop by Location
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+            {HOME_LOCATIONS.map((loc) => {
+              const targetValue = loc === 'All' ? 'all' : loc;
+              const isSelected =
+                filters.region === targetValue ||
+                (loc === 'All' &&
+                  (filters.region === 'all' ||
+                    filters.region === 'All Regions' ||
+                    filters.region === 'All Ghana'));
+              return (
+                <button
+                  key={loc}
+                  type="button"
+                  onClick={() => handleFilterUpdate({ region: targetValue })}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all cursor-pointer border ${
+                    isSelected
+                      ? 'bg-[#FF6600] text-white border-[#FF6600] shadow-xs'
+                      : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-[#F59E0B]/60 hover:text-white'
+                  }`}
+                >
+                  {loc}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* General Marketplace Store Products Organized by Category (Food, Phones, Laptops, Cars, Accessories, Fashion, Home Items, Electronics) */}
       <StoreProductsSection
         products={products}
         selectedCategory={filters.category}
+        selectedLocation={filters.region}
         searchQuery={filters.searchQuery}
+        reviews={reviews}
         onSelectProduct={(p) => setSelectedProduct(p)}
         onAddToCart={(p) => handleAddToCart(p, 1)}
+        onOrderWhatsApp={(p) => openWhatsAppOrderForProduct(p)}
         onSelectCategory={handleSelectCategory}
         onReportProduct={(product) => {
           setReportTargetType('listing');
@@ -1278,30 +1402,26 @@ export default function App() {
                   <span>Filter Location:</span>
                 </span>
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none no-scrollbar">
-                  {[
-                    { label: 'All Ghana', value: 'all' },
-                    { label: 'Accra', value: 'Accra' },
-                    { label: 'Kumasi', value: 'Kumasi' },
-                    { label: 'Tema', value: 'Tema' },
-                    { label: 'Takoradi', value: 'Takoradi' },
-                    { label: 'Tamale', value: 'Tamale' },
-                    { label: 'Cape Coast', value: 'Cape Coast' },
-                  ].map((loc) => {
+                  {HOME_LOCATIONS.map((loc) => {
+                    const value = loc === 'All' ? 'all' : loc;
                     const isSelected =
-                      filters.region === loc.value ||
-                      (loc.value === 'all' && (filters.region === 'all' || filters.region === 'All Regions' || filters.region === 'All Ghana'));
+                      filters.region === value ||
+                      (value === 'all' &&
+                        (filters.region === 'all' ||
+                          filters.region === 'All Regions' ||
+                          filters.region === 'All Ghana'));
                     return (
                       <button
-                        key={loc.label}
+                        key={loc}
                         type="button"
-                        onClick={() => handleFilterUpdate({ region: loc.value })}
+                        onClick={() => handleFilterUpdate({ region: value })}
                         className={`text-xs px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all cursor-pointer ${
                           isSelected
                             ? 'bg-[#FF6600] text-white shadow-xs font-black'
                             : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300'
                         }`}
                       >
-                        {loc.label}
+                        {loc}
                       </button>
                     );
                   })}
@@ -1457,6 +1577,11 @@ export default function App() {
                       setFraudReportingListing(item);
                     }}
                     onAddToCart={handleAddToCartFromListing}
+                    onOrderWhatsApp={(listing, e) => {
+                      e.stopPropagation();
+                      openWhatsAppOrderForListing(listing);
+                    }}
+                    reviews={reviews}
                   />
                 ))}
               </div>
@@ -1487,7 +1612,7 @@ export default function App() {
         onOpenPostAd={() => setIsPostAdOpen(true)}
         onOpenAuth={handleOpenAuth}
         onOpenCourierHub={handleOpenCourierHub}
-        onOpenVerifiedSubscription={() => setIsVerifiedModalOpen(true)}
+        onOpenVerifiedSubscription={navigateToBecomeVerified}
       />
 
       {/* Listing Detail Modal / PDP */}
@@ -1521,6 +1646,11 @@ export default function App() {
           handleAddToCartFromListing(listing);
           setIsCartOpen(true);
         }}
+        onOrderWhatsApp={(listing) => {
+          setSelectedListing(null);
+          openWhatsAppOrderForListing(listing);
+        }}
+        reviews={reviews}
       />
 
       {/* Boost Ad Modal */}
@@ -1549,6 +1679,15 @@ export default function App() {
           setSelectedSeller(null);
           setChatListing(listing);
         }}
+        onOrderWhatsApp={(listing) => {
+          setSelectedSeller(null);
+          openWhatsAppOrderForListing(listing);
+        }}
+        onOpenBecomeVerified={() => {
+          setSelectedSeller(null);
+          navigateToBecomeVerified();
+        }}
+        reviews={reviews}
         onReportListing={(listing) => {
           setSelectedSeller(null);
           setReportTargetType('listing');
@@ -1662,6 +1801,10 @@ export default function App() {
           setIsProfileOpen(false);
           navigateToLegalPage(page);
         }}
+        onReviewCreated={(rev) => {
+          setReviews((prev) => [rev, ...prev.filter((r) => r.id !== rev.id)]);
+          showToast('Thank you! Your review has been published.');
+        }}
         onAccountDeleted={(deletedUid) => {
           setCurrentUser(null);
           setCurrentVendor(null);
@@ -1772,6 +1915,11 @@ export default function App() {
         isOpen={Boolean(selectedProduct)}
         onClose={() => setSelectedProduct(null)}
         onAddToCart={handleAddToCart}
+        onOrderWhatsApp={(product) => {
+          setSelectedProduct(null);
+          openWhatsAppOrderForProduct(product);
+        }}
+        reviews={reviews}
         onReportProduct={(product) => {
           setSelectedProduct(null);
           setReportTargetType('listing');
@@ -1839,12 +1987,35 @@ export default function App() {
         onRequireAuth={() => handleOpenAuth('signin')}
       />
 
-      {/* My Orders Modal (Customer Orders from Firestore) */}
+      {/* My Orders Modal (Customer Orders from Firestore + MoMo Proof + Reviews) */}
       <MyOrdersModal
         isOpen={isMyOrdersOpen}
         onClose={() => setIsMyOrdersOpen(false)}
         currentUser={currentUser}
         onOpenStore={handleScrollToMarketplace}
+        onReviewCreated={(rev) => {
+          setReviews((prev) => [rev, ...prev.filter((r) => r.id !== rev.id)]);
+          showToast('Thank you! Your review has been published.');
+        }}
+      />
+
+      {/* WhatsApp Direct Order + MoMo Screenshot Proof Modal */}
+      <WhatsAppOrderModal
+        isOpen={Boolean(whatsAppOrderTarget)}
+        onClose={() => setWhatsAppOrderTarget(null)}
+        target={whatsAppOrderTarget}
+        currentUser={currentUser}
+        onOrderCreated={() => {
+          showToast('WhatsApp order saved! Upload MoMo screenshot proof anytime in My Orders.');
+        }}
+        onOpenMyOrders={() => {
+          setWhatsAppOrderTarget(null);
+          if (currentUser && auth.currentUser) {
+            handleOpenProfile('orders');
+          } else {
+            setIsMyOrdersOpen(true);
+          }
+        }}
       />
 
       {/* Become a Vendor Modal (Firestore 'vendors' + role='vendor') */}

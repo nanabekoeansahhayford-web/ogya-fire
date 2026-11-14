@@ -355,19 +355,20 @@ export function getVerifiedSubscriptions(): VerifiedSubscriptionRecord[] {
 }
 
 /**
- * Activate or Renew Paid Verified Seller Badge (100 GHS/month) via Paystack
+ * Activate or Renew Paid Verified Seller Badge (GH₵50)
  */
 export function subscribeSellerVerified(payload: {
   userId: string;
   sellerName: string;
   paymentMethod?: string;
   paystackReference?: string;
+  proofUrl?: string;
   amount?: number;
 }): VerifiedSubscriptionRecord {
-  const amount = payload.amount || 100;
+  const amount = payload.amount || 50;
   const now = new Date();
   const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days active
-  const reference = payload.paystackReference || `PSTK_VER_${Date.now()}_${Math.floor(Math.random() * 8999 + 1000)}`;
+  const reference = payload.paystackReference || `OGYA_VER_${Date.now()}_${Math.floor(Math.random() * 8999 + 1000)}`;
 
   const record: VerifiedSubscriptionRecord = {
     userId: payload.userId,
@@ -376,7 +377,7 @@ export function subscribeSellerVerified(payload: {
     billingCycle: 'monthly',
     subscribedAt: now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     expiresAt: expires.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-    paymentMethod: payload.paymentMethod || 'Paystack Ghana (MoMo & Card)',
+    paymentMethod: payload.paymentMethod || 'MTN / Telecel MoMo',
     paystackReference: reference,
     isActive: true,
   };
@@ -396,9 +397,11 @@ export function subscribeSellerVerified(payload: {
   updateUserProfile(payload.userId, {
     isVerified: true,
     isSubscribedVerified: true,
-    subscriptionPlan: `Verified Pro Seller (${amount} GHS/month)`,
+    subscriptionPlan: `Verified Seller (GH₵${amount})`,
     verifiedAmount: amount,
     verifiedExpiresAt: record.expiresAt,
+    verificationProofUrl: payload.proofUrl,
+    verificationStatus: 'verified',
   });
 
   // 2. Mark all listings belonging to this seller as Verified
@@ -414,7 +417,7 @@ export function subscribeSellerVerified(payload: {
             ...listing.seller,
             isVerified: true,
             isSubscribedVerified: true,
-            verifiedPlan: `Verified Pro (${amount} GHS/mo)`,
+            verifiedPlan: `Verified Seller (GH₵${amount})`,
           },
         });
       }

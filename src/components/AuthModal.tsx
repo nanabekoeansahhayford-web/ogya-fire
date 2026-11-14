@@ -132,7 +132,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
 
     if (!agreeTerms) {
-      setError('Please agree to the OGYA Safe Trade Rules and Terms of Service to continue.');
+      setError('Please tick the checkbox to agree to the Privacy Policy and Terms of Use.');
       return;
     }
 
@@ -218,6 +218,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const handleGoogleSignIn = async (asRole: 'buyer' | 'seller') => {
     setError(null);
+    if (mode === 'register' && !agreeTerms) {
+      setError('Please tick the checkbox to agree to the Privacy Policy and Terms of Use.');
+      return;
+    }
     setGoogleDomainBlocked(false);
     setIsSubmitting(true);
     try {
@@ -282,6 +286,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const handleSendPhoneOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (mode === 'register' && !agreeTerms) {
+      setError('Please tick the checkbox to agree to the Privacy Policy and Terms of Use.');
+      return;
+    }
     setIsSubmitting(true);
     try {
       const res = await sendPhoneOtp(phoneAuthNumber, 'ogya-recaptcha-container');
@@ -400,16 +408,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <span>
               {mode === 'forgot_password'
                 ? 'FIREBASE AUTH RECOVERY'
-                : 'OGYA FIRE · SECURE SIGN IN'}
+                : 'OGYA (FIRE) · SECURE SIGN IN'}
             </span>
           </div>
 
           <h3 className="text-2xl font-black tracking-tight">
             {mode === 'register'
-              ? 'Create an OGYA Account'
+              ? 'Create an OGYA (FIRE) Account'
               : mode === 'forgot_password'
               ? 'Recover Your Password'
-              : 'Sign In to OGYA FIRE'}
+              : 'Sign In to OGYA (FIRE)'}
           </h3>
           <p className="text-xs text-white/90 mt-1 max-w-sm mx-auto">
             {mode === 'register'
@@ -742,6 +750,42 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       </p>
                     </div>
 
+                    {mode === 'register' && (
+                      <label className="flex items-start gap-2.5 cursor-pointer pt-1">
+                        <input
+                          type="checkbox"
+                          checked={agreeTerms}
+                          onChange={(e) => setAgreeTerms(e.target.checked)}
+                          className="mt-0.5 rounded text-amber-500 focus:ring-0 cursor-pointer"
+                        />
+                        <span className="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">
+                          I agree to the{' '}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              onOpenLegalPage?.('terms');
+                            }}
+                            className="font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
+                          >
+                            Terms of Use
+                          </button>{' '}
+                          and{' '}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              onOpenLegalPage?.('privacy');
+                            }}
+                            className="font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
+                          >
+                            Privacy Policy
+                          </button>
+                          .
+                        </span>
+                      </label>
+                    )}
+
                     <button
                       type="submit"
                       disabled={isSubmitting}
@@ -1007,9 +1051,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         }}
                         className="font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
                       >
-                        Terms of Service
-                      </button>
-                      ,{' '}
+                        Terms of Use
+                      </button>{' '}
+                      and{' '}
                       <button
                         type="button"
                         onClick={(e) => {
@@ -1020,10 +1064,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       >
                         Privacy Policy
                       </button>
-                      , and{' '}
-                      <strong className="text-slate-900 dark:text-slate-200">
-                        OGYA Safe Trade Guidelines
-                      </strong>
                       .
                     </span>
                   </label>
@@ -1114,13 +1154,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           {/* Legal Notice on Sign Up Screen (Applies to Email, Phone OTP & Google Sign Up) */}
           {mode === 'register' && (
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-center text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-              By creating an account, you agree to OGYA&apos;s{' '}
+              By creating an account, you agree to OGYA (FIRE)&apos;s{' '}
               <button
                 type="button"
                 onClick={() => onOpenLegalPage?.('terms')}
                 className="font-bold text-[#00875A] dark:text-emerald-400 hover:underline cursor-pointer"
               >
-                Terms of Service
+                Terms of Use
               </button>{' '}
               and{' '}
               <button
@@ -1168,7 +1208,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </p>
             ) : (
               <p>
-                New to OGYA FIRE?{' '}
+                New to OGYA (FIRE)?{' '}
                 <button
                   type="button"
                   onClick={() => {

@@ -57,7 +57,9 @@ service cloud.firestore {
       return data.keys().hasAll(['name', 'price', 'category', 'stock', 'sellerId', 'vendorId', 'vendorName'])
         && data.keys().hasOnly([
           'id', 'name', 'description', 'price', 'category', 'imageUrl', 'stock',
-          'sellerId', 'vendorId', 'vendorName', 'isTest', 'createdAt', 'updatedAt'
+          'sellerId', 'vendorId', 'vendorName', 'location', 'sellerLocation',
+          'sellerPhone', 'sellerWhatsapp', 'isVerified', 'rating', 'reviewCount',
+          'isTest', 'createdAt', 'updatedAt'
         ])
         && (!('id' in data) || isValidId(data.id))
         && data.name is string && data.name.size() > 0 && data.name.size() <= 256
@@ -67,6 +69,13 @@ service cloud.firestore {
         && data.sellerId is string && isValidId(data.sellerId)
         && data.vendorId is string && isValidId(data.vendorId)
         && data.vendorName is string && data.vendorName.size() > 0 && data.vendorName.size() <= 256
+        && (!('location' in data) || (data.location is string && data.location.size() <= 256))
+        && (!('sellerLocation' in data) || (data.sellerLocation is string && data.sellerLocation.size() <= 256))
+        && (!('sellerPhone' in data) || (data.sellerPhone is string && data.sellerPhone.size() <= 64))
+        && (!('sellerWhatsapp' in data) || (data.sellerWhatsapp is string && data.sellerWhatsapp.size() <= 64))
+        && (!('isVerified' in data) || data.isVerified is bool)
+        && (!('rating' in data) || (data.rating is number && data.rating >= 0 && data.rating <= 5))
+        && (!('reviewCount' in data) || (data.reviewCount is number && data.reviewCount >= 0))
         && (!('isTest' in data) || data.isTest is bool)
         && (!('description' in data) || (data.description is string && data.description.size() <= 5000))
         && (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 2048));
@@ -81,7 +90,7 @@ service cloud.firestore {
       return data.keys().hasAll(['id', 'userId', 'sellerId', 'title', 'categoryId', 'price', 'currency', 'location', 'condition', 'seller'])
         && data.keys().hasOnly([
           'id', 'userId', 'sellerId', 'title', 'categoryId', 'categoryName', 'subcategory',
-          'price', 'currency', 'isNegotiable', 'location', 'region', 'condition', 'description',
+          'price', 'currency', 'isNegotiable', 'location', 'sellerLocation', 'region', 'condition', 'description',
           'imageUrl', 'images', 'seller', 'postedAt', 'viewsCount', 'likesCount', 'status', 'isSold',
           'soldAt', 'attributes', 'cvDetails', 'jobDetails', 'createdAt', 'updatedAt'
         ])
@@ -94,6 +103,7 @@ service cloud.firestore {
         && (!('subcategory' in data) || (data.subcategory is string && data.subcategory.size() <= 128))
         && data.price is number && data.price >= 0
         && data.location is string && data.location.size() > 0 && data.location.size() <= 256
+        && (!('sellerLocation' in data) || (data.sellerLocation is string && data.sellerLocation.size() <= 256))
         && (!('region' in data) || (data.region is string && data.region.size() <= 128))
         && data.currency is string && data.currency.size() > 0 && data.currency.size() <= 16
         && data.condition is string && data.condition.size() > 0 && data.condition.size() <= 64
@@ -132,20 +142,25 @@ service cloud.firestore {
           'id', 'sellerId', 'ownerId', 'shopName', 'displayName', 'phone', 'whatsapp',
           'location', 'region', 'bio', 'description', 'logoUrl', 'avatarUrl',
           'rating', 'ratingCount', 'salesCount', 'momoVerified', 'isTrustedSeller',
-          'isVerified', 'createdAt', 'updatedAt'
+          'isVerified', 'verificationProofUrl', 'verificationStatus', 'verifiedPlan',
+          'createdAt', 'updatedAt'
         ])
         && data.sellerId is string && isValidId(data.sellerId)
         && data.shopName is string && data.shopName.size() > 0 && data.shopName.size() <= 256
         && (!('location' in data) || (data.location is string && data.location.size() <= 256))
-        && (!('bio' in data) || (data.bio is string && data.bio.size() <= 3000));
+        && (!('bio' in data) || (data.bio is string && data.bio.size() <= 3000))
+        && (!('verificationProofUrl' in data) || (data.verificationProofUrl is string && data.verificationProofUrl.size() <= 2048))
+        && (!('verificationStatus' in data) || (data.verificationStatus is string && data.verificationStatus.size() <= 32))
+        && (!('verifiedPlan' in data) || (data.verifiedPlan is string && data.verifiedPlan.size() <= 128));
     }
 
     function isValidOrder(data) {
       return data.keys().hasAll(['userId', 'buyerId', 'items', 'total', 'deliveryAddress', 'phone', 'status', 'paymentMethod', 'sellerIds'])
         && data.keys().hasOnly([
           'id', 'userId', 'buyerId', 'buyerName', 'vendorId', 'sellerId', 'sellerIds',
-          'items', 'total', 'deliveryAddress', 'phone', 'status', 'paymentMethod',
-          'momoNumber', 'createdAt', 'updatedAt'
+          'sellerName', 'sellerPhone', 'productId', 'items', 'total', 'deliveryAddress',
+          'buyerLocation', 'phone', 'status', 'paymentMethod', 'momoNumber', 'proofUrl',
+          'whatsappOrder', 'hasReviewed', 'reviewId', 'createdAt', 'updatedAt'
         ])
         && (!('id' in data) || isValidId(data.id))
         && data.userId is string && isValidId(data.userId)
@@ -156,13 +171,24 @@ service cloud.firestore {
         && data.sellerIds[0] is string
         && (!('sellerId' in data) || isValidId(data.sellerId))
         && (!('vendorId' in data) || isValidId(data.vendorId))
+        && (!('sellerName' in data) || (data.sellerName is string && data.sellerName.size() <= 256))
+        && (!('sellerPhone' in data) || (data.sellerPhone is string && data.sellerPhone.size() <= 64))
+        && (!('productId' in data) || isValidId(data.productId))
         && (!('buyerName' in data) || (data.buyerName is string && data.buyerName.size() <= 128))
         && data.total is number && data.total >= 0
         && data.deliveryAddress is string && data.deliveryAddress.size() > 0 && data.deliveryAddress.size() <= 500
+        && (!('buyerLocation' in data) || (data.buyerLocation is string && data.buyerLocation.size() <= 256))
         && data.phone is string && data.phone.size() > 0 && data.phone.size() <= 64
-        && data.status is string && data.status in ['pending', 'pending_payment', 'paid', 'processing', 'shipped', 'delivered', 'cancelled']
+        && data.status is string && data.status in [
+          'Pending', 'Confirmed', 'On Delivery', 'Delivered',
+          'pending', 'pending_payment', 'paid', 'processing', 'shipped', 'delivered', 'cancelled'
+        ]
         && data.paymentMethod is string && data.paymentMethod.size() > 0 && data.paymentMethod.size() <= 64
-        && (!('momoNumber' in data) || (data.momoNumber is string && data.momoNumber.size() <= 64));
+        && (!('momoNumber' in data) || (data.momoNumber is string && data.momoNumber.size() <= 64))
+        && (!('proofUrl' in data) || (data.proofUrl is string && data.proofUrl.size() <= 2048))
+        && (!('whatsappOrder' in data) || data.whatsappOrder is bool)
+        && (!('hasReviewed' in data) || data.hasReviewed is bool)
+        && (!('reviewId' in data) || isValidId(data.reviewId));
     }
 
     function isOrderBuyer(data) {
@@ -187,6 +213,24 @@ service cloud.firestore {
         && data.whatsapp is string && data.whatsapp.size() > 0 && data.whatsapp.size() <= 64
         && (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000))
         && (!('status' in data) || (data.status is string && data.status in ['active', 'fulfilled']));
+    }
+
+    function isValidReview(data) {
+      return data.keys().hasAll(['id', 'userId', 'buyerName', 'sellerName', 'rating', 'comment'])
+        && data.keys().hasOnly([
+          'id', 'orderId', 'productId', 'listingId', 'sellerId', 'sellerName',
+          'userId', 'buyerName', 'rating', 'comment', 'createdAt'
+        ])
+        && isValidId(data.id)
+        && isValidId(data.userId)
+        && data.buyerName is string && data.buyerName.size() > 0 && data.buyerName.size() <= 128
+        && data.sellerName is string && data.sellerName.size() > 0 && data.sellerName.size() <= 256
+        && (!('orderId' in data) || isValidId(data.orderId))
+        && (!('productId' in data) || isValidId(data.productId))
+        && (!('listingId' in data) || isValidId(data.listingId))
+        && (!('sellerId' in data) || isValidId(data.sellerId))
+        && data.rating is number && data.rating >= 1 && data.rating <= 5
+        && data.comment is string && data.comment.size() > 0 && data.comment.size() <= 2000;
     }
 
     // =========================================================================
@@ -342,14 +386,41 @@ service cloud.firestore {
       allow update: if isSignedIn()
         && isValidId(orderId)
         && isValidOrder(incoming())
-        && (isOrderBuyer(existing()) || isOrderSeller(existing()))
-        && existing().status != 'cancelled'
         && incoming().userId == existing().userId
         && incoming().buyerId == existing().buyerId
         && incoming().total == existing().total
         && incoming().items == existing().items
         && incoming().sellerIds == existing().sellerIds
-        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+        && (
+          // Action 1: Buyer uploads MoMo payment proof before terminal cancellation
+          (
+            isOrderBuyer(existing())
+            && existing().status != 'cancelled'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['proofUrl', 'updatedAt'])
+          )
+          // Action 2: Buyer marks order reviewed once Delivered
+          || (
+            isOrderBuyer(existing())
+            && (existing().status == 'Delivered' || existing().status == 'delivered')
+            && incoming().diff(existing()).affectedKeys().hasOnly(['hasReviewed', 'reviewId', 'updatedAt'])
+          )
+          // Action 3: Seller updates fulfillment status (Pending -> Confirmed -> On Delivery -> Delivered)
+          || (
+            isOrderSeller(existing())
+            && existing().status != 'cancelled'
+            && existing().status != 'Delivered'
+            && existing().status != 'delivered'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          )
+          // Action 4: Legacy buyer payment simulation update before delivery/cancel
+          || (
+            isOrderBuyer(existing())
+            && existing().status != 'cancelled'
+            && existing().status != 'Delivered'
+            && existing().status != 'delivered'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          )
+        );
 
       allow delete: if false;
     }
@@ -375,6 +446,21 @@ service cloud.firestore {
       allow delete: if isSignedIn()
         && isValidId(wantedItemId)
         && existing().userId == request.auth.uid;
+    }
+
+    // =========================================================================
+    // 12. BUYER REVIEWS (/reviews/{reviewId}): Public READ; Signed-in Buyer CREATE
+    // =========================================================================
+    match /reviews/{reviewId} {
+      allow get: if isValidId(reviewId);
+      allow list: if true;
+
+      allow create: if isSignedIn()
+        && isValidId(reviewId)
+        && isValidReview(incoming())
+        && incoming().userId == request.auth.uid;
+
+      allow update, delete: if false;
     }
   }
 }
