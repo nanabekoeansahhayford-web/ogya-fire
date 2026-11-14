@@ -31,6 +31,7 @@ import {
   Database,
   Lock,
   LogIn,
+  Upload,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -58,7 +59,9 @@ import {
   removeDuplicateProductsFromFirestore,
   isTestProduct,
   getExactDuplicateProductIds,
+  uploadListingImageToStorage,
 } from '../utils/firebase';
+import { compressImageToMax1MB } from '../utils/imageUpload';
 import vendorStoreShowcaseImg from '../assets/images/vendor_store_showcase_1793870144741.jpg';
 
 interface VendorDashboardPageProps {
@@ -89,6 +92,10 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [image, setImage] = useState('');
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageUploadProgress, setImageUploadProgress] = useState(0);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
   const [stock, setStock] = useState('15');
   const [category, setCategory] = useState<string>('');
   const [description, setDescription] = useState('');
@@ -345,6 +352,11 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
       setFormError('Please enter a valid price in GHS.');
       return;
     }
+    if (isUploadingImage) {
+      setFormError('Please wait until image upload finishes before publishing.');
+      return;
+    }
+
     const numStock = Number(stock);
     if (isNaN(numStock) || numStock < 0) {
       setFormError('Please enter a valid stock count.');
@@ -396,6 +408,9 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
       setName('');
       setPrice('');
       setImage('');
+      setImagePreviewUrl(null);
+      setImageUploadError(null);
+      setImageUploadProgress(0);
       setStock('15');
       setCategory('');
       setDescription('');
@@ -1299,18 +1314,96 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
 
                 <div>
                   <label htmlFor="product_image" className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                    Image URL
+                    Product Image (Upload Max 1MB or URL)
                   </label>
-                  <div className="relative">
-                    <ImageIcon size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      id="product_image"
-                      type="url"
-                      value={image}
-                      onChange={(e) => setImage(e.target.value)}
-                      placeholder="https://images.unsplash.com/..."
-                      className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-red-500"
-                    />
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <ImageIcon size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                          id="product_image"
+                          type="url"
+                          value={image}
+                          onChange={(e) => {
+                            setImage(e.target.value);
+                            setImagePreviewUrl(e.target.value || null);
+                          }}
+                          placeholder="https://images.unsplash.com/..."
+                          className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-red-500"
+                        />
+                      </div>
+                      <label className="px-3 py-2.5 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shrink-0 border border-slate-700">
+                        <Upload size={14} className="text-amber-400" />
+                        <span>Upload</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            e.target.value = '';
+                            if (!file) return;
+                            const localPreview = URL.createObjectURL(file);
+                            setImagePreviewUrl(localPreview);
+                            setImageUploadError(null);
+                            setFormError(null);
+                            setImageUploadProgress(0);
+                            setIsUploadingImage(true);
+                            try {
+                              const compressed = await compressImageToMax1MB(file);
+                              const { downloadUrl } = await uploadListingImageToStorage(
+                                compressed,
+                                compressed.name,
+                                (pct) => setImageUploadProgress(pct),
+                                'products'
+                              );
+                              setImage(downloadUrl);
+                              setImagePreviewUrl(downloadUrl);
+                              setImageUploadProgress(100);
+                            } catch (err: any) {
+                              console.log('Vendor product image upload error:', err);
+                              const exactErr = err instanceof Error ? err.message : String(err);
+                              setImageUploadError(exactErr);
+                              setFormError(exactErr);
+                            } finally {
+                              setIsUploadingImage(false);
+                              try {
+                                URL.revokeObjectURL(localPreview);
+                              } catch {
+                                // ignore
+                              }
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+
+                    {(imagePreviewUrl || isUploadingImage || imageUploadError) && (
+                      <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
+                        {imagePreviewUrl && (
+                          <img
+                            src={imagePreviewUrl}
+                            alt="Product preview"
+                            className="w-12 h-12 rounded-lg object-cover shrink-0 border border-slate-200 dark:border-slate-700"
+                          />
+                        )}
+                        <div className="min-w-0 flex-1 text-xs">
+                          {isUploadingImage ? (
+                            <span className="font-bold text-amber-600 dark:text-amber-400">
+                              Uploading... {imageUploadProgress}%
+                            </span>
+                          ) : imageUploadError ? (
+                            <span className="font-semibold text-rose-600 dark:text-rose-400 break-words">
+                              {imageUploadError}
+                            </span>
+                          ) : (
+                            <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                              Image ready for Firestore
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1333,10 +1426,15 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isSubmittingProduct}
-                className="w-full py-4 px-6 bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 hover:opacity-95 active:scale-[0.99] text-white font-black text-sm rounded-2xl shadow-xl shadow-red-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
+                disabled={isSubmittingProduct || isUploadingImage}
+                className="w-full py-4 px-6 bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 hover:opacity-95 active:scale-[0.99] text-white font-black text-sm rounded-2xl shadow-xl shadow-red-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmittingProduct ? (
+                {isUploadingImage ? (
+                  <>
+                    <RefreshCw size={16} className="animate-spin" />
+                    <span>Uploading... {imageUploadProgress}%</span>
+                  </>
+                ) : isSubmittingProduct ? (
                   <>
                     <RefreshCw size={16} className="animate-spin" />
                     <span>Saving to Firestore 'products'...</span>

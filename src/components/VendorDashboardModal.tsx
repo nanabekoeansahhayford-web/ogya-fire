@@ -19,9 +19,11 @@ import {
   Truck,
   Lock,
   LogIn,
+  Upload,
 } from 'lucide-react';
 import { Product, ProductCategory, PRODUCT_CATEGORIES, Vendor } from '../types/store';
-import { auth, saveProductToFirestore, deleteProductFromFirestore } from '../utils/firebase';
+import { auth, saveProductToFirestore, deleteProductFromFirestore, uploadListingImageToStorage } from '../utils/firebase';
+import { compressImageToMax1MB } from '../utils/imageUpload';
 import { UserProfile } from '../types/marketplace';
 import vendorStoreShowcaseImg from '../assets/images/vendor_store_showcase_1793870144741.jpg';
 
@@ -53,6 +55,9 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState<string>('');
   const [imageUrl, setImageUrl] = useState('');
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [stock, setStock] = useState('10');
 
   const [isSaving, setIsSaving] = useState(false);
@@ -78,6 +83,9 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
     setPrice('');
     setCategory('');
     setImageUrl('');
+    setImagePreviewUrl(null);
+    setUploadProgress(0);
+    setIsUploadingImage(false);
     setStock('10');
     setEditingProduct(null);
     setErrorMessage(null);
@@ -90,6 +98,7 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
     setPrice(String(p.price));
     setCategory(p.category);
     setImageUrl(p.imageUrl);
+    setImagePreviewUrl(p.imageUrl || null);
     setStock(String(p.stock));
     setActiveTab('add_product');
   };
@@ -98,6 +107,11 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
     e.preventDefault();
     setErrorMessage(null);
     setSuccessMessage(null);
+
+    if (isUploadingImage) {
+      setErrorMessage('Please wait until image upload finishes before saving.');
+      return;
+    }
 
     if (!name.trim()) {
       setErrorMessage('Product title is required.');
@@ -550,17 +564,89 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Product Image URL (Optional)
+                    Product Image (Upload Max 1MB or URL)
                   </label>
-                  <div className="relative">
-                    <ImageIcon size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="url"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      placeholder="https://images.unsplash.com/..."
-                      className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-red-500"
-                    />
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <ImageIcon size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                          type="url"
+                          value={imageUrl}
+                          onChange={(e) => {
+                            setImageUrl(e.target.value);
+                            setImagePreviewUrl(e.target.value || null);
+                          }}
+                          placeholder="https://images.unsplash.com/..."
+                          className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-red-500"
+                        />
+                      </div>
+                      <label className="px-3 py-2 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1 cursor-pointer shrink-0 border border-slate-700">
+                        <Upload size={13} className="text-amber-400" />
+                        <span>Upload</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            e.target.value = '';
+                            if (!file) return;
+                            const localPreview = URL.createObjectURL(file);
+                            setImagePreviewUrl(localPreview);
+                            setErrorMessage(null);
+                            setUploadProgress(0);
+                            setIsUploadingImage(true);
+                            try {
+                              const compressed = await compressImageToMax1MB(file);
+                              const { downloadUrl } = await uploadListingImageToStorage(
+                                compressed,
+                                compressed.name,
+                                (pct) => setUploadProgress(pct),
+                                'products'
+                              );
+                              setImageUrl(downloadUrl);
+                              setImagePreviewUrl(downloadUrl);
+                              setUploadProgress(100);
+                            } catch (err: any) {
+                              console.log('Vendor modal image upload error:', err);
+                              const exactErr = err instanceof Error ? err.message : String(err);
+                              setErrorMessage(exactErr);
+                            } finally {
+                              setIsUploadingImage(false);
+                              try {
+                                URL.revokeObjectURL(localPreview);
+                              } catch {
+                                // ignore
+                              }
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+
+                    {(imagePreviewUrl || isUploadingImage) && (
+                      <div className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
+                        {imagePreviewUrl && (
+                          <img
+                            src={imagePreviewUrl}
+                            alt="Product preview"
+                            className="w-10 h-10 rounded-lg object-cover shrink-0 border border-slate-200 dark:border-slate-700"
+                          />
+                        )}
+                        <span className="text-xs font-bold">
+                          {isUploadingImage ? (
+                            <span className="text-amber-600 dark:text-amber-400">
+                              Uploading... {uploadProgress}%
+                            </span>
+                          ) : (
+                            <span className="text-emerald-600 dark:text-emerald-400">
+                              Image uploaded
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -582,10 +668,15 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isSaving}
-                className="w-full py-4 px-4 bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 hover:opacity-95 text-white font-black text-sm rounded-xl shadow-lg shadow-red-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.99] disabled:opacity-50"
+                disabled={isSaving || isUploadingImage}
+                className="w-full py-4 px-4 bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 hover:opacity-95 text-white font-black text-sm rounded-xl shadow-lg shadow-red-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSaving ? (
+                {isUploadingImage ? (
+                  <>
+                    <RefreshCw size={16} className="animate-spin" />
+                    <span>Uploading... {uploadProgress}%</span>
+                  </>
+                ) : isSaving ? (
                   <>
                     <RefreshCw size={16} className="animate-spin" />
                     <span>Saving to Firestore 'products'...</span>

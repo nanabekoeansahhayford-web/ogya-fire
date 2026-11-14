@@ -16,11 +16,14 @@ import {
   Trash2,
   Lock,
   LogIn,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { CATEGORIES, REGIONS } from '../data/categories';
 import { CategoryId, ItemCondition, Listing, UserProfile } from '../types/marketplace';
 import { saveCustomListing, getStoredListings } from '../utils/storage';
-import { auth, saveListingToFirestore } from '../utils/firebase';
+import { auth, saveListingToFirestore, uploadListingImageToStorage } from '../utils/firebase';
+import { compressImageToMax1MB } from '../utils/imageUpload';
 import { CategoryIcon } from './CategoryIcon';
 import { SmartPriceAdvisor } from './SmartPriceAdvisor';
 import heroMarketplaceShowcaseImg from '../assets/images/hero_marketplace_showcase_1792291775965.jpg';
@@ -60,14 +63,51 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
   const [whatsapp, setWhatsapp] = useState(
     currentUser?.whatsapp || currentUser?.phone || '+233 '
   );
-  const [previewImages, setPreviewImages] = useState<string[]>([
-    heroMarketplaceShowcaseImg,
+  const [photoItems, setPhotoItems] = useState<
+    Array<{
+      id: string;
+      file?: File;
+      fileName: string;
+      previewUrl: string;
+      downloadUrl: string | null;
+      progress: number;
+      status: 'uploading' | 'done' | 'error';
+      error?: string;
+      compressedSizeKb?: number;
+      isDefaultShowcase?: boolean;
+    }>
+  >([
+    {
+      id: 'default-showcase',
+      fileName: 'showcase.jpg',
+      previewUrl: heroMarketplaceShowcaseImg,
+      downloadUrl: heroMarketplaceShowcaseImg,
+      progress: 100,
+      status: 'done',
+      isDefaultShowcase: true,
+    },
   ]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const blobUrlsRef = useRef<Set<string>>(new Set());
+
+  // Clean up created object URLs on unmount
+  useEffect(() => {
+    const urls = blobUrlsRef.current;
+    return () => {
+      urls.forEach((url) => {
+        try {
+          URL.revokeObjectURL(url);
+        } catch {
+          // ignore
+        }
+      });
+      urls.clear();
+    };
+  }, []);
 
   // Update seller fields whenever currentUser changes
   useEffect(() => {
@@ -96,9 +136,25 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
 
   const allListings = useMemo(() => getStoredListings(), [isOpen]);
 
+  useEffect(() => {
+    if (isOpen) {
+      setSaveSuccess(false);
+      setErrorMessage(null);
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const currentCategory = CATEGORIES.find((c) => c.id === categoryId) || CATEGORIES[0];
+  const isUploadingImages = photoItems.some((item) => item.status === 'uploading');
+  const failedPhotoItems = photoItems.filter((item) => item.status === 'error');
+  const uploadingItems = photoItems.filter((item) => item.status === 'uploading');
+  const overallUploadPercent =
+    uploadingItems.length > 0
+      ? Math.round(
+          uploadingItems.reduce((sum, item) => sum + item.progress, 0) / uploadingItems.length
+        )
+      : 100;
 
   const handleCategoryChange = (newCat: CategoryId) => {
     setCategoryId(newCat);
@@ -108,39 +164,157 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
     }
   };
 
-  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      const readers = Array.from(files)
-        .slice(0, 6)
-        .map((file) => {
-          return new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              if (typeof reader.result === 'string') resolve(reader.result);
-            };
-            reader.readAsDataURL(file);
-          });
-        });
+  const startPhotoUpload = async (itemId: string, file: File) => {
+    try {
+      const compressedFile = await compressImageToMax1MB(file);
+      const compressedKb = Math.max(1, Math.round(compressedFile.size / 1024));
 
-      Promise.all(readers).then((newUrls) => {
-        setPreviewImages((prev) => {
-          // Remove default showcase image if user uploads their own photos
-          const filtered = prev.filter((u) => !u.includes('hero_marketplace_showcase'));
-          return [...filtered, ...newUrls].slice(0, 8);
-        });
-      });
+      setPhotoItems((prev) =>
+        prev.map((item) =>
+          item.id === itemId ? { ...item, compressedSizeKb: compressedKb } : item
+        )
+      );
+
+      const { downloadUrl } = await uploadListingImageToStorage(
+        compressedFile,
+        compressedFile.name,
+        (percent) => {
+          setPhotoItems((prev) =>
+            prev.map((item) =>
+              item.id === itemId
+                ? { ...item, progress: percent, status: 'uploading' }
+                : item
+            )
+          );
+        },
+        'listings'
+      );
+
+      setPhotoItems((prev) =>
+        prev.map((item) =>
+          item.id === itemId
+            ? {
+                ...item,
+                downloadUrl,
+                progress: 100,
+                status: 'done',
+                error: undefined,
+              }
+            : item
+        )
+      );
+    } catch (err: any) {
+      console.log('Image upload error:', err);
+      const exactMessage =
+        err instanceof Error
+          ? err.message
+          : typeof err === 'string'
+          ? err
+          : JSON.stringify(err);
+      setPhotoItems((prev) =>
+        prev.map((item) =>
+          item.id === itemId
+            ? {
+                ...item,
+                status: 'error',
+                error: exactMessage,
+              }
+            : item
+        )
+      );
+      setErrorMessage(exactMessage);
     }
   };
 
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setErrorMessage(null);
+
+    const existingNonDefaultCount = photoItems.filter((p) => !p.isDefaultShowcase).length;
+    const remainingSlots = Math.max(0, 8 - existingNonDefaultCount);
+    if (remainingSlots === 0) {
+      setErrorMessage('Maximum of 8 photos reached. Remove a photo to upload another.');
+      e.target.value = '';
+      return;
+    }
+
+    const selectedFiles = Array.from(files).slice(0, remainingSlots);
+    const newItems = selectedFiles.map((file, idx) => {
+      const previewUrl = URL.createObjectURL(file);
+      blobUrlsRef.current.add(previewUrl);
+      return {
+        id: `upload-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 7)}`,
+        file,
+        fileName: file.name,
+        previewUrl,
+        downloadUrl: null,
+        progress: 0,
+        status: 'uploading' as const,
+      };
+    });
+
+    // Immediately show preview + "Uploading... 0%" progress
+    setPhotoItems((prev) => {
+      const filtered = prev.filter((item) => !item.isDefaultShowcase);
+      return [...filtered, ...newItems].slice(0, 8);
+    });
+
+    e.target.value = '';
+
+    // Compress to max 1MB and upload each selected image to Firebase Storage
+    newItems.forEach((item) => {
+      if (item.file) {
+        void startPhotoUpload(item.id, item.file);
+      }
+    });
+  };
+
+  const handleRetryUpload = (itemId: string) => {
+    const target = photoItems.find((p) => p.id === itemId);
+    if (!target || !target.file) return;
+    setErrorMessage(null);
+    setPhotoItems((prev) =>
+      prev.map((item) =>
+        item.id === itemId
+          ? { ...item, status: 'uploading', progress: 0, error: undefined }
+          : item
+      )
+    );
+    void startPhotoUpload(itemId, target.file);
+  };
+
   const handleRemoveImage = (index: number) => {
-    setPreviewImages((prev) => prev.filter((_, idx) => idx !== index));
+    setPhotoItems((prev) => {
+      const target = prev[index];
+      if (target?.previewUrl?.startsWith('blob:')) {
+        try {
+          URL.revokeObjectURL(target.previewUrl);
+          blobUrlsRef.current.delete(target.previewUrl);
+        } catch {
+          // ignore
+        }
+      }
+      return prev.filter((_, idx) => idx !== index);
+    });
   };
 
   const handleAddPreset = (url: string) => {
-    setPreviewImages((prev) => {
-      const filtered = prev.filter((u) => !u.includes('hero_marketplace_showcase'));
-      return [...filtered, url].slice(0, 8);
+    setPhotoItems((prev) => {
+      const filtered = prev.filter((item) => !item.isDefaultShowcase);
+      if (filtered.length >= 8) return filtered;
+      return [
+        ...filtered,
+        {
+          id: `preset-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          fileName: 'sample.jpg',
+          previewUrl: url,
+          downloadUrl: url,
+          progress: 100,
+          status: 'done' as const,
+        },
+      ].slice(0, 8);
     });
   };
 
@@ -156,6 +330,19 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
 
     if (!currentUser || !auth.currentUser) {
       setErrorMessage('Please sign in as a Seller before publishing a product.');
+      return;
+    }
+
+    if (isUploadingImages) {
+      setErrorMessage('Please wait until all photo uploads finish before submitting.');
+      return;
+    }
+
+    if (failedPhotoItems.length > 0) {
+      setErrorMessage(
+        failedPhotoItems[0].error ||
+          'One or more photos failed to upload. Please retry or remove failed photos before submitting.'
+      );
       return;
     }
 
@@ -195,10 +382,12 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
       region,
       condition,
       description: description.trim() || `${title.trim()} for sale in ${location.trim()}, ${region}. Contact seller on WhatsApp for quick inspection and deal closure.`,
-      images:
-        previewImages.length > 0
-          ? previewImages
-          : [heroMarketplaceShowcaseImg],
+      images: (() => {
+        const uploadedUrls = photoItems
+          .filter((item) => item.status === 'done' && item.downloadUrl)
+          .map((item) => item.downloadUrl as string);
+        return uploadedUrls.length > 0 ? uploadedUrls : [heroMarketplaceShowcaseImg];
+      })(),
       seller: {
         name: sellerName.trim(),
         isVerified: currentUser ? currentUser.isVerified : true,
@@ -265,6 +454,20 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
     setSaveSuccess(true);
 
     setTimeout(() => {
+      setTitle('');
+      setPrice('');
+      setDescription('');
+      setPhotoItems([
+        {
+          id: 'default-showcase',
+          fileName: 'showcase.jpg',
+          previewUrl: heroMarketplaceShowcaseImg,
+          downloadUrl: heroMarketplaceShowcaseImg,
+          progress: 100,
+          status: 'done',
+          isDefaultShowcase: true,
+        },
+      ]);
       onClose();
     }, 600);
   };
@@ -417,30 +620,86 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
             <div className="flex items-center justify-between mb-2">
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <ImageIcon size={14} className="text-amber-500" />
-                <span>Product Photo Upload ({previewImages.length}/8) *</span>
+                <span>Product Photo Upload ({photoItems.length}/8) *</span>
               </label>
               <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                First photo will be the main listing cover
+                Max 1MB compressed · First photo is main cover
               </span>
             </div>
 
             <div className="p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-amber-500 dark:hover:border-amber-400 rounded-2xl bg-slate-50 dark:bg-slate-950/60 space-y-3 transition-colors">
               {/* Photo Thumbnails Preview */}
-              {previewImages.length > 0 && (
+              {photoItems.length > 0 && (
                 <div className="flex items-center gap-3 overflow-x-auto pb-1.5 pt-0.5">
-                  {previewImages.map((img, idx) => (
+                  {photoItems.map((item, idx) => (
                     <div
-                      key={idx}
-                      className="relative w-22 h-22 rounded-xl overflow-hidden border-2 border-slate-300 dark:border-slate-700 bg-slate-200 dark:bg-slate-800 shrink-0 group shadow-xs"
+                      key={item.id}
+                      className={`relative w-24 h-24 rounded-xl overflow-hidden border-2 bg-slate-200 dark:bg-slate-800 shrink-0 group shadow-xs ${
+                        item.status === 'error'
+                          ? 'border-rose-500'
+                          : item.status === 'uploading'
+                          ? 'border-amber-500'
+                          : 'border-slate-300 dark:border-slate-700'
+                      }`}
                     >
-                      <img src={img} alt={`Product photo ${idx + 1}`} className="w-full h-full object-cover" />
-                      <span className="absolute bottom-1 left-1 bg-black/75 text-[9px] text-white px-1.5 py-0.5 rounded font-mono font-bold">
-                        {idx === 0 ? 'Cover' : `#${idx + 1}`}
-                      </span>
+                      <img
+                        src={item.previewUrl}
+                        alt={`Product photo ${idx + 1}`}
+                        className={`w-full h-full object-cover ${
+                          item.status === 'uploading' ? 'opacity-70' : ''
+                        }`}
+                      />
+
+                      {/* Immediate Uploading... % Overlay */}
+                      {item.status === 'uploading' && (
+                        <div className="absolute inset-0 bg-slate-950/70 flex flex-col items-center justify-center p-1.5 text-center">
+                          <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mb-1" />
+                          <span className="text-[10px] font-black text-amber-300 leading-tight">
+                            Uploading... {item.progress}%
+                          </span>
+                          <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mt-1">
+                            <div
+                              className="h-full bg-amber-400 transition-all duration-150"
+                              style={{ width: `${Math.max(4, item.progress)}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Failed Upload Overlay */}
+                      {item.status === 'error' && (
+                        <div className="absolute inset-0 bg-rose-950/80 flex flex-col items-center justify-center p-1.5 text-center gap-1">
+                          <AlertCircle size={16} className="text-rose-300" />
+                          <span className="text-[9px] font-extrabold text-rose-200 leading-tight">
+                            Upload Failed
+                          </span>
+                          {item.file && (
+                            <button
+                              type="button"
+                              onClick={() => handleRetryUpload(item.id)}
+                              className="px-1.5 py-0.5 rounded bg-white text-rose-700 text-[9px] font-black flex items-center gap-0.5 cursor-pointer hover:bg-rose-50"
+                            >
+                              <RefreshCw size={9} />
+                              <span>Retry</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Bottom status / index label */}
+                      {item.status === 'done' && (
+                        <span className="absolute bottom-1 left-1 bg-black/75 text-[9px] text-white px-1.5 py-0.5 rounded font-mono font-bold flex items-center gap-1">
+                          <span>{idx === 0 ? 'Cover' : `#${idx + 1}`}</span>
+                          {!item.isDefaultShowcase && item.compressedSizeKb && (
+                            <span className="text-emerald-300">· {item.compressedSizeKb}KB</span>
+                          )}
+                        </span>
+                      )}
+
                       <button
                         type="button"
                         onClick={() => handleRemoveImage(idx)}
-                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center opacity-90 hover:opacity-100 transition-opacity cursor-pointer shadow-xs text-xs font-bold"
+                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center opacity-90 hover:opacity-100 transition-opacity cursor-pointer shadow-xs text-xs font-bold z-10"
                         title="Remove photo"
                         aria-label="Remove photo"
                       >
@@ -450,17 +709,54 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                   ))}
 
                   {/* Add more button */}
-                  {previewImages.length < 8 && (
+                  {photoItems.length < 8 && (
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-22 h-22 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-amber-500 text-slate-500 hover:text-amber-500 flex flex-col items-center justify-center gap-1 shrink-0 cursor-pointer bg-white dark:bg-slate-800 transition-colors"
+                      className="w-24 h-24 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-amber-500 text-slate-500 hover:text-amber-500 flex flex-col items-center justify-center gap-1 shrink-0 cursor-pointer bg-white dark:bg-slate-800 transition-colors"
                       title="Add more photos"
                     >
                       <Plus size={18} />
                       <span className="text-[10px] font-bold">Add Photo</span>
                     </button>
                   )}
+                </div>
+              )}
+
+              {/* Live Uploading Progress Banner */}
+              {isUploadingImages && (
+                <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs font-bold flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3.5 h-3.5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin shrink-0" />
+                    <span>Uploading... {overallUploadPercent}% (Compressing &amp; saving to Firebase Storage)</span>
+                  </div>
+                  <span className="font-mono text-[11px]">{overallUploadPercent}%</span>
+                </div>
+              )}
+
+              {/* Exact Upload Error Details */}
+              {failedPhotoItems.length > 0 && (
+                <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs space-y-1">
+                  {failedPhotoItems.map((failed) => (
+                    <div key={failed.id} className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-1.5">
+                        <AlertCircle size={14} className="text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                        <span>
+                          <strong className="font-bold">{failed.fileName}:</strong>{' '}
+                          {failed.error || 'Upload failed'}
+                        </span>
+                      </div>
+                      {failed.file && (
+                        <button
+                          type="button"
+                          onClick={() => handleRetryUpload(failed.id)}
+                          className="text-[11px] font-black text-rose-700 dark:text-rose-300 underline shrink-0 cursor-pointer"
+                        >
+                          Retry
+                        </button>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -485,7 +781,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                 </button>
 
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 text-center sm:text-right">
-                  PNG, JPG, WebP supported. Multiple files allowed.
+                  Auto-compressed to max 1MB · PNG, JPG, WebP supported.
                 </span>
               </div>
 
@@ -754,10 +1050,15 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
               </button>
               <button
                 type="submit"
-                disabled={isSaving}
-                className="px-6 py-2.5 bg-gradient-to-r from-amber-500 via-amber-400 to-orange-500 hover:from-amber-400 hover:to-orange-400 active:from-amber-600 text-slate-950 font-black text-xs sm:text-sm rounded-xl transition-all shadow-md cursor-pointer flex items-center gap-2 disabled:opacity-60"
+                disabled={isSaving || isUploadingImages}
+                className="px-6 py-2.5 bg-gradient-to-r from-amber-500 via-amber-400 to-orange-500 hover:from-amber-400 hover:to-orange-400 active:from-amber-600 text-slate-950 font-black text-xs sm:text-sm rounded-xl transition-all shadow-md cursor-pointer flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {isSaving ? (
+                {isUploadingImages ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                    <span>Uploading... {overallUploadPercent}%</span>
+                  </>
+                ) : isSaving ? (
                   <>
                     <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
                     <span>Saving to Firestore...</span>
