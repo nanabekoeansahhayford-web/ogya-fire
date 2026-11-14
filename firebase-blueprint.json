@@ -31,6 +31,7 @@
         "region": { "type": "string", "maxLength": 128 },
         "condition": { "type": "string", "maxLength": 64 },
         "description": { "type": "string", "maxLength": 5000 },
+        "imageUrl": { "type": "string", "maxLength": 2048 },
         "images": { "type": "array" },
         "seller": { "type": "object" },
         "postedAt": { "type": "string", "maxLength": 64 },

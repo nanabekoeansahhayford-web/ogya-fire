@@ -82,7 +82,7 @@ service cloud.firestore {
         && data.keys().hasOnly([
           'id', 'userId', 'sellerId', 'title', 'categoryId', 'categoryName', 'subcategory',
           'price', 'currency', 'isNegotiable', 'location', 'region', 'condition', 'description',
-          'images', 'seller', 'postedAt', 'viewsCount', 'likesCount', 'status', 'isSold',
+          'imageUrl', 'images', 'seller', 'postedAt', 'viewsCount', 'likesCount', 'status', 'isSold',
           'soldAt', 'attributes', 'cvDetails', 'jobDetails', 'createdAt', 'updatedAt'
         ])
         && isValidId(data.id)
@@ -98,6 +98,7 @@ service cloud.firestore {
         && data.currency is string && data.currency.size() > 0 && data.currency.size() <= 16
         && data.condition is string && data.condition.size() > 0 && data.condition.size() <= 64
         && (!('description' in data) || (data.description is string && data.description.size() <= 5000))
+        && (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 2048))
         && (!('images' in data) || (data.images is list && data.images.size() <= 12))
         && data.seller is map
         && data.seller.name is string && data.seller.name.size() > 0 && data.seller.name.size() <= 128

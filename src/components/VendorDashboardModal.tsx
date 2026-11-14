@@ -22,8 +22,8 @@ import {
   Upload,
 } from 'lucide-react';
 import { Product, ProductCategory, PRODUCT_CATEGORIES, Vendor } from '../types/store';
-import { auth, saveProductToFirestore, deleteProductFromFirestore, uploadListingImageToStorage } from '../utils/firebase';
-import { compressImageToMax1MB } from '../utils/imageUpload';
+import { auth, saveProductToFirestore, deleteProductFromFirestore } from '../utils/firebase';
+import { uploadImageToCloudinary } from '../utils/imageUpload';
 import { UserProfile } from '../types/marketplace';
 import vendorStoreShowcaseImg from '../assets/images/vendor_store_showcase_1793870144741.jpg';
 
@@ -595,21 +595,18 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
                             const localPreview = URL.createObjectURL(file);
                             setImagePreviewUrl(localPreview);
                             setErrorMessage(null);
-                            setUploadProgress(0);
+                            setUploadProgress(1);
                             setIsUploadingImage(true);
                             try {
-                              const compressed = await compressImageToMax1MB(file);
-                              const { downloadUrl } = await uploadListingImageToStorage(
-                                compressed,
-                                compressed.name,
-                                (pct) => setUploadProgress(pct),
-                                'products'
+                              const { secureUrl } = await uploadImageToCloudinary(
+                                file,
+                                (pct) => setUploadProgress(Math.max(1, pct))
                               );
-                              setImageUrl(downloadUrl);
-                              setImagePreviewUrl(downloadUrl);
+                              setImageUrl(secureUrl);
+                              setImagePreviewUrl(secureUrl);
                               setUploadProgress(100);
                             } catch (err: any) {
-                              console.log('Vendor modal image upload error:', err);
+                              console.log('Cloudinary vendor modal upload error:', err);
                               const exactErr = err instanceof Error ? err.message : String(err);
                               setErrorMessage(exactErr);
                             } finally {

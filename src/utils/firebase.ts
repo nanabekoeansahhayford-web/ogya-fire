@@ -33,22 +33,15 @@ import {
   reauthenticateWithPopup,
   User as FirebaseUser,
 } from 'firebase/auth';
-import {
-  getStorage,
-  ref,
-  uploadBytesResumable,
-  getDownloadURL,
-} from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { Listing, WantedItem } from '../types/marketplace';
 import { Product, Vendor, Order, OrderStatus } from '../types/store';
 import { SEED_PRODUCTS } from '../data/seedProducts';
 
-// Initialize Firebase App & Services
+// Initialize Firebase App & Services (Auth + Firestore only; images use Cloudinary)
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId); /* CRITICAL: The app will break without this line */
 export const auth = getAuth(app);
-export const storage = getStorage(app);
 
 export type { FirebaseUser, ConfirmationResult };
 
@@ -465,6 +458,11 @@ export async function saveListingToFirestore(listing: Listing): Promise<Listing>
     const safeImages = Array.isArray(listing.images)
       ? listing.images.filter((img) => typeof img === 'string' && img.length <= 2048).slice(0, 12)
       : [];
+    const safePrimaryImageUrl = (
+      (typeof listing.imageUrl === 'string' && listing.imageUrl.trim()) ||
+      safeImages[0] ||
+      ''
+    ).slice(0, 2048);
 
     const docData: Record<string, any> = {
       id: listing.id,
@@ -481,7 +479,8 @@ export async function saveListingToFirestore(listing: Listing): Promise<Listing>
       region: (listing.region || '').slice(0, 128),
       condition: (listing.condition || 'Brand New').slice(0, 64),
       description: (listing.description || '').slice(0, 5000),
-      images: safeImages,
+      imageUrl: safePrimaryImageUrl,
+      images: safeImages.length > 0 ? safeImages : safePrimaryImageUrl ? [safePrimaryImageUrl] : [],
       seller: {
         name: (listing.seller?.name || 'Seller').slice(0, 128),
         phone: (listing.seller?.phone || '+233 24 000 0000').slice(0, 64),
@@ -560,7 +559,18 @@ export async function fetchListingsFromFirestore(): Promise<Listing[]> {
     const snap = await getDocs(collection(db, path));
     const items: Listing[] = [];
     snap.forEach((d) => {
-      items.push(d.data() as Listing);
+      const data = d.data() as Listing;
+      const normalizedImages =
+        Array.isArray(data.images) && data.images.length > 0
+          ? data.images
+          : data.imageUrl
+          ? [data.imageUrl]
+          : [];
+      items.push({
+        ...data,
+        imageUrl: data.imageUrl || normalizedImages[0] || undefined,
+        images: normalizedImages,
+      });
     });
     return items;
   } catch (error) {
@@ -582,7 +592,18 @@ export function subscribeToListingsFromFirestore(
       (snapshot) => {
         const items: Listing[] = [];
         snapshot.forEach((d) => {
-          items.push(d.data() as Listing);
+          const data = d.data() as Listing;
+          const normalizedImages =
+            Array.isArray(data.images) && data.images.length > 0
+              ? data.images
+              : data.imageUrl
+              ? [data.imageUrl]
+              : [];
+          items.push({
+            ...data,
+            imageUrl: data.imageUrl || normalizedImages[0] || undefined,
+            images: normalizedImages,
+          });
         });
         onUpdate(items);
       },
@@ -1641,72 +1662,6 @@ export async function deleteCurrentAccountAndData(password?: string): Promise<{
       error: err?.message || 'Could not complete account deletion. Please try again.',
     };
   }
-}
-
-export interface StorageUploadResult {
-  downloadUrl: string;
-  storagePath: string;
-}
-
-/**
- * Upload a compressed image (<= 1MB) to Firebase Storage with live % progress.
- * Logs upload errors via console.log and rejects with the exact error message.
- */
-export function uploadListingImageToStorage(
-  file: Blob | File,
-  fileName: string,
-  onProgress?: (percent: number) => void,
-  folder: 'listings' | 'products' = 'listings'
-): Promise<StorageUploadResult> {
-  return new Promise((resolve, reject) => {
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      const authError = new Error('You must be signed in before uploading images.');
-      console.log('Firebase Storage upload error:', authError);
-      reject(authError);
-      return;
-    }
-
-    const safeFileName = (fileName || 'photo.jpg')
-      .replace(/[^a-zA-Z0-9._-]/g, '_')
-      .slice(-80);
-    const uniquePrefix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const storagePath = `${folder}/${currentUser.uid}/${uniquePrefix}_${safeFileName}`;
-    const storageRef = ref(storage, storagePath);
-
-    const uploadTask = uploadBytesResumable(storageRef, file, {
-      contentType: file.type || 'image/jpeg',
-    });
-
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        const percent =
-          snapshot.totalBytes > 0
-            ? Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100)
-            : 0;
-        onProgress?.(percent);
-      },
-      (error) => {
-        console.log('Firebase Storage upload error:', error);
-        const exactMessage =
-          error?.message ||
-          (error?.code ? `Firebase Storage error (${error.code})` : String(error));
-        reject(new Error(exactMessage));
-      },
-      async () => {
-        try {
-          const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
-          onProgress?.(100);
-          resolve({ downloadUrl, storagePath });
-        } catch (urlError: any) {
-          console.log('Firebase Storage getDownloadURL error:', urlError);
-          const exactMessage = urlError?.message || String(urlError);
-          reject(new Error(exactMessage));
-        }
-      }
-    );
-  });
 }
 
 

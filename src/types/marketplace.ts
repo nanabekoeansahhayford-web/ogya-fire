@@ -156,6 +156,7 @@ export interface Listing {
   region: string;
   condition: ItemCondition;
   description: string;
+  imageUrl?: string;
   images: string[];
   seller: SellerInfo;
   postedAt: string;

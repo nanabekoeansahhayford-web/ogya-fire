@@ -1,21 +1,44 @@
 /**
- * Client-side image compression utility before uploading to Firebase Storage.
- * Guarantees output image is <= 1MB (<= 980KB target) and reasonable resolution.
+ * Client-side image compression and Cloudinary unsigned upload utilities.
+ * Compresses images to max 1MB before uploading to Cloudinary.
  */
 
-export const MAX_UPLOAD_IMAGE_BYTES = 980 * 1024; // Strictly under 1MB (1,000,000 & 1,048,576 bytes)
+export const MAX_UPLOAD_IMAGE_BYTES = 980 * 1024; // Strictly under 1MB
+
+export const CLOUDINARY_CLOUD_NAME = 'pzfmaamb';
+export const CLOUDINARY_UPLOAD_PRESET = 'ogya_unsigned';
+export const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+
+export interface CloudinaryUploadResult {
+  secureUrl: string;
+  publicId?: string;
+  width?: number;
+  height?: number;
+  bytes?: number;
+}
 
 function loadImageFromFile(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const objectUrl = URL.createObjectURL(file);
     const img = new Image();
+    const timer = window.setTimeout(() => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error(`Timed out reading image "${file.name}". Please try another photo.`));
+    }, 15000);
+
     img.onload = () => {
+      window.clearTimeout(timer);
       URL.revokeObjectURL(objectUrl);
       resolve(img);
     };
     img.onerror = () => {
+      window.clearTimeout(timer);
       URL.revokeObjectURL(objectUrl);
-      reject(new Error(`Unable to read image "${file.name}". Please choose a valid JPG, PNG, or WebP file.`));
+      reject(
+        new Error(
+          `Unable to read image "${file.name}". Please choose a valid JPG, PNG, or WebP file.`
+        )
+      );
     };
     img.src = objectUrl;
   });
@@ -59,8 +82,7 @@ export async function compressImageToMax1MB(
     throw new Error(`Invalid image dimensions for "${file.name}".`);
   }
 
-  // If already well under 1MB and within 1920px, still normalize oversized images;
-  // if <= 300KB and <= 1600px in JPEG/WebP/PNG, return directly to preserve crispness.
+  // If already <= 300KB and <= 1600px in JPEG/WebP/PNG, keep original for crispness.
   if (
     file.size <= 300 * 1024 &&
     origWidth <= 1600 &&
@@ -114,7 +136,97 @@ export async function compressImageToMax1MB(
     });
   }
 
-  throw new Error(
-    `Could not compress "${file.name}" below 1MB. Please choose a smaller photo.`
-  );
+  throw new Error(`Could not compress "${file.name}" below 1MB. Please choose a smaller photo.`);
+}
+
+/**
+ * Compress an image to max 1MB and upload to Cloudinary unsigned preset
+ * with real byte-level upload progress (XMLHttpRequest + FormData).
+ */
+export async function uploadImageToCloudinary(
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<CloudinaryUploadResult> {
+  onProgress?.(3);
+  const compressedFile = await compressImageToMax1MB(file);
+  onProgress?.(8);
+
+  const formData = new FormData();
+  formData.append('file', compressedFile);
+  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', CLOUDINARY_UPLOAD_URL, true);
+    xhr.timeout = 45000;
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && event.total > 0) {
+        // Scale 0..100% network transfer across 10..95% so UI moves smoothly and never stalls at 0%
+        const pct = Math.min(95, Math.max(10, Math.round((event.loaded / event.total) * 85 + 10)));
+        onProgress?.(pct);
+      } else {
+        onProgress?.(50);
+      }
+    };
+
+    xhr.upload.onload = () => {
+      onProgress?.(96);
+    };
+
+    xhr.onload = () => {
+      let parsed: any = null;
+      try {
+        parsed = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+      } catch {
+        parsed = null;
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300 && parsed?.secure_url) {
+        onProgress?.(100);
+        resolve({
+          secureUrl: String(parsed.secure_url),
+          publicId: parsed.public_id ? String(parsed.public_id) : undefined,
+          width: typeof parsed.width === 'number' ? parsed.width : undefined,
+          height: typeof parsed.height === 'number' ? parsed.height : undefined,
+          bytes: typeof parsed.bytes === 'number' ? parsed.bytes : compressedFile.size,
+        });
+        return;
+      }
+
+      const exactMessage =
+        parsed?.error?.message ||
+        parsed?.message ||
+        `Cloudinary upload failed (HTTP ${xhr.status || 0}).`;
+      console.log('Cloudinary upload error:', {
+        status: xhr.status,
+        error: parsed?.error || parsed || xhr.responseText,
+      });
+      reject(new Error(exactMessage));
+    };
+
+    xhr.onerror = () => {
+      const networkErr = new Error(
+        'Network error while uploading image to Cloudinary. Please check your internet connection.'
+      );
+      console.log('Cloudinary upload network error:', networkErr);
+      reject(networkErr);
+    };
+
+    xhr.ontimeout = () => {
+      const timeoutErr = new Error(
+        'Cloudinary upload timed out after 45 seconds. Please check your connection and try again.'
+      );
+      console.log('Cloudinary upload timeout error:', timeoutErr);
+      reject(timeoutErr);
+    };
+
+    xhr.onabort = () => {
+      const abortErr = new Error('Image upload was aborted.');
+      console.log('Cloudinary upload aborted:', abortErr);
+      reject(abortErr);
+    };
+
+    xhr.send(formData);
+  });
 }

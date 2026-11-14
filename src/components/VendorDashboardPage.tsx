@@ -59,9 +59,8 @@ import {
   removeDuplicateProductsFromFirestore,
   isTestProduct,
   getExactDuplicateProductIds,
-  uploadListingImageToStorage,
 } from '../utils/firebase';
-import { compressImageToMax1MB } from '../utils/imageUpload';
+import { uploadImageToCloudinary } from '../utils/imageUpload';
 import vendorStoreShowcaseImg from '../assets/images/vendor_store_showcase_1793870144741.jpg';
 
 interface VendorDashboardPageProps {
@@ -1347,21 +1346,18 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
                             setImagePreviewUrl(localPreview);
                             setImageUploadError(null);
                             setFormError(null);
-                            setImageUploadProgress(0);
+                            setImageUploadProgress(1);
                             setIsUploadingImage(true);
                             try {
-                              const compressed = await compressImageToMax1MB(file);
-                              const { downloadUrl } = await uploadListingImageToStorage(
-                                compressed,
-                                compressed.name,
-                                (pct) => setImageUploadProgress(pct),
-                                'products'
+                              const { secureUrl } = await uploadImageToCloudinary(
+                                file,
+                                (pct) => setImageUploadProgress(Math.max(1, pct))
                               );
-                              setImage(downloadUrl);
-                              setImagePreviewUrl(downloadUrl);
+                              setImage(secureUrl);
+                              setImagePreviewUrl(secureUrl);
                               setImageUploadProgress(100);
                             } catch (err: any) {
-                              console.log('Vendor product image upload error:', err);
+                              console.log('Cloudinary vendor product upload error:', err);
                               const exactErr = err instanceof Error ? err.message : String(err);
                               setImageUploadError(exactErr);
                               setFormError(exactErr);

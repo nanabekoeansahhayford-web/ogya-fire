@@ -22,8 +22,8 @@ import {
 import { CATEGORIES, REGIONS } from '../data/categories';
 import { CategoryId, ItemCondition, Listing, UserProfile } from '../types/marketplace';
 import { saveCustomListing, getStoredListings } from '../utils/storage';
-import { auth, saveListingToFirestore, uploadListingImageToStorage } from '../utils/firebase';
-import { compressImageToMax1MB } from '../utils/imageUpload';
+import { auth, saveListingToFirestore } from '../utils/firebase';
+import { uploadImageToCloudinary } from '../utils/imageUpload';
 import { CategoryIcon } from './CategoryIcon';
 import { SmartPriceAdvisor } from './SmartPriceAdvisor';
 import heroMarketplaceShowcaseImg from '../assets/images/hero_marketplace_showcase_1792291775965.jpg';
@@ -166,36 +166,28 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
 
   const startPhotoUpload = async (itemId: string, file: File) => {
     try {
-      const compressedFile = await compressImageToMax1MB(file);
-      const compressedKb = Math.max(1, Math.round(compressedFile.size / 1024));
+      const result = await uploadImageToCloudinary(file, (percent) => {
+        setPhotoItems((prev) =>
+          prev.map((item) =>
+            item.id === itemId
+              ? { ...item, progress: Math.max(1, percent), status: 'uploading' }
+              : item
+          )
+        );
+      });
 
-      setPhotoItems((prev) =>
-        prev.map((item) =>
-          item.id === itemId ? { ...item, compressedSizeKb: compressedKb } : item
-        )
-      );
-
-      const { downloadUrl } = await uploadListingImageToStorage(
-        compressedFile,
-        compressedFile.name,
-        (percent) => {
-          setPhotoItems((prev) =>
-            prev.map((item) =>
-              item.id === itemId
-                ? { ...item, progress: percent, status: 'uploading' }
-                : item
-            )
-          );
-        },
-        'listings'
-      );
+      const compressedKb = result.bytes
+        ? Math.max(1, Math.round(result.bytes / 1024))
+        : undefined;
 
       setPhotoItems((prev) =>
         prev.map((item) =>
           item.id === itemId
             ? {
                 ...item,
-                downloadUrl,
+                previewUrl: result.secureUrl,
+                downloadUrl: result.secureUrl,
+                compressedSizeKb: compressedKb,
                 progress: 100,
                 status: 'done',
                 error: undefined,
@@ -204,7 +196,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
         )
       );
     } catch (err: any) {
-      console.log('Image upload error:', err);
+      console.log('Cloudinary image upload error:', err);
       const exactMessage =
         err instanceof Error
           ? err.message
@@ -250,12 +242,12 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
         fileName: file.name,
         previewUrl,
         downloadUrl: null,
-        progress: 0,
+        progress: 1,
         status: 'uploading' as const,
       };
     });
 
-    // Immediately show preview + "Uploading... 0%" progress
+    // Immediately show preview + live "Uploading... %" progress
     setPhotoItems((prev) => {
       const filtered = prev.filter((item) => !item.isDefaultShowcase);
       return [...filtered, ...newItems].slice(0, 8);
@@ -263,7 +255,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
 
     e.target.value = '';
 
-    // Compress to max 1MB and upload each selected image to Firebase Storage
+    // Compress to max 1MB and upload each selected image to Cloudinary
     newItems.forEach((item) => {
       if (item.file) {
         void startPhotoUpload(item.id, item.file);
@@ -278,7 +270,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
     setPhotoItems((prev) =>
       prev.map((item) =>
         item.id === itemId
-          ? { ...item, status: 'uploading', progress: 0, error: undefined }
+          ? { ...item, status: 'uploading', progress: 1, error: undefined }
           : item
       )
     );
@@ -382,6 +374,12 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
       region,
       condition,
       description: description.trim() || `${title.trim()} for sale in ${location.trim()}, ${region}. Contact seller on WhatsApp for quick inspection and deal closure.`,
+      imageUrl: (() => {
+        const uploadedUrls = photoItems
+          .filter((item) => item.status === 'done' && item.downloadUrl)
+          .map((item) => item.downloadUrl as string);
+        return uploadedUrls[0] || heroMarketplaceShowcaseImg;
+      })(),
       images: (() => {
         const uploadedUrls = photoItems
           .filter((item) => item.status === 'done' && item.downloadUrl)
@@ -643,7 +641,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                       }`}
                     >
                       <img
-                        src={item.previewUrl}
+                        src={item.downloadUrl || item.previewUrl}
                         alt={`Product photo ${idx + 1}`}
                         className={`w-full h-full object-cover ${
                           item.status === 'uploading' ? 'opacity-70' : ''
@@ -728,7 +726,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                 <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs font-bold flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <div className="w-3.5 h-3.5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin shrink-0" />
-                    <span>Uploading... {overallUploadPercent}% (Compressing &amp; saving to Firebase Storage)</span>
+                    <span>Uploading... {overallUploadPercent}% (Compressing &amp; uploading image)</span>
                   </div>
                   <span className="font-mono text-[11px]">{overallUploadPercent}%</span>
                 </div>

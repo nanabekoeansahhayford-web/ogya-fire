@@ -39,6 +39,7 @@ import {
   clearTestProductsFromFirestore,
   removeDuplicateProductsFromFirestore,
 } from '../utils/firebase';
+import { uploadImageToCloudinary } from '../utils/imageUpload';
 import {
   getVerificationRequests,
   getVerificationRequestByUserId,
@@ -97,6 +98,9 @@ export const SellerDashboardModal: React.FC<SellerDashboardModalProps> = ({
   const [ghanaCardPin, setGhanaCardPin] = useState(currentUser.ghanaCardNumber || 'GHA-724891204-7');
   const [fullNameOnCard, setFullNameOnCard] = useState(currentUser.name || 'Ansah Ford');
   const [cardPhoto, setCardPhoto] = useState<string>(currentUser.ghanaCardPhotoUrl || SAMPLE_GHANA_CARD_FRONT);
+  const [isUploadingCardPhoto, setIsUploadingCardPhoto] = useState(false);
+  const [cardUploadProgress, setCardUploadProgress] = useState(0);
+  const [cardUploadError, setCardUploadError] = useState<string | null>(null);
   const [isPhotoBlurred, setIsPhotoBlurred] = useState(true);
   const [isSubmittingCard, setIsSubmittingCard] = useState(false);
   const [adminMode, setAdminMode] = useState(false);
@@ -480,17 +484,36 @@ export const SellerDashboardModal: React.FC<SellerDashboardModalProps> = ({
     onToast('Standard Biometric Ghana Card loaded.');
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          setCardPhoto(reader.result);
-          onToast('Ghana Card photo uploaded securely.');
-        }
-      };
-      reader.readAsDataURL(file);
+    e.target.value = '';
+    if (!file) return;
+
+    const localPreview = URL.createObjectURL(file);
+    setCardPhoto(localPreview);
+    setCardUploadError(null);
+    setCardUploadProgress(1);
+    setIsUploadingCardPhoto(true);
+
+    try {
+      const { secureUrl } = await uploadImageToCloudinary(file, (pct) => {
+        setCardUploadProgress(Math.max(1, pct));
+      });
+      setCardPhoto(secureUrl);
+      setCardUploadProgress(100);
+      onToast('Ghana Card photo uploaded securely to Cloudinary.');
+    } catch (err: any) {
+      console.log('Cloudinary Ghana Card upload error:', err);
+      const exactErr = err instanceof Error ? err.message : String(err);
+      setCardUploadError(exactErr);
+      onToast(`Upload failed: ${exactErr}`);
+    } finally {
+      setIsUploadingCardPhoto(false);
+      try {
+        URL.revokeObjectURL(localPreview);
+      } catch {
+        // ignore
+      }
     }
   };
 
@@ -1756,11 +1779,23 @@ export const SellerDashboardModal: React.FC<SellerDashboardModalProps> = ({
                         )}
                       </div>
 
+                      {/* Upload Progress / Error Indicator */}
+                      {isUploadingCardPhoto && (
+                        <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold">
+                          Uploading... {cardUploadProgress}%
+                        </div>
+                      )}
+                      {cardUploadError && (
+                        <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold">
+                          {cardUploadError}
+                        </div>
+                      )}
+
                       {/* Upload and Sample Actions */}
                       <div className="grid grid-cols-2 gap-2 pt-1">
                         <label className="py-2 px-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs transition-colors">
                           <Plus size={13} />
-                          <span>Upload File</span>
+                          <span>{isUploadingCardPhoto ? `Uploading... ${cardUploadProgress}%` : 'Upload File'}</span>
                           <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
                         </label>
 
