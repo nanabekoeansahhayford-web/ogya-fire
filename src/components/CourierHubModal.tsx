@@ -42,6 +42,7 @@ import {
   DELIVERY_SPEED_OPTIONS,
 } from '../utils/courierStorage';
 import { formatPrice } from '../utils/storage';
+import ghanaCourierDeliveryImg from '../assets/images/ghana_courier_delivery_1792921463636.jpg';
 
 interface CourierHubModalProps {
   isOpen: boolean;
@@ -191,7 +192,7 @@ export const CourierHubModal: React.FC<CourierHubModalProps> = ({
 
             <div className="md:col-span-5 relative min-h-[180px] md:min-h-full">
               <img
-                src="/src/assets/images/ghana_courier_delivery_1792921463636.jpg"
+                src={ghanaCourierDeliveryImg}
                 alt="OGYA Ghana Express Courier Rider"
                 referrerPolicy="no-referrer"
                 className="w-full h-full object-cover md:absolute inset-0"

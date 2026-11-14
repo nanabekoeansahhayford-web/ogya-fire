@@ -23,6 +23,11 @@ import { saveCustomListing, getStoredListings } from '../utils/storage';
 import { auth, saveListingToFirestore } from '../utils/firebase';
 import { CategoryIcon } from './CategoryIcon';
 import { SmartPriceAdvisor } from './SmartPriceAdvisor';
+import heroMarketplaceShowcaseImg from '../assets/images/hero_marketplace_showcase_1792291775965.jpg';
+import spotlightVehiclesAutoImg from '../assets/images/spotlight_vehicles_auto_1792291776565.jpg';
+import spotlightModernPropertyImg from '../assets/images/spotlight_modern_property_1792291776719.jpg';
+import spotlightDevicesTechImg from '../assets/images/spotlight_devices_tech_1792291775880.jpg';
+import ghanaCourierDeliveryImg from '../assets/images/ghana_courier_delivery_1792921463636.jpg';
 
 interface PostAdModalProps {
   isOpen: boolean;
@@ -56,7 +61,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
     currentUser?.whatsapp || currentUser?.phone || '+233 '
   );
   const [previewImages, setPreviewImages] = useState<string[]>([
-    '/src/assets/images/hero_marketplace_showcase_1792291775965.jpg',
+    heroMarketplaceShowcaseImg,
   ]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -193,7 +198,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
       images:
         previewImages.length > 0
           ? previewImages
-          : ['/src/assets/images/hero_marketplace_showcase_1792291775965.jpg'],
+          : [heroMarketplaceShowcaseImg],
       seller: {
         name: sellerName.trim(),
         isVerified: currentUser ? currentUser.isVerified : true,
@@ -492,28 +497,28 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <button
                     type="button"
-                    onClick={() => handleAddPreset('/src/assets/images/spotlight_vehicles_auto_1792291776565.jpg')}
+                    onClick={() => handleAddPreset(spotlightVehiclesAutoImg)}
                     className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 px-2 py-1 rounded-lg cursor-pointer"
                   >
                     + Auto / Car
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleAddPreset('/src/assets/images/spotlight_modern_property_1792291776719.jpg')}
+                    onClick={() => handleAddPreset(spotlightModernPropertyImg)}
                     className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 px-2 py-1 rounded-lg cursor-pointer"
                   >
                     + Property
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleAddPreset('/src/assets/images/spotlight_devices_tech_1792291775880.jpg')}
+                    onClick={() => handleAddPreset(spotlightDevicesTechImg)}
                     className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 px-2 py-1 rounded-lg cursor-pointer"
                   >
                     + Phone & Tech
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleAddPreset('/src/assets/images/ghana_courier_delivery_1792921463636.jpg')}
+                    onClick={() => handleAddPreset(ghanaCourierDeliveryImg)}
                     className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 px-2 py-1 rounded-lg cursor-pointer"
                   >
                     + Delivery Goods

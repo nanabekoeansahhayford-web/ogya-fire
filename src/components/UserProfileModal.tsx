@@ -50,6 +50,7 @@ import mamaEfuaImg from '../assets/images/food_mama_efua_jollof_1793886043512.jp
 import accraGrillImg from '../assets/images/food_accra_grill_tilapia_1793886043887.jpg';
 import auntieMuniImg from '../assets/images/food_auntie_muni_waakye_1793886045717.jpg';
 import freshJuiceImg from '../assets/images/food_fresh_juice_bar_1793886046929.jpg';
+import heroMarketplaceShowcaseImg from '../assets/images/hero_marketplace_showcase_1792291775965.jpg';
 
 // Pre-seeded demo orders representing authentic Ghanaian food and safety equipment
 const DEMO_PAST_ORDERS: Order[] = [
@@ -1416,8 +1417,9 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                           {/* Image with SOLD banner badge */}
                           <div className="relative w-16 h-14 shrink-0 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">
                             <img
-                              src={item.images[0] || '/src/assets/images/hero_marketplace_showcase_1792291775965.jpg'}
+                              src={item.images[0] || heroMarketplaceShowcaseImg}
                               alt={item.title}
+                              referrerPolicy="no-referrer"
                               className={`w-full h-full object-cover ${isItemSold ? 'grayscale-40 contrast-90' : ''}`}
                             />
                             {isItemSold && (

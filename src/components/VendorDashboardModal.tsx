@@ -23,6 +23,7 @@ import {
 import { Product, ProductCategory, PRODUCT_CATEGORIES, Vendor } from '../types/store';
 import { auth, saveProductToFirestore, deleteProductFromFirestore } from '../utils/firebase';
 import { UserProfile } from '../types/marketplace';
+import vendorStoreShowcaseImg from '../assets/images/vendor_store_showcase_1793870144741.jpg';
 
 interface VendorDashboardModalProps {
   isOpen: boolean;
@@ -195,8 +196,9 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
             {/* Vendor Logo */}
             <div className="w-14 h-14 rounded-2xl overflow-hidden ring-2 ring-white/30 bg-white/20 backdrop-blur-md shrink-0 shadow-md">
               <img
-                src={vendor?.logoUrl || '/src/assets/images/vendor_store_showcase_1793870144741.jpg'}
+                src={vendor?.logoUrl || vendorStoreShowcaseImg}
                 alt={vendor?.shopName || 'Vendor'}
+                referrerPolicy="no-referrer"
                 className="w-full h-full object-cover"
               />
             </div>

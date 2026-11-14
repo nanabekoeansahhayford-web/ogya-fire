@@ -1,4 +1,7 @@
 import { Listing } from '../types/marketplace';
+import spotlightVehiclesAutoImg from '../assets/images/spotlight_vehicles_auto_1792291776565.jpg';
+import spotlightDevicesTechImg from '../assets/images/spotlight_devices_tech_1792291775880.jpg';
+import spotlightModernPropertyImg from '../assets/images/spotlight_modern_property_1792291776719.jpg';
 
 export const SEED_LISTINGS: Listing[] = [
   // ==========================================
@@ -22,7 +25,7 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Like New / Mint',
     description: 'Immaculate 2023 Toyota Land Cruiser Prado TX-L 2.8L D-4D Turbo Diesel. 7-seater luxury leather interior, sunroof, 360-degree cameras, cool box, keyless entry and push start. Full documentation with GRA customs duty fully cleared. In-person physical inspection required before payment.',
     images: [
-      '/src/assets/images/spotlight_vehicles_auto_1792291776565.jpg',
+      spotlightVehiclesAutoImg,
       'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80'
     ],
@@ -541,7 +544,7 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Brand new factory sealed box Apple iPhone 15 Pro Max 256GB Natural Titanium. Direct US Import, A2849 Factory Unlocked with 1 year AppleCare warranty. Same-day Accra door delivery with MoMo Paystack payment.',
     images: [
-      '/src/assets/images/spotlight_devices_tech_1792291775880.jpg',
+      spotlightDevicesTechImg,
       'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?auto=format&fit=crop&w=1200&q=80'
     ],
@@ -591,7 +594,7 @@ export const SEED_LISTINGS: Listing[] = [
     description: 'Official Samsung Galaxy S24 Ultra 512GB Titanium Black. 200MP camera with Galaxy AI features, titanium frame, Snapdragon 8 Gen 3, 5000mAh battery. Complete sealed pack with receipt & 2-year warranty.',
     images: [
       'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?auto=format&fit=crop&w=1200&q=80',
-      '/src/assets/images/spotlight_devices_tech_1792291775880.jpg'
+      spotlightDevicesTechImg
     ],
     seller: {
       name: 'Adum Phone Plaza',
@@ -919,7 +922,7 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Like New / Mint',
     description: 'Modern Chamber and Hall Self Contain in a peaceful gated house at Ahodwo, Kumasi. Has private bathroom, fitted kitchen sink, own ECG prepaid meter, 24/7 Ghana Water flow with backup polytank, tiled floor and ceiling fan. In-person inspection required with landlord before signing.',
     images: [
-      '/src/assets/images/spotlight_modern_property_1792291776719.jpg',
+      spotlightModernPropertyImg,
       'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1200&q=80'
     ],
@@ -967,7 +970,7 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Executive 2-bedroom en-suite apartment in a serene gated estate at Tema Community 25. Spacious hall with dining area, modern fitted kitchen with granite tops, water heaters, paved compound, dedicated parking, electric fencing and security guard post. Inspect in person before tenancy payment.',
     images: [
-      '/src/assets/images/spotlight_modern_property_1792291776719.jpg',
+      spotlightModernPropertyImg,
       'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&q=80'
     ],
@@ -1014,7 +1017,7 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Like New / Mint',
     description: 'Stunning 4-bedroom executive furnished house in prime East Legon. Features Olympic-grade swimming pool, standby generator, en-suite bedrooms, open plan Italian kitchen, rooftop terrace, 2-bedroom boys quarters, electric gate. Physical site tour arranged on WhatsApp.',
     images: [
-      '/src/assets/images/spotlight_modern_property_1792291776719.jpg',
+      spotlightModernPropertyImg,
       'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80'
     ],

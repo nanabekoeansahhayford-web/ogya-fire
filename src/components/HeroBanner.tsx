@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, MapPin, Layers, ArrowRight, Clock, X, Sparkles, Mic, MicOff } from 'lucide-react';
+import { Search, MapPin, Layers, ArrowRight, Clock, X, Sparkles, Mic, Store } from 'lucide-react';
 import { CATEGORIES, REGIONS } from '../data/categories';
 import { CategoryId } from '../types/marketplace';
 import {
@@ -8,6 +8,8 @@ import {
   removeRecentSearch,
   clearRecentSearches,
 } from '../utils/storage';
+import heroAccraFastDeliveryImg from '../assets/images/hero_accra_fast_delivery_1793870145564.jpg';
+import heroMarketplaceShowcaseImg from '../assets/images/hero_marketplace_showcase_1792291775965.jpg';
 
 interface HeroBannerProps {
   searchQuery: string;
@@ -37,21 +39,19 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   const [isListening, setIsListening] = useState(false);
   const [voiceFeedback, setVoiceFeedback] = useState<string | null>(null);
   const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [heroBgError, setHeroBgError] = useState(false);
+  const [heroCardError, setHeroCardError] = useState(false);
 
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  const quickTags = [
-    'iPhone 15',
-    'Toyota Prado',
-    'Trotro Kumasi',
-    'Apartments Tema',
-    'Kente Cloth',
-    'Jollof Rice',
-    'Waakye Special',
-    'Master Plumber',
-    'Electrician',
+  const popularSuggestions = [
+    'Range Rover',
+    'East Legon Villa',
+    'MacBook M3',
+    'Bonwire Kente',
+    'Accountant CV',
   ];
 
   // Close recent searches dropdown when clicking outside
@@ -130,7 +130,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
     setRecentSearches([]);
   };
 
-  const handlePopularTagClick = (tag: string) => {
+  const handleSuggestionClick = (tag: string) => {
     const updated = addRecentSearch(tag);
     setRecentSearches(updated);
     onQuickTagClick(tag);
@@ -232,12 +232,15 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
     <div className="relative bg-slate-950 text-white overflow-hidden border-b border-slate-800">
       {/* Background imagery with subtle overlay scrim */}
       <div className="absolute inset-0 z-0">
-        <img
-          src="/src/assets/images/hero_accra_fast_delivery_1793870145564.jpg"
-          alt="Shop Local in Accra - Fast Delivery on OGYA"
-          className="w-full h-full object-cover opacity-35 object-center"
-          referrerPolicy="no-referrer"
-        />
+        {!heroBgError && (
+          <img
+            src={heroAccraFastDeliveryImg}
+            alt="Shop Local in Accra - Fast Delivery on OGYA"
+            onError={() => setHeroBgError(true)}
+            className="w-full h-full object-cover opacity-35 object-center"
+            referrerPolicy="no-referrer"
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/85 to-slate-900/60" />
       </div>
 
@@ -279,30 +282,30 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               )}
 
               <div
-                className={`bg-white dark:bg-slate-900 p-2 sm:p-2.5 rounded-2xl shadow-xl flex flex-col md:flex-row items-stretch md:items-center gap-2 text-slate-900 dark:text-white border transition-all ${
+                className={`bg-[#0B1221] p-2 sm:p-2.5 rounded-[16px] shadow-xl flex flex-col md:flex-row items-stretch md:items-center gap-2 text-white border-2 transition-all ${
                   isListening
-                    ? 'ring-2 ring-red-500 border-red-500 shadow-2xl'
+                    ? 'border-red-500 ring-2 ring-red-500/40 shadow-2xl'
                     : isFocused
-                    ? 'ring-2 ring-amber-500/80 border-amber-500/50 shadow-2xl'
-                    : 'border-transparent dark:border-slate-800'
+                    ? 'border-[#F59E0B] ring-2 ring-[#F59E0B]/30 shadow-2xl'
+                    : 'border-[#F59E0B]'
                 }`}
               >
                 {/* Search query input */}
-                <div className="flex-1 flex items-center gap-2 px-3 py-2.5 bg-slate-50 dark:bg-slate-800/80 md:bg-transparent md:dark:bg-transparent rounded-xl min-h-[44px]">
+                <div className="flex-1 flex items-center gap-2 px-3 py-2.5 bg-[#111A2E] md:bg-transparent rounded-xl min-h-[44px]">
                   <Search className="w-5 h-5 text-slate-400 shrink-0" />
                   <input
                     ref={inputRef}
                     type="text"
                     placeholder={
                       isListening
-                        ? 'Listening... say e.g. "Toyota", "iPhone 15"'
-                        : 'Search Waakye, Jollof, Phones, Kente...'
+                        ? 'Listening... say e.g. "Range Rover", "MacBook M3"'
+                        : 'What are you looking for...'
                     }
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
                     onFocus={handleInputFocus}
                     onKeyDown={handleKeyDown}
-                    className="w-full bg-transparent text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none caret-amber-500"
+                    className="w-full bg-transparent text-sm font-medium text-white placeholder:text-slate-300 focus:outline-none caret-[#F59E0B]"
                   />
 
                   {/* Clear text button */}
@@ -313,7 +316,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                         onSearchChange('');
                         inputRef.current?.focus();
                       }}
-                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer transition-colors"
+                      className="text-slate-400 hover:text-white p-1 cursor-pointer transition-colors"
                       title="Clear search text"
                       aria-label="Clear search"
                     >
@@ -328,7 +331,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                     className={`p-1.5 rounded-lg transition-all cursor-pointer relative shrink-0 flex items-center justify-center min-h-[36px] min-w-[36px] ${
                       isListening
                         ? 'bg-red-500 text-white animate-pulse shadow-md ring-2 ring-red-400/60'
-                        : 'text-slate-400 hover:text-amber-500 hover:bg-slate-200/60 dark:hover:bg-slate-800'
+                        : 'text-slate-300 hover:text-[#F59E0B] hover:bg-slate-800/80'
                     }`}
                     title={
                       isListening
@@ -337,11 +340,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                     }
                     aria-label={isListening ? 'Stop voice listening' : 'Start voice search'}
                   >
-                    {isListening ? (
-                      <Mic size={17} className="animate-bounce" />
-                    ) : (
-                      <Mic size={17} />
-                    )}
+                    <Mic size={17} className={isListening ? 'animate-bounce' : ''} />
                     {isListening && (
                       <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-400 rounded-full animate-ping" />
                     )}
@@ -349,19 +348,19 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                 </div>
 
                 {/* Category selection */}
-                <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-50 dark:bg-slate-800/80 md:bg-transparent md:dark:bg-transparent rounded-xl border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 min-h-[44px]">
+                <div className="flex items-center gap-2 px-3 py-2.5 bg-[#111A2E] md:bg-transparent rounded-xl border-t md:border-t-0 md:border-l border-slate-700/80 min-h-[44px]">
                   <Layers className="w-4 h-4 text-slate-400 shrink-0" />
                   <select
                     value={selectedCategory}
                     onChange={(e) => onCategoryChange(e.target.value as CategoryId | 'all')}
                     aria-label="Filter by Category"
-                    className="w-full md:w-auto bg-transparent text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer md:max-w-[130px] truncate"
+                    className="w-full md:w-auto bg-transparent text-xs font-semibold text-slate-200 focus:outline-none cursor-pointer md:max-w-[140px] truncate"
                   >
-                    <option value="all" className="dark:bg-slate-900 dark:text-slate-100">
-                      All Categories
+                    <option value="all" className="bg-[#0B1221] text-white">
+                      All 17 Categories
                     </option>
                     {CATEGORIES.map((c) => (
-                      <option key={c.id} value={c.id} className="dark:bg-slate-900 dark:text-slate-100">
+                      <option key={c.id} value={c.id} className="bg-[#0B1221] text-white">
                         {c.name}
                       </option>
                     ))}
@@ -369,7 +368,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                 </div>
 
                 {/* Region selection */}
-                <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-50 dark:bg-slate-800/80 md:bg-transparent md:dark:bg-transparent rounded-xl border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 min-h-[44px]">
+                <div className="flex items-center gap-2 px-3 py-2.5 bg-[#111A2E] md:bg-transparent rounded-xl border-t md:border-t-0 md:border-l border-slate-700/80 min-h-[44px]">
                   <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
                   <select
                     value={selectedRegion === 'all' ? 'All Regions' : selectedRegion}
@@ -381,51 +380,47 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                       }, 60);
                     }}
                     aria-label="Filter by Region"
-                    className="w-full md:w-auto bg-transparent text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer md:max-w-[130px] truncate"
+                    className="w-full md:w-auto bg-transparent text-xs font-semibold text-slate-200 focus:outline-none cursor-pointer md:max-w-[130px] truncate"
                   >
-                    <option value="All Regions" className="dark:bg-slate-900 dark:text-slate-100">
+                    <option value="All Regions" className="bg-[#0B1221] text-white">
                       All Regions
                     </option>
                     {selectedRegion &&
                       selectedRegion !== 'All Regions' &&
                       selectedRegion !== 'all' &&
                       !REGIONS.includes(selectedRegion) && (
-                        <option value={selectedRegion} className="dark:bg-slate-900 dark:text-slate-100">
-                          📍 {selectedRegion}
+                        <option value={selectedRegion} className="bg-[#0B1221] text-white">
+                          {selectedRegion}
                         </option>
                       )}
                     {REGIONS.map((r) => (
-                      <option key={r} value={r} className="dark:bg-slate-900 dark:text-slate-100">
+                      <option key={r} value={r} className="bg-[#0B1221] text-white">
                         {r}
                       </option>
                     ))}
                   </select>
                 </div>
 
-                {/* Submit / Filter action */}
+                {/* Submit / Filter action — Orange #F59E0B with black bold text */}
                 <button
                   type="button"
                   onClick={() => handleExecuteSearch()}
-                  className="w-full md:w-auto px-6 py-3.5 bg-[#00875A] hover:bg-[#00734c] active:bg-[#005a3c] text-white font-black text-sm rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 cursor-pointer shadow-md hover:shadow-lg active:scale-98 min-h-[44px] relative z-20"
+                  className="w-full md:w-auto px-6 py-3.5 bg-[#F59E0B] hover:bg-[#fbbf24] active:bg-[#d97706] text-slate-950 font-black text-sm rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 cursor-pointer shadow-md hover:shadow-lg min-h-[44px] relative z-20 whitespace-nowrap"
                 >
                   <span>Search</span>
-                  <span className="text-[#FF6600]">🔥</span>
-                  <ArrowRight size={16} />
+                  <ArrowRight size={16} strokeWidth={2.5} />
                 </button>
               </div>
 
-              {/* Dropdown panel displaying 'Recent Searches' when the search input is focused */}
-              {isFocused && (
-                <div
-                  className="absolute left-0 right-0 top-full mt-2 z-50 bg-slate-900/98 backdrop-blur-md text-white rounded-xl border border-slate-750 shadow-2xl p-4 animate-in fade-in slide-in-from-top-2 duration-150"
-                >
+              {/* Card directly below search bar: Recent Searches + Popular Suggestions */}
+              <div className="mt-3 bg-[#0F172A]/95 backdrop-blur-md text-white rounded-2xl border border-slate-700/80 shadow-xl p-4">
                 {recentSearches.length > 0 ? (
                   <div>
                     <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-800 text-xs">
                       <div className="flex items-center gap-1.5 font-bold text-slate-200">
-                        <Clock size={14} className="text-amber-400 shrink-0" />
+                        <Clock size={14} className="text-[#F59E0B] shrink-0" />
                         <span>Recent Searches</span>
-                        <span className="text-[10px] text-slate-400 font-mono">
+                        <span className="text-[10px] text-slate-400 font-mono tabular-nums">
                           ({recentSearches.length})
                         </span>
                       </div>
@@ -439,12 +434,11 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                       </button>
                     </div>
 
-                    {/* Clickable tags */}
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap mb-3">
                       {recentSearches.map((tag) => (
                         <div
                           key={tag}
-                          className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/90 hover:bg-slate-750 text-slate-200 hover:text-amber-300 border border-slate-700 hover:border-amber-500/50 transition-all shadow-xs group"
+                          className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/90 hover:bg-slate-800 text-slate-200 hover:text-[#F59E0B] border border-slate-700 hover:border-[#F59E0B]/50 transition-all shadow-xs group"
                         >
                           <button
                             type="button"
@@ -452,7 +446,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                             className="flex items-center gap-1.5 text-left truncate max-w-[220px] cursor-pointer"
                             title={`Search for "${tag}"`}
                           >
-                            <Clock size={11} className="text-slate-400 group-hover:text-amber-400 shrink-0" />
+                            <Clock size={11} className="text-slate-400 group-hover:text-[#F59E0B] shrink-0" />
                             <span className="truncate">{tag}</span>
                           </button>
                           <button
@@ -469,81 +463,70 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <div>
-                    <div className="flex items-center gap-1.5 font-bold text-slate-200 text-xs mb-1.5">
-                      <Clock size={14} className="text-amber-400 shrink-0" />
+                  <div className="mb-3">
+                    <div className="flex items-center gap-1.5 font-bold text-slate-200 text-xs mb-1">
+                      <Clock size={14} className="text-[#F59E0B] shrink-0" />
                       <span>Recent Searches</span>
                     </div>
-                    <p className="text-xs text-slate-400 mb-3">
-                      No recent searches yet. Search for vehicles, electronics, apartments, or jobs to quickly revisit them here.
+                    <p className="text-xs text-slate-400">
+                      No recent searches yet... Search for vehicles, electronics, apartments, or jobs to quickly revisit them here.
                     </p>
-                    <div className="pt-2.5 border-t border-slate-800">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2 flex items-center gap-1">
-                        <Sparkles size={11} className="text-amber-400" />
-                        <span>Popular Suggestions:</span>
-                      </span>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {['Jollof Rice', 'Waakye Special', 'Kente Cloth', 'iPhone', 'Tilapia'].map((tag) => (
-                          <button
-                            key={tag}
-                            type="button"
-                            onClick={() => handleSelectTag(tag)}
-                            className="text-xs bg-slate-800 hover:bg-amber-600 hover:text-white text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 hover:border-amber-500 transition-colors cursor-pointer flex items-center gap-1 active:scale-95"
-                          >
-                            <span>{tag}</span>
-                            <span className="text-amber-400 text-[10px]">🔥</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
                   </div>
                 )}
+
+                <div className="pt-2.5 border-t border-slate-800">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Sparkles size={11} className="text-[#F59E0B]" />
+                    <span>POPULAR SUGGESTIONS</span>
+                  </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {popularSuggestions.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => handleSuggestionClick(tag)}
+                        className="text-xs font-semibold bg-slate-800/90 hover:bg-[#F59E0B] hover:text-slate-950 text-slate-200 px-3 py-1.5 rounded-full border border-slate-700 hover:border-[#F59E0B] transition-colors cursor-pointer active:scale-95 whitespace-nowrap"
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
           </div>
 
-          {/* Quick trending popular tags below search bar */}
-          <div className="mt-4 flex items-center gap-2 flex-wrap text-xs">
-            <span className="font-bold text-slate-300 flex items-center gap-1.5 shrink-0">
-              <Sparkles size={13} className="text-amber-400" />
-              <span>Popular Tags:</span>
-            </span>
-            {quickTags.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => handlePopularTagClick(tag)}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-800/90 hover:bg-gradient-to-r hover:from-amber-500 hover:to-orange-500 hover:text-slate-950 text-slate-200 border border-slate-700 hover:border-amber-400 transition-all duration-150 cursor-pointer shadow-xs active:scale-95 group"
-                title={`Filter listings for popular tag: "${tag}"`}
-              >
-                <span>{tag}</span>
-                <span className="text-[10px] text-amber-400 group-hover:text-slate-950 transition-colors">🔥</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Right Column (50% on tablet/desktop): Hero Visual Card */}
-        <div className="hidden md:flex flex-col items-center justify-center relative">
-          <div className="w-full relative rounded-2xl overflow-hidden border border-slate-700/60 shadow-2xl bg-gradient-to-br from-slate-900 to-slate-950 group">
-            <img
-              src="/src/assets/images/hero_marketplace_showcase_1792291775965.jpg"
-              alt="OGYA FIRE Marketplace Ghana"
-              className="w-full h-64 lg:h-72 object-cover object-center group-hover:scale-105 transition-transform duration-500"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
-            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2 bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                <span className="font-bold text-white">Live in Accra, Kumasi & Tema</span>
-              </div>
-              <div className="flex items-center gap-1.5 bg-orange-600/90 text-white px-2.5 py-1 rounded-lg font-black text-[11px] shadow-md">
-                <span>⚡ 100% MoMo Secured</span>
+          {/* Right Column (50% on tablet/desktop): Hero Visual Card */}
+          <div className="hidden md:flex flex-col items-center justify-center relative">
+            <div className="w-full relative rounded-2xl overflow-hidden border border-slate-700/60 shadow-2xl bg-gradient-to-br from-slate-900 to-slate-950 group">
+              {!heroCardError ? (
+                <img
+                  src={heroMarketplaceShowcaseImg}
+                  alt="OGYA FIRE Marketplace Ghana"
+                  onError={() => setHeroCardError(true)}
+                  referrerPolicy="no-referrer"
+                  className="w-full h-64 lg:h-80 object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                />
+              ) : (
+                <div className="w-full h-64 lg:h-80 bg-gradient-to-br from-slate-900 via-[#111A2E] to-slate-950 flex flex-col items-center justify-center p-6 text-center">
+                  <Store className="w-12 h-12 text-[#F59E0B] mb-2" />
+                  <p className="text-sm font-black text-white">OGYA FIRE Ghana Marketplace</p>
+                  <p className="text-xs text-slate-400 mt-1">Verified Vendors Across All 16 Regions</p>
+                </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/35 to-transparent" />
+              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2 bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  <span className="font-bold text-white">Live in Accra, Kumasi &amp; Tema</span>
+                </div>
+                <div className="flex items-center gap-1.5 bg-orange-600/95 text-white px-2.5 py-1.5 rounded-lg font-black text-[11px] shadow-md">
+                  <span>⚡ 100% MoMo Secured</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
       {/* Big Orange "I WANT THIS - Post What You Want" Action Card */}
       {onOpenIWantThis && (

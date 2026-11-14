@@ -59,6 +59,7 @@ import {
   isTestProduct,
   getExactDuplicateProductIds,
 } from '../utils/firebase';
+import vendorStoreShowcaseImg from '../assets/images/vendor_store_showcase_1793870144741.jpg';
 
 interface VendorDashboardPageProps {
   currentUser: UserProfile | null;
@@ -167,7 +168,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
         name: vendor.shopName,
         phone: vendor.phone,
         location: vendor.location,
-        logoUrl: vendor.logoUrl || '/src/assets/images/vendor_store_showcase_1793870144741.jpg',
+        logoUrl: vendor.logoUrl || vendorStoreShowcaseImg,
         rating: vendor.rating || 4.9,
         ratingCount: vendor.ratingCount || 148,
         isVerified: true,
@@ -180,7 +181,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
         name: currentUser.businessName || currentUser.name || 'My Vendor Shop',
         phone: currentUser.phone || '+233 24 000 0000',
         location: currentUser.city || 'Accra, Ghana',
-        logoUrl: currentUser.avatarUrl || '/src/assets/images/vendor_store_showcase_1793870144741.jpg',
+        logoUrl: currentUser.avatarUrl || vendorStoreShowcaseImg,
         rating: 4.9,
         ratingCount: 86,
         isVerified: true,
@@ -193,7 +194,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
         name: 'OGYA Fire Direct Ltd (Accra)',
         phone: '+233 24 412 3456',
         location: 'Ring Road Central, Accra',
-        logoUrl: '/src/assets/images/vendor_store_showcase_1793870144741.jpg',
+        logoUrl: vendorStoreShowcaseImg,
         rating: 4.9,
         ratingCount: 148,
         isVerified: true,
@@ -206,7 +207,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
         name: 'SafeGuard Fire Solutions Ghana',
         phone: '+233 20 890 1234',
         location: 'Spintex Road, Accra',
-        logoUrl: '/src/assets/images/vendor_store_showcase_1793870144741.jpg',
+        logoUrl: vendorStoreShowcaseImg,
         rating: 4.8,
         ratingCount: 112,
         isVerified: true,
@@ -218,7 +219,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
       name: 'Certified OGYA Fire Vendor',
       phone: '+233 24 000 0000',
       location: 'Accra, Ghana',
-      logoUrl: '/src/assets/images/vendor_store_showcase_1793870144741.jpg',
+      logoUrl: vendorStoreShowcaseImg,
       rating: 4.9,
       ratingCount: 94,
       isVerified: true,
