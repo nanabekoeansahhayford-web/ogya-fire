@@ -1,11 +1,25 @@
 {
   "entities": {
+    "Category": {
+      "title": "Category",
+      "description": "Marketplace product category (Food, Phones, Laptops, Cars, Car Accessories, Phone Accessories, Fashion, Home Items, Electronics, Everything)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "name": { "type": "string", "maxLength": 100 },
+        "shortDesc": { "type": "string", "maxLength": 256 },
+        "iconName": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "name"]
+    },
     "Listing": {
       "title": "Listing",
       "description": "Marketplace product or service listing item",
       "type": "object",
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "sellerId": { "type": "string", "maxLength": 128 },
         "title": { "type": "string", "maxLength": 200 },
         "categoryId": { "type": "string", "maxLength": 64 },
         "categoryName": { "type": "string", "maxLength": 128 },
@@ -22,45 +36,50 @@
         "postedAt": { "type": "string", "maxLength": 64 },
         "viewsCount": { "type": "number" },
         "likesCount": { "type": "number" },
-        "status": { "type": "string", "maxLength": 32 },
+        "status": { "type": "string", "enum": ["active", "sold", "expired"] },
         "isSold": { "type": "boolean" },
         "soldAt": { "type": "string", "maxLength": 64 },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "title", "categoryId", "price", "currency", "location", "condition", "seller"]
+      "required": ["id", "userId", "sellerId", "title", "categoryId", "price", "currency", "location", "condition", "seller"]
     },
     "User": {
       "title": "User",
-      "description": "User profile in the marketplace with doc id = user uid, fields: email, createdAt, role = 'customer' or 'vendor', displayName = email",
+      "description": "Private user account profile keyed by Firebase Auth uid",
       "type": "object",
       "properties": {
         "email": { "type": "string", "maxLength": 256 },
+        "phone": { "type": "string", "maxLength": 64 },
         "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
         "role": { "type": "string", "enum": ["customer", "vendor"] },
         "displayName": { "type": "string", "maxLength": 256 }
       },
-      "required": ["email", "role", "displayName"]
+      "required": ["role", "displayName"]
     },
     "Product": {
       "title": "Product",
-      "description": "Fire safety product in the marketplace",
+      "description": "General marketplace product across all categories owned by sellerId == auth.uid",
       "type": "object",
       "properties": {
+        "id": { "type": "string", "maxLength": 128 },
         "name": { "type": "string", "maxLength": 256 },
         "description": { "type": "string", "maxLength": 5000 },
         "price": { "type": "number" },
-        "category": { "type": "string", "enum": ["Fire Extinguisher", "Smoke Detector", "Fire Blanket", "Alarm", "Hose"] },
+        "category": { "type": "string", "maxLength": 100 },
         "imageUrl": { "type": "string", "maxLength": 2048 },
         "stock": { "type": "number" },
+        "sellerId": { "type": "string", "maxLength": 128 },
         "vendorId": { "type": "string", "maxLength": 128 },
         "vendorName": { "type": "string", "maxLength": 256 },
+        "isTest": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["name", "price", "category", "stock", "vendorId", "vendorName"]
+      "required": ["name", "price", "category", "stock", "sellerId", "vendorId", "vendorName"]
     },
     "Vendor": {
       "title": "Vendor",
-      "description": "Registered vendor shop in the marketplace",
+      "description": "Public seller store profile in the marketplace",
       "type": "object",
       "properties": {
         "ownerId": { "type": "string", "maxLength": 128 },
@@ -72,29 +91,50 @@
       },
       "required": ["ownerId", "shopName", "phone", "location"]
     },
+    "SellerPublicProfile": {
+      "title": "SellerPublicProfile",
+      "description": "Public seller identity & reputation summary readable by all buyers",
+      "type": "object",
+      "properties": {
+        "sellerId": { "type": "string", "maxLength": 128 },
+        "shopName": { "type": "string", "maxLength": 256 },
+        "location": { "type": "string", "maxLength": 256 },
+        "bio": { "type": "string", "maxLength": 3000 },
+        "momoVerified": { "type": "boolean" },
+        "isTrustedSeller": { "type": "boolean" },
+        "salesCount": { "type": "number" },
+        "rating": { "type": "number" }
+      },
+      "required": ["sellerId", "shopName"]
+    },
     "Order": {
       "title": "Order",
-      "description": "Customer purchase order for fire safety products",
+      "description": "Authenticated customer purchase order isolated to buyer and product sellers",
       "type": "object",
       "properties": {
         "userId": { "type": "string", "maxLength": 128 },
+        "buyerId": { "type": "string", "maxLength": 128 },
+        "sellerId": { "type": "string", "maxLength": 128 },
+        "vendorId": { "type": "string", "maxLength": 128 },
+        "sellerIds": { "type": "array" },
         "items": { "type": "array" },
         "total": { "type": "number" },
         "deliveryAddress": { "type": "string", "maxLength": 500 },
         "phone": { "type": "string", "maxLength": 64 },
-        "status": { "type": "string", "maxLength": 64 },
+        "status": { "type": "string", "enum": ["pending", "pending_payment", "paid", "processing", "shipped", "delivered", "cancelled"] },
         "paymentMethod": { "type": "string", "maxLength": 64 },
         "momoNumber": { "type": "string", "maxLength": 64 },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "items", "total", "deliveryAddress", "phone", "status", "paymentMethod"]
+      "required": ["userId", "buyerId", "sellerIds", "items", "total", "deliveryAddress", "phone", "status", "paymentMethod"]
     },
     "WantedItem": {
       "title": "WantedItem",
-      "description": "Buyer item request posted via I WANT THIS feature",
+      "description": "Authenticated buyer item request posted via I WANT THIS feature",
       "type": "object",
       "properties": {
         "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
         "item": { "type": "string", "maxLength": 256 },
         "budget": { "type": "number" },
         "location": { "type": "string", "maxLength": 256 },
@@ -103,33 +143,41 @@
         "status": { "type": "string", "enum": ["active", "fulfilled"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "item", "budget", "location", "whatsapp"]
+      "required": ["id", "userId", "item", "budget", "location", "whatsapp"]
     }
   },
   "firestore": {
+    "/categories/{categoryId}": {
+      "schema": { "$ref": "#/entities/Category" },
+      "description": "Public read-only marketplace categories"
+    },
     "/listings/{listingId}": {
       "schema": { "$ref": "#/entities/Listing" },
-      "description": "Collection of public marketplace listings posted by sellers"
+      "description": "Publicly readable marketplace listings with owner-restricted create/update/delete"
     },
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/User" },
-      "description": "Collection of user profiles keyed by user uid with fields: email, createdAt, role = 'customer' or 'vendor', displayName = email"
+      "description": "Private user profiles strictly restricted to the owning Firebase Auth uid"
     },
     "/products/{productId}": {
       "schema": { "$ref": "#/entities/Product" },
-      "description": "Collection of fire safety products offered by vendors"
+      "description": "Publicly readable products; create/update/delete restricted to sellerId == auth.uid"
     },
     "/vendors/{vendorId}": {
       "schema": { "$ref": "#/entities/Vendor" },
-      "description": "Collection of registered vendor shops keyed by vendorId or ownerId"
+      "description": "Publicly readable seller shop profiles; writes restricted to ownerId == auth.uid"
+    },
+    "/sellers/{sellerId}": {
+      "schema": { "$ref": "#/entities/SellerPublicProfile" },
+      "description": "Publicly readable seller reputation profiles; writes restricted to sellerId == auth.uid"
     },
     "/orders/{orderId}": {
       "schema": { "$ref": "#/entities/Order" },
-      "description": "Collection of customer checkout orders"
+      "description": "Customer checkout orders readable only by buyer (userId/buyerId) or product sellers (sellerIds)"
     },
     "/wanted_items/{wantedItemId}": {
       "schema": { "$ref": "#/entities/WantedItem" },
-      "description": "Collection of buyer requested items for sellers to respond to"
+      "description": "Buyer requested items readable publicly, writable by authenticated userId == auth.uid"
     }
   }
 }

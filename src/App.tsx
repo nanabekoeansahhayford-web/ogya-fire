@@ -30,10 +30,11 @@ import { BecomeVendorModal } from './components/BecomeVendorModal';
 import { VendorDashboardModal } from './components/VendorDashboardModal';
 import { VendorDashboardPage } from './components/VendorDashboardPage';
 import { FoodVendorsSection } from './components/FoodVendorsSection';
+import { StoreProductsSection } from './components/StoreProductsSection';
 import { IWantThisModal } from './components/IWantThisModal';
 import { BuyersWantFeed } from './components/BuyersWantFeed';
 import { FoodVendor, FoodMenuItem } from './data/foodVendors';
-import { Product, Vendor, Order, CartItem } from './types/store';
+import { Product, Vendor, Order, CartItem, matchesProductCategoryFilter } from './types/store';
 import { SEED_PRODUCTS } from './data/seedProducts';
 import {
   getCart,
@@ -55,11 +56,14 @@ import {
   markListingAsBoosted,
   updateStoredListing,
 } from './utils/storage';
-import { getCurrentUser, logoutUser } from './utils/auth';
+import { getCurrentUser, logoutUser, syncUserProfileFromFirebaseAuth } from './utils/auth';
 import { useDarkMode } from './utils/theme';
 import { computeSellerBadges, BADGE_DEFINITIONS } from './utils/reputation';
 import {
+  auth,
   testConnection,
+  subscribeToAuthState,
+  ensureUserDocOnLogin,
   subscribeToListingsFromFirestore,
   fetchProductsFromFirestore,
   subscribeToProductsFromFirestore,
@@ -235,9 +239,28 @@ export default function App() {
     };
   }, []);
 
+  // Keep currentUser synchronized with real Firebase Auth session (null for guests)
+  useEffect(() => {
+    const unsubscribeAuth = subscribeToAuthState((fbUser) => {
+      if (fbUser) {
+        const synced = syncUserProfileFromFirebaseAuth(fbUser);
+        setCurrentUser(synced);
+        ensureUserDocOnLogin(
+          fbUser.uid,
+          fbUser.email || undefined,
+          fbUser.phoneNumber || undefined,
+          fbUser.displayName || undefined
+        ).catch(() => {});
+      } else {
+        setCurrentUser(null);
+      }
+    });
+    return () => unsubscribeAuth();
+  }, []);
+
   // Fetch vendor status for currentUser
   useEffect(() => {
-    if (currentUser?.id) {
+    if (currentUser?.id && auth.currentUser) {
       fetchVendorByOwnerId(currentUser.id).then((v) => {
         setCurrentVendor(v);
       });
@@ -631,14 +654,32 @@ export default function App() {
     handleOpenListing(newListing);
   };
 
-  // Compute category counts
+  // Compute category counts across listings & store products
   const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: listings.length };
+    const counts: Record<string, number> = { all: listings.length + products.length };
     CATEGORIES.forEach((cat) => {
-      counts[cat.id] = listings.filter((item) => item.categoryId === cat.id).length;
+      const listingCount = listings.filter((item) => {
+        if (cat.id === 'laptops') {
+          return (
+            item.categoryId === 'laptops' ||
+            item.subcategory.toLowerCase().includes('laptop') ||
+            item.title.toLowerCase().includes('macbook')
+          );
+        }
+        if (cat.id === 'accessories') {
+          return (
+            item.categoryId === 'accessories' ||
+            item.subcategory.toLowerCase().includes('accessor') ||
+            item.subcategory.toLowerCase().includes('auto parts')
+          );
+        }
+        return item.categoryId === cat.id;
+      }).length;
+      const storeCount = products.filter((p) => matchesProductCategoryFilter(p, cat.id)).length;
+      counts[cat.id] = listingCount + storeCount;
     });
     return counts;
-  }, [listings]);
+  }, [listings, products]);
 
   // Filtered listings
   const filteredListings = useMemo(() => {
@@ -668,8 +709,27 @@ export default function App() {
         }
 
         // Category
-        if (filters.category !== 'all' && item.categoryId !== filters.category) {
-          return false;
+        if (filters.category !== 'all') {
+          if (filters.category === 'laptops') {
+            const isLaptop =
+              item.categoryId === 'laptops' ||
+              item.subcategory.toLowerCase().includes('laptop') ||
+              item.title.toLowerCase().includes('laptop') ||
+              item.title.toLowerCase().includes('macbook');
+            if (!isLaptop) return false;
+          } else if (filters.category === 'accessories') {
+            const isAcc =
+              item.categoryId === 'accessories' ||
+              item.subcategory.toLowerCase().includes('accessor') ||
+              item.subcategory.toLowerCase().includes('auto parts') ||
+              item.title.toLowerCase().includes('earbuds') ||
+              item.title.toLowerCase().includes('charger') ||
+              item.title.toLowerCase().includes('headphone') ||
+              item.title.toLowerCase().includes('phone case');
+            if (!isAcc) return false;
+          } else if (item.categoryId !== filters.category) {
+            return false;
+          }
         }
 
         // Subcategory
@@ -774,15 +834,24 @@ export default function App() {
 
   const currentCategoryInfo = CATEGORIES.find((c) => c.id === filters.category);
 
-  // If on /vendor page, render the full-page Vendor Dashboard
+  // If on /vendor page, render the full-page Vendor Dashboard + AuthModal so sellers can sign in directly
   if (currentPath === '/vendor') {
     return (
-      <VendorDashboardPage
-        currentUser={currentUser}
-        vendor={currentVendor}
-        onNavigateHome={navigateToHome}
-        onOpenAuth={handleOpenAuth}
-      />
+      <>
+        <VendorDashboardPage
+          currentUser={currentUser}
+          vendor={currentVendor}
+          onNavigateHome={navigateToHome}
+          onOpenAuth={handleOpenAuth}
+        />
+        <AuthModal
+          isOpen={isAuthOpen}
+          onClose={() => setIsAuthOpen(false)}
+          initialMode={authMode}
+          defaultRole={authDefaultRole}
+          onAuthSuccess={handleAuthSuccess}
+        />
+      </>
     );
   }
 
@@ -832,7 +901,14 @@ export default function App() {
         onLogout={handleLogout}
         cartCount={getCartItemCount(cart)}
         onOpenCart={() => setIsCartOpen(true)}
-        onOpenMyOrders={() => handleOpenProfile('orders')}
+        onOpenMyOrders={() => {
+          if (!currentUser || !auth.currentUser) {
+            handleOpenAuth('signin', 'buyer');
+            showToast('Sign in to view your orders.');
+          } else {
+            handleOpenProfile('orders');
+          }
+        }}
         onOpenBecomeVendor={() => setIsBecomeVendorOpen(true)}
         onOpenVendorDashboard={navigateToVendor}
         isVendor={isVendor}
@@ -919,12 +995,24 @@ export default function App() {
         onOpenIWantThis={() => setIsIWantThisOpen(true)}
       />
 
-      {/* Featured Food Vendors in Accra (6 Demo Ghanaian Vendors with Jumia/Bolt Food design) */}
-      <FoodVendorsSection
-        onAddToCart={handleAddFoodToCart}
-        cartItemCount={getCartItemCount(cart)}
-        getItemQuantityInCart={getItemQuantityInCart}
+      {/* Featured Food Vendors in Accra (shown on All & Food tabs) */}
+      {(filters.category === 'all' || filters.category === 'food') && (
+        <FoodVendorsSection
+          onAddToCart={handleAddFoodToCart}
+          cartItemCount={getCartItemCount(cart)}
+          getItemQuantityInCart={getItemQuantityInCart}
+          searchQuery={filters.searchQuery}
+        />
+      )}
+
+      {/* General Marketplace Store Products Organized by Category (Food, Phones, Laptops, Cars, Accessories, Fashion, Home Items, Electronics) */}
+      <StoreProductsSection
+        products={products}
+        selectedCategory={filters.category}
         searchQuery={filters.searchQuery}
+        onSelectProduct={(p) => setSelectedProduct(p)}
+        onAddToCart={(p) => handleAddToCart(p, 1)}
+        onSelectCategory={handleSelectCategory}
       />
 
       {/* Main Content Area: Sidebar Filters + Listings Grid */}
@@ -1139,6 +1227,7 @@ export default function App() {
 
             {/* Vendor card at top of Phone Accessories: Daniel Arnan Aboagye */}
             {(filters.category === 'phones-tablets' ||
+              filters.category === 'accessories' ||
               filters.subcategory === 'Phone Accessories' ||
               filters.searchQuery.toLowerCase().includes('daniel') ||
               filters.searchQuery.toLowerCase().includes('accessories')) && (
@@ -1559,6 +1648,7 @@ export default function App() {
         vendor={currentVendor}
         products={products}
         onProductUpdated={() => fetchProductsFromFirestore().then(setProducts)}
+        onOpenAuth={() => handleOpenAuth('signin', 'seller')}
       />
 
       {/* "I WANT THIS" Buyer Request Modal (No login required, saves to Firestore 'wanted_items') */}

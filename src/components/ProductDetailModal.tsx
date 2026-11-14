@@ -82,8 +82,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <span className="px-2.5 py-1 rounded-lg bg-black/80 backdrop-blur-md text-[11px] font-black uppercase tracking-wider text-white">
                 {product.category}
               </span>
-              <span className="px-2.5 py-1 rounded-lg bg-red-600 text-white text-[11px] font-black uppercase">
-                GNFS Certified
+              <span className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-[11px] font-black uppercase">
+                ✅ OGYA Verified
               </span>
             </div>
           </div>

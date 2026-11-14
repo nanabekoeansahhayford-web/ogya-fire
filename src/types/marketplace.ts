@@ -1,6 +1,8 @@
 export type CategoryId =
   | 'vehicles'
   | 'phones-tablets'
+  | 'laptops'
+  | 'accessories'
   | 'electronics'
   | 'property'
   | 'fashion'
@@ -141,6 +143,7 @@ export interface PriceHistoryPoint {
 export interface Listing {
   id: string;
   userId?: string;
+  sellerId?: string;
   title: string;
   priceHistory?: PriceHistoryPoint[];
   categoryId: CategoryId;
@@ -217,6 +220,7 @@ export interface FilterState {
 
 export interface WantedItem {
   id: string;
+  userId?: string;
   item: string;
   budget: number;
   location: string;

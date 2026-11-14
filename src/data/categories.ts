@@ -2,32 +2,39 @@ import { CategoryInfo } from '../types/marketplace';
 
 export const CATEGORIES: CategoryInfo[] = [
   {
+    id: 'food',
+    name: 'Food',
+    iconName: 'Utensils',
+    shortDesc: 'Jollof, Waakye, Pizza, Tilapia, Kelewele, Juice & Grills',
+    subcategories: ['Jollof & Fried Rice', 'Waakye Specials', 'Grilled Tilapia & Banku', 'Pizza & Fast Food', 'Kelewele & Street Food', 'Fresh Juices & Smoothies']
+  },
+  {
+    id: 'phones-tablets',
+    name: 'Phones',
+    iconName: 'Smartphone',
+    shortDesc: 'iPhone, Samsung, Tecno, Infinix & Tablets',
+    subcategories: ['iPhone', 'Samsung Galaxy', 'Tecno', 'Infinix', 'Tablets & iPads', 'Smart Watches', 'Phone Accessories']
+  },
+  {
+    id: 'laptops',
+    name: 'Laptops',
+    iconName: 'Laptop',
+    shortDesc: 'MacBook, HP, Dell, Lenovo, Gaming & Office Laptops',
+    subcategories: ['Laptops & Computers', 'MacBooks', 'Gaming Laptops', 'Business Laptops', 'Monitors & Peripherals']
+  },
+  {
     id: 'vehicles',
-    name: 'Vehicles',
+    name: 'Cars',
     iconName: 'Car',
     shortDesc: 'Cars, Motorbikes, Trotro, SUVs & Trucks in Ghana',
     subcategories: ['Cars', 'Motorbikes & Scooters', 'Trotro & Buses', 'SUVs & 4x4s', 'Auto Parts & Tires', 'Trucks & Trailers']
   },
   {
-    id: 'phones-tablets',
-    name: 'Phones & Tablets',
-    iconName: 'Smartphone',
-    shortDesc: 'iPhone, Samsung, Tecno, Infinix & Tablets',
-    subcategories: ['Phone Accessories', 'iPhone', 'Samsung Galaxy', 'Tecno', 'Infinix', 'Tablets & iPads', 'Smart Watches', 'Accessories']
-  },
-  {
-    id: 'electronics',
-    name: 'Electronics',
-    iconName: 'Laptop',
-    shortDesc: 'Laptops, TVs, Fridges, Fans & Audio Systems',
-    subcategories: ['Laptops & Computers', 'TVs & Home Audio', 'Fridges & Freezers', 'Fans & Air Conditioners', 'Gaming & Consoles']
-  },
-  {
-    id: 'property',
-    name: 'Property',
-    iconName: 'Building2',
-    shortDesc: 'Rooms, Apartments, Houses for rent in Accra, Kumasi, Tema',
-    subcategories: ['Rooms for Rent', 'Apartments for Rent', 'Houses for Rent', 'Houses for Sale', 'Plots & Land', 'Commercial Property']
+    id: 'accessories',
+    name: 'Accessories',
+    iconName: 'Headphones',
+    shortDesc: 'Phone Accessories, Car Accessories, Earbuds, Chargers & Cases',
+    subcategories: ['Phone Accessories', 'Car Accessories', 'Earbuds & Headphones', 'Chargers & Cables', 'Phone Cases & Screen Protectors']
   },
   {
     id: 'fashion',
@@ -37,11 +44,25 @@ export const CATEGORIES: CategoryInfo[] = [
     subcategories: ['Wigs & Hair', 'Shoes & Sneakers', 'Men\'s Clothing', 'Women\'s Clothing', 'Bags & Purses', 'Watches & Jewelry', 'African Wear & Kente']
   },
   {
+    id: 'electronics',
+    name: 'Electronics',
+    iconName: 'Cpu',
+    shortDesc: 'TVs, Fridges, Fans, Laptops & Audio Systems',
+    subcategories: ['Laptops & Computers', 'TVs & Home Audio', 'Fridges & Freezers', 'Fans & Air Conditioners', 'Gaming & Consoles']
+  },
+  {
     id: 'home-furniture',
-    name: 'Home & Furniture',
+    name: 'Home Items',
     iconName: 'Armchair',
     shortDesc: 'Beds, Sofas, Tables, Kitchen & Living Room Decor',
     subcategories: ['Beds & Mattresses', 'Sofas & Couches', 'Dining Tables & Chairs', 'Wardrobes & Cabinets', 'Kitchen Appliances', 'Home Decor']
+  },
+  {
+    id: 'property',
+    name: 'Property',
+    iconName: 'Building2',
+    shortDesc: 'Rooms, Apartments, Houses for rent in Accra, Kumasi, Tema',
+    subcategories: ['Rooms for Rent', 'Apartments for Rent', 'Houses for Rent', 'Houses for Sale', 'Plots & Land', 'Commercial Property']
   },
   {
     id: 'beauty-care',
@@ -49,13 +70,6 @@ export const CATEGORIES: CategoryInfo[] = [
     iconName: 'Sparkles',
     shortDesc: 'Skincare, Hair Products, Shea Butter & Fragrances',
     subcategories: ['Skincare & Glow', 'Hair Care & Oils', 'Fragrances & Perfumes', 'Makeup & Cosmetics', 'Natural Shea & Cocoa Butter']
-  },
-  {
-    id: 'food',
-    name: 'Food',
-    iconName: 'Utensils',
-    shortDesc: 'Jollof, Waakye, Pizza, Tilapia, Kelewele, Juice & Grills',
-    subcategories: ['Jollof & Fried Rice', 'Waakye Specials', 'Grilled Tilapia & Banku', 'Pizza & Fast Food', 'Kelewele & Street Food', 'Fresh Juices & Smoothies']
   },
   {
     id: 'jobs-services',

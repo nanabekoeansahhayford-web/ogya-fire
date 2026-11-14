@@ -1,117 +1,379 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Global Safety Net: Default-deny all unexpected collections
+    // =========================================================================
+    // 1. GLOBAL SAFETY NET: Default-deny all unmatched paths & whole-DB actions
+    // =========================================================================
     match /{document=**} {
       allow read, write: if false;
     }
 
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    // =========================================================================
+    // 2. ADMIN & SYSTEM COLLECTIONS: Strictly locked down (no client access)
+    // =========================================================================
+    match /admin/{docId=**} {
+      allow read, write: if false;
+    }
+    match /admins/{docId=**} {
+      allow read, write: if false;
+    }
+    match /admin_logs/{docId=**} {
+      allow read, write: if false;
+    }
+    match /system/{docId=**} {
+      allow read, write: if false;
     }
 
-    function isValidListing(data) {
-      return data.title is string && data.title.size() > 0 && data.title.size() <= 200
-        && data.price is number && data.price >= 0
-        && data.location is string && data.location.size() <= 256
-        && data.currency is string && data.currency.size() <= 16
-        && data.condition is string && data.condition.size() <= 64
-        && data.seller is map
-        && data.seller.name is string && data.seller.name.size() <= 128
-        && data.seller.whatsapp is string && data.seller.whatsapp.size() <= 64;
+    // =========================================================================
+    // 3. SHARED SECURITY PRIMITIVES & SCHEMA HELPERS
+    // =========================================================================
+    function isSignedIn() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
     function isValidUser(data) {
-      return data.email is string && data.email.size() > 0 && data.email.size() <= 256
+      return data.keys().hasAll(['role', 'displayName'])
+        && data.keys().hasOnly(['email', 'phone', 'role', 'displayName', 'createdAt', 'updatedAt'])
+        && (!('email' in data) || (data.email is string && data.email.size() <= 256))
+        && (!('phone' in data) || (data.phone is string && data.phone.size() <= 64))
+        && (('email' in data && data.email.size() > 0) || ('phone' in data && data.phone.size() > 0))
         && data.role is string && (data.role == 'customer' || data.role == 'vendor')
-        && (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 256));
+        && data.displayName is string && data.displayName.size() > 0 && data.displayName.size() <= 256;
     }
 
     function isValidProduct(data) {
-      return data.name is string && data.name.size() > 0 && data.name.size() <= 256
+      return data.keys().hasAll(['name', 'price', 'category', 'stock', 'sellerId', 'vendorId', 'vendorName'])
+        && data.keys().hasOnly([
+          'id', 'name', 'description', 'price', 'category', 'imageUrl', 'stock',
+          'sellerId', 'vendorId', 'vendorName', 'isTest', 'createdAt', 'updatedAt'
+        ])
+        && (!('id' in data) || isValidId(data.id))
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 256
         && data.price is number && data.price >= 0
         && data.stock is number && data.stock >= 0
-        && data.category is string && data.category in ['Fire Extinguisher', 'Smoke Detector', 'Fire Blanket', 'Alarm', 'Hose']
-        && data.vendorId is string && data.vendorId.size() <= 128
-        && data.vendorName is string && data.vendorName.size() <= 256;
+        && data.category is string && data.category.size() > 0 && data.category.size() <= 100
+        && data.sellerId is string && isValidId(data.sellerId)
+        && data.vendorId is string && isValidId(data.vendorId)
+        && data.vendorName is string && data.vendorName.size() > 0 && data.vendorName.size() <= 256
+        && (!('isTest' in data) || data.isTest is bool)
+        && (!('description' in data) || (data.description is string && data.description.size() <= 5000))
+        && (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 2048));
+    }
+
+    function isProductOwner(data) {
+      return ('sellerId' in data && data.sellerId == request.auth.uid)
+        || (!('sellerId' in data) && 'vendorId' in data && data.vendorId == request.auth.uid);
+    }
+
+    function isValidListing(data) {
+      return data.keys().hasAll(['id', 'userId', 'sellerId', 'title', 'categoryId', 'price', 'currency', 'location', 'condition', 'seller'])
+        && data.keys().hasOnly([
+          'id', 'userId', 'sellerId', 'title', 'categoryId', 'categoryName', 'subcategory',
+          'price', 'currency', 'isNegotiable', 'location', 'region', 'condition', 'description',
+          'images', 'seller', 'postedAt', 'viewsCount', 'likesCount', 'status', 'isSold',
+          'soldAt', 'attributes', 'cvDetails', 'jobDetails', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && isValidId(data.userId)
+        && isValidId(data.sellerId)
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 200
+        && data.categoryId is string && data.categoryId.size() > 0 && data.categoryId.size() <= 64
+        && (!('categoryName' in data) || (data.categoryName is string && data.categoryName.size() <= 128))
+        && (!('subcategory' in data) || (data.subcategory is string && data.subcategory.size() <= 128))
+        && data.price is number && data.price >= 0
+        && data.location is string && data.location.size() > 0 && data.location.size() <= 256
+        && (!('region' in data) || (data.region is string && data.region.size() <= 128))
+        && data.currency is string && data.currency.size() > 0 && data.currency.size() <= 16
+        && data.condition is string && data.condition.size() > 0 && data.condition.size() <= 64
+        && (!('description' in data) || (data.description is string && data.description.size() <= 5000))
+        && (!('images' in data) || (data.images is list && data.images.size() <= 12))
+        && data.seller is map
+        && data.seller.name is string && data.seller.name.size() > 0 && data.seller.name.size() <= 128
+        && data.seller.whatsapp is string && data.seller.whatsapp.size() <= 64
+        && (!('status' in data) || (data.status is string && data.status in ['active', 'sold', 'expired']));
+    }
+
+    function isListingOwner(data) {
+      return ('userId' in data && data.userId == request.auth.uid)
+        || ('sellerId' in data && data.sellerId == request.auth.uid);
     }
 
     function isValidVendor(data) {
-      return data.ownerId is string && data.ownerId.size() <= 128
+      return data.keys().hasAll(['ownerId', 'shopName', 'phone', 'location'])
+        && data.keys().hasOnly([
+          'id', 'ownerId', 'shopName', 'phone', 'location', 'description',
+          'logoUrl', 'rating', 'ratingCount', 'isVerified', 'deliverySpeed',
+          'createdAt', 'updatedAt'
+        ])
+        && (!('id' in data) || isValidId(data.id))
+        && data.ownerId is string && isValidId(data.ownerId)
         && data.shopName is string && data.shopName.size() > 0 && data.shopName.size() <= 256
-        && data.phone is string && data.phone.size() <= 64
-        && data.location is string && data.location.size() <= 256;
+        && data.phone is string && data.phone.size() > 0 && data.phone.size() <= 64
+        && data.location is string && data.location.size() > 0 && data.location.size() <= 256
+        && (!('description' in data) || (data.description is string && data.description.size() <= 3000));
+    }
+
+    function isValidSellerPublicProfile(data) {
+      return data.keys().hasAll(['sellerId', 'shopName'])
+        && data.keys().hasOnly([
+          'id', 'sellerId', 'ownerId', 'shopName', 'displayName', 'phone', 'whatsapp',
+          'location', 'region', 'bio', 'description', 'logoUrl', 'avatarUrl',
+          'rating', 'ratingCount', 'salesCount', 'momoVerified', 'isTrustedSeller',
+          'isVerified', 'createdAt', 'updatedAt'
+        ])
+        && data.sellerId is string && isValidId(data.sellerId)
+        && data.shopName is string && data.shopName.size() > 0 && data.shopName.size() <= 256
+        && (!('location' in data) || (data.location is string && data.location.size() <= 256))
+        && (!('bio' in data) || (data.bio is string && data.bio.size() <= 3000));
     }
 
     function isValidOrder(data) {
-      return data.userId is string && data.userId.size() <= 128
+      return data.keys().hasAll(['userId', 'buyerId', 'items', 'total', 'deliveryAddress', 'phone', 'status', 'paymentMethod', 'sellerIds'])
+        && data.keys().hasOnly([
+          'id', 'userId', 'buyerId', 'buyerName', 'vendorId', 'sellerId', 'sellerIds',
+          'items', 'total', 'deliveryAddress', 'phone', 'status', 'paymentMethod',
+          'momoNumber', 'createdAt', 'updatedAt'
+        ])
+        && (!('id' in data) || isValidId(data.id))
+        && data.userId is string && isValidId(data.userId)
+        && data.buyerId is string && isValidId(data.buyerId)
+        && data.userId == data.buyerId
         && data.items is list && data.items.size() > 0 && data.items.size() <= 100
+        && data.sellerIds is list && data.sellerIds.size() > 0 && data.sellerIds.size() <= 50
+        && data.sellerIds[0] is string
+        && (!('sellerId' in data) || isValidId(data.sellerId))
+        && (!('vendorId' in data) || isValidId(data.vendorId))
+        && (!('buyerName' in data) || (data.buyerName is string && data.buyerName.size() <= 128))
         && data.total is number && data.total >= 0
-        && data.deliveryAddress is string && data.deliveryAddress.size() <= 500
-        && data.phone is string && data.phone.size() <= 64
-        && data.status is string && data.status.size() <= 64
-        && data.paymentMethod is string && data.paymentMethod.size() <= 64
+        && data.deliveryAddress is string && data.deliveryAddress.size() > 0 && data.deliveryAddress.size() <= 500
+        && data.phone is string && data.phone.size() > 0 && data.phone.size() <= 64
+        && data.status is string && data.status in ['pending', 'pending_payment', 'paid', 'processing', 'shipped', 'delivered', 'cancelled']
+        && data.paymentMethod is string && data.paymentMethod.size() > 0 && data.paymentMethod.size() <= 64
         && (!('momoNumber' in data) || (data.momoNumber is string && data.momoNumber.size() <= 64));
     }
 
+    function isOrderBuyer(data) {
+      return data.userId == request.auth.uid
+        || ('buyerId' in data && data.buyerId == request.auth.uid);
+    }
+
+    function isOrderSeller(data) {
+      return ('sellerIds' in data && data.sellerIds is list && request.auth.uid in data.sellerIds)
+        || ('sellerId' in data && data.sellerId == request.auth.uid)
+        || ('vendorId' in data && data.vendorId == request.auth.uid);
+    }
+
     function isValidWantedItem(data) {
-      return data.item is string && data.item.size() > 0 && data.item.size() <= 256
+      return data.keys().hasAll(['id', 'userId', 'item', 'budget', 'location', 'whatsapp'])
+        && data.keys().hasOnly(['id', 'userId', 'item', 'budget', 'location', 'whatsapp', 'notes', 'status', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidId(data.userId)
+        && data.item is string && data.item.size() > 0 && data.item.size() <= 256
         && data.budget is number && data.budget >= 0
         && data.location is string && data.location.size() > 0 && data.location.size() <= 256
-        && data.whatsapp is string && data.whatsapp.size() > 0 && data.whatsapp.size() <= 64;
+        && data.whatsapp is string && data.whatsapp.size() > 0 && data.whatsapp.size() <= 64
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000))
+        && (!('status' in data) || (data.status is string && data.status in ['active', 'fulfilled']));
     }
 
-    // Health check endpoint
+    // =========================================================================
+    // 4. PUBLIC CONNECTION HEALTH CHECK (Read-Only Single Doc)
+    // =========================================================================
     match /test/connection {
-      allow read: if true;
+      allow get: if true;
+      allow list, write: if false;
     }
 
-    // Public marketplace listings
-    match /listings/{listingId} {
-      allow read: if true;
-      allow create: if isValidId(listingId) && isValidListing(request.resource.data);
-      allow update: if isValidId(listingId);
-      allow delete: if isValidId(listingId);
+    // =========================================================================
+    // 5. CATEGORIES: Anyone (even without login) can READ; no client writes
+    // =========================================================================
+    match /categories/{categoryId} {
+      allow get: if isValidId(categoryId);
+      allow list: if true;
+      allow write: if false;
     }
 
-    // User profiles collection
-    match /users/{userId} {
-      allow read: if isValidId(userId);
-      allow create: if isValidId(userId) && isValidUser(request.resource.data);
-      allow update: if isValidId(userId) && isValidUser(request.resource.data);
-      allow delete: if isValidId(userId) && (request.auth != null && request.auth.uid == userId);
-    }
-
-    // Fire safety products collection
+    // =========================================================================
+    // 6. PRODUCTS: Public READ; Logged-in CREATE (sellerId == uid); Owner-only UPDATE/DELETE
+    // =========================================================================
     match /products/{productId} {
-      allow read: if true;
-      allow create: if isValidId(productId) && isValidProduct(request.resource.data);
-      allow update: if isValidId(productId);
-      allow delete: if isValidId(productId);
+      allow get: if isValidId(productId);
+      allow list: if true;
+
+      allow create: if isSignedIn()
+        && isValidId(productId)
+        && isValidProduct(incoming())
+        && incoming().sellerId == request.auth.uid
+        && incoming().vendorId == request.auth.uid;
+
+      allow update: if isSignedIn()
+        && isValidId(productId)
+        && isValidProduct(incoming())
+        && isProductOwner(existing())
+        && incoming().sellerId == request.auth.uid
+        && (!('sellerId' in existing()) || incoming().sellerId == existing().sellerId);
+
+      allow delete: if isSignedIn()
+        && isValidId(productId)
+        && isProductOwner(existing());
     }
 
-    // Vendor shops collection
+    // =========================================================================
+    // 7. MARKETPLACE LISTINGS: Public READ; Logged-in CREATE (userId == uid); Owner UPDATE/DELETE
+    // =========================================================================
+    match /listings/{listingId} {
+      allow get: if isValidId(listingId);
+      allow list: if true;
+
+      allow create: if isSignedIn()
+        && isValidId(listingId)
+        && isValidListing(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().sellerId == request.auth.uid;
+
+      allow update: if isSignedIn()
+        && isValidId(listingId)
+        && isValidListing(incoming())
+        && isListingOwner(existing())
+        && incoming().userId == existing().userId
+        && incoming().sellerId == existing().sellerId;
+
+      allow delete: if isSignedIn()
+        && isValidId(listingId)
+        && isListingOwner(existing());
+    }
+
+    // =========================================================================
+    // 8. SELLER PUBLIC PROFILES (vendors & sellers): Public READ; Owner-only WRITE
+    // =========================================================================
     match /vendors/{vendorId} {
-      allow read: if true;
-      allow create: if isValidId(vendorId) && isValidVendor(request.resource.data);
-      allow update: if isValidId(vendorId);
-      allow delete: if isValidId(vendorId);
+      allow get: if isValidId(vendorId);
+      allow list: if true;
+
+      allow create: if isSignedIn()
+        && isValidId(vendorId)
+        && isValidVendor(incoming())
+        && incoming().ownerId == request.auth.uid;
+
+      allow update: if isSignedIn()
+        && isValidId(vendorId)
+        && isValidVendor(incoming())
+        && existing().ownerId == request.auth.uid
+        && incoming().ownerId == existing().ownerId;
+
+      allow delete: if isSignedIn()
+        && isValidId(vendorId)
+        && existing().ownerId == request.auth.uid;
     }
 
-    // Orders collection
+    match /sellers/{sellerId} {
+      allow get: if isValidId(sellerId);
+      allow list: if true;
+
+      allow create: if isSignedIn()
+        && isValidId(sellerId)
+        && sellerId == request.auth.uid
+        && isValidSellerPublicProfile(incoming())
+        && incoming().sellerId == request.auth.uid;
+
+      allow update: if isSignedIn()
+        && isValidId(sellerId)
+        && isValidSellerPublicProfile(incoming())
+        && existing().sellerId == request.auth.uid
+        && incoming().sellerId == existing().sellerId;
+
+      allow delete: if isSignedIn()
+        && isValidId(sellerId)
+        && existing().sellerId == request.auth.uid;
+    }
+
+    // =========================================================================
+    // 9. PRIVATE USER ACCOUNTS (/users/{userId}): Strict Owner-Only PII Access
+    // =========================================================================
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+      allow list: if false;
+
+      allow create: if isSignedIn()
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && isValidUser(incoming())
+        && incoming().role == 'customer';
+
+      allow update: if isSignedIn()
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && isValidUser(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['role', 'displayName', 'email', 'phone', 'updatedAt']);
+
+      allow delete: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+    }
+
+    // =========================================================================
+    // 10. ORDERS: Logged-in CREATE; Buyers read own orders; Sellers read own product orders
+    // =========================================================================
     match /orders/{orderId} {
-      allow read: if true;
-      allow create: if isValidId(orderId) && isValidOrder(request.resource.data);
-      allow update: if isValidId(orderId);
-      allow delete: if isValidId(orderId);
+      allow get: if isSignedIn()
+        && isValidId(orderId)
+        && (isOrderBuyer(existing()) || isOrderSeller(existing()));
+
+      allow list: if isSignedIn()
+        && (isOrderBuyer(existing()) || isOrderSeller(existing()));
+
+      allow create: if isSignedIn()
+        && isValidId(orderId)
+        && isValidOrder(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().buyerId == request.auth.uid;
+
+      allow update: if isSignedIn()
+        && isValidId(orderId)
+        && isValidOrder(incoming())
+        && (isOrderBuyer(existing()) || isOrderSeller(existing()))
+        && existing().status != 'cancelled'
+        && incoming().userId == existing().userId
+        && incoming().buyerId == existing().buyerId
+        && incoming().total == existing().total
+        && incoming().items == existing().items
+        && incoming().sellerIds == existing().sellerIds
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+
+      allow delete: if false;
     }
 
-    // Buyers wanted items collection ("I WANT THIS" feature - no login required)
+    // =========================================================================
+    // 11. BUYER REQUESTS (wanted_items): Public READ; Logged-in CREATE; Owner UPDATE/DELETE
+    // =========================================================================
     match /wanted_items/{wantedItemId} {
-      allow read: if true;
-      allow create: if isValidId(wantedItemId) && isValidWantedItem(request.resource.data);
-      allow update: if isValidId(wantedItemId);
-      allow delete: if isValidId(wantedItemId);
+      allow get: if isValidId(wantedItemId);
+      allow list: if true;
+
+      allow create: if isSignedIn()
+        && isValidId(wantedItemId)
+        && isValidWantedItem(incoming())
+        && incoming().userId == request.auth.uid;
+
+      allow update: if isSignedIn()
+        && isValidId(wantedItemId)
+        && isValidWantedItem(incoming())
+        && existing().userId == request.auth.uid
+        && incoming().userId == existing().userId;
+
+      allow delete: if isSignedIn()
+        && isValidId(wantedItemId)
+        && existing().userId == request.auth.uid;
     }
   }
 }

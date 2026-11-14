@@ -14,11 +14,13 @@ import {
   Tag,
   Plus,
   Trash2,
+  Lock,
+  LogIn,
 } from 'lucide-react';
 import { CATEGORIES, REGIONS } from '../data/categories';
 import { CategoryId, ItemCondition, Listing, UserProfile } from '../types/marketplace';
 import { saveCustomListing, getStoredListings } from '../utils/storage';
-import { saveListingToFirestore } from '../utils/firebase';
+import { auth, saveListingToFirestore } from '../utils/firebase';
 import { CategoryIcon } from './CategoryIcon';
 import { SmartPriceAdvisor } from './SmartPriceAdvisor';
 
@@ -147,6 +149,11 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
     e.preventDefault();
     setErrorMessage(null);
 
+    if (!currentUser || !auth.currentUser) {
+      setErrorMessage('Please sign in as a Seller before publishing a product.');
+      return;
+    }
+
     if (!title.trim() || !price || !sellerName.trim()) {
       setErrorMessage('Please fill in required fields: Product Title, Price in GHS, and Seller Name.');
       return;
@@ -166,10 +173,12 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
 
     const generatedId = `prod-${Date.now()}`;
     const cleanPrice = parseFloat(price) || 0;
+    const sellerUid = auth.currentUser.uid;
 
     const newListing: Listing = {
       id: generatedId,
-      userId: currentUser ? currentUser.id : undefined,
+      userId: sellerUid,
+      sellerId: sellerUid,
       title: title.trim(),
       categoryId,
       categoryName: currentCategory.name,
@@ -292,6 +301,41 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
         </div>
 
         {/* Scrollable Form Body */}
+        {!currentUser || !auth.currentUser ? (
+          <div className="p-8 sm:p-10 text-center space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center mx-auto">
+              <Lock size={28} />
+            </div>
+            <h4 className="text-lg font-black text-slate-900 dark:text-white">
+              Seller Sign-In Required
+            </h4>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+              Only signed-in users can create listings on OGYA FIRE. Sign in with Email, Phone OTP, or Google so your products are protected under your verified Seller ID.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2.5 justify-center pt-2">
+              {onOpenAuth && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenAuth('signin');
+                  }}
+                  className="px-6 py-3 bg-gradient-to-r from-amber-500 via-orange-500 to-red-600 text-white font-black text-xs sm:text-sm rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <LogIn size={16} />
+                  <span>Sign In / Register to Sell</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-5 py-3 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold text-xs rounded-xl cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="overflow-y-auto p-6 space-y-6 flex-1 text-slate-900 dark:text-slate-100 text-xs sm:text-sm">
           {/* Error Banner */}
           {errorMessage && (
@@ -302,39 +346,17 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
           )}
 
           {/* Member Authentication Status Strip */}
-          {currentUser ? (
-            <div className="flex items-center justify-between p-3 rounded-xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 text-xs">
-              <div className="flex items-center gap-2">
-                <ShieldCheck size={16} className="text-amber-600 dark:text-amber-400 shrink-0" />
-                <span className="text-slate-800 dark:text-slate-200">
-                  Posting as verified seller: <strong className="text-amber-800 dark:text-amber-300 font-extrabold">{currentUser.name}</strong> ({currentUser.accountType})
-                </span>
-              </div>
-              <span className="text-[10px] font-bold bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded shadow-2xs">
-                Auto-Linked
+          <div className="flex items-center justify-between p-3 rounded-xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 text-xs">
+            <div className="flex items-center gap-2">
+              <ShieldCheck size={16} className="text-amber-600 dark:text-amber-400 shrink-0" />
+              <span className="text-slate-800 dark:text-slate-200">
+                Posting as verified seller: <strong className="text-amber-800 dark:text-amber-300 font-extrabold">{currentUser.name}</strong> ({currentUser.accountType})
               </span>
             </div>
-          ) : (
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs">
-              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                <User size={15} className="text-amber-500 shrink-0" />
-                <span>Posting as Guest. Products are saved to Firestore and accessible to all buyers.</span>
-              </div>
-              {onOpenAuth && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    onOpenAuth('register');
-                  }}
-                  className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer shrink-0 ml-2"
-                >
-                  <UserPlus size={13} />
-                  <span>Register Free</span>
-                </button>
-              )}
-            </div>
-          )}
+            <span className="text-[10px] font-bold bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded shadow-2xs">
+              UID Verified
+            </span>
+          </div>
 
           {/* Step 1: Select Category */}
           <div>
@@ -750,6 +772,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
             </div>
           </div>
         </form>
+        )}
       </div>
     </div>
   );

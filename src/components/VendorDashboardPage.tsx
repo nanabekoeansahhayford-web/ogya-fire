@@ -28,6 +28,9 @@ import {
   BarChart3,
   Sparkles,
   Calendar,
+  Database,
+  Lock,
+  LogIn,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -40,9 +43,10 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
 } from 'recharts';
-import { Product, ProductCategory, PRODUCT_CATEGORIES, Order, OrderStatus, Vendor } from '../types/store';
+import { Product, ProductCategory, PRODUCT_CATEGORIES, Order, OrderStatus, Vendor, normalizeProductCategory } from '../types/store';
 import { UserProfile } from '../types/marketplace';
 import {
+  auth,
   saveProductToFirestore,
   deleteProductFromFirestore,
   updateOrderStatusInFirestore,
@@ -50,6 +54,10 @@ import {
   subscribeToProductsFromFirestore,
   fetchAllOrdersFromFirestore,
   fetchProductsFromFirestore,
+  clearTestProductsFromFirestore,
+  removeDuplicateProductsFromFirestore,
+  isTestProduct,
+  getExactDuplicateProductIds,
 } from '../utils/firebase';
 
 interface VendorDashboardPageProps {
@@ -65,34 +73,29 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
   onNavigateHome,
   onOpenAuth,
 }) => {
-  // Determine active logged-in vendor ID and name
-  // If user has a registered vendor profile or vendor role, use their id; otherwise default to verified primary vendor
-  const [selectedVendorId, setSelectedVendorId] = useState<string>(() => {
-    if (vendor?.id) return vendor.id;
-    if (currentUser?.id && (currentUser.userRole === 'vendor' || currentUser.role === 'vendor')) {
-      return currentUser.id;
-    }
-    return 'vnd-ogya-central';
-  });
+  const activeUid = auth.currentUser?.uid || currentUser?.id || '';
+  const selectedVendorId = activeUid;
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Active view tab: 'overview' | 'orders' | 'products' | 'add_product'
-  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'add_product'>('orders');
+  // Active view tab: 'orders' | 'products' | 'add_product' | 'admin'
+  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'add_product' | 'admin'>('orders');
 
   // Add Product Form state
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [image, setImage] = useState('');
   const [stock, setStock] = useState('15');
-  const [category, setCategory] = useState<ProductCategory>('General Goods');
+  const [category, setCategory] = useState<string>('');
   const [description, setDescription] = useState('');
   const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
+  const [isClearingTestData, setIsClearingTestData] = useState(false);
+  const [adminCleanupResult, setAdminCleanupResult] = useState<string | null>(null);
 
   // Status update loading state per order ID
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
@@ -101,12 +104,22 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState<'all' | OrderStatus>('all');
 
-  // Real-time Firestore sync for both collections: 'products' and 'orders'
+  // Real-time Firestore sync strictly scoped to authenticated seller's UID
   useEffect(() => {
     let isMounted = true;
+    const sellerUid = auth.currentUser?.uid;
 
-    // Fetch initial orders & products
-    Promise.all([fetchAllOrdersFromFirestore(), fetchProductsFromFirestore()])
+    if (!sellerUid) {
+      setOrders([]);
+      setProducts([]);
+      setIsLoading(false);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    setIsLoading(true);
+    Promise.all([fetchAllOrdersFromFirestore(sellerUid), fetchProductsFromFirestore()])
       .then(([initialOrders, initialProducts]) => {
         if (!isMounted) return;
         setOrders(initialOrders);
@@ -118,14 +131,12 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
         setIsLoading(false);
       });
 
-    // Real-time listener for orders collection
     const unsubOrders = subscribeToAllOrdersFromFirestore((updatedOrders) => {
       if (isMounted) {
         setOrders(updatedOrders);
       }
-    });
+    }, sellerUid);
 
-    // Real-time listener for products collection
     const unsubProducts = subscribeToProductsFromFirestore((updatedProducts) => {
       if (isMounted) {
         setProducts(updatedProducts);
@@ -137,16 +148,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
       unsubOrders();
       unsubProducts();
     };
-  }, []);
-
-  // Update selectedVendorId if currentUser or vendor changes
-  useEffect(() => {
-    if (vendor?.id) {
-      setSelectedVendorId(vendor.id);
-    } else if (currentUser?.id && (currentUser.userRole === 'vendor' || currentUser.role === 'vendor')) {
-      setSelectedVendorId(currentUser.id);
-    }
-  }, [vendor, currentUser]);
+  }, [activeUid]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -224,12 +226,12 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
     };
   }, [selectedVendorId, vendor, currentUser]);
 
-  // "Only show orders where vendorId matches logged-in vendor"
+  // Only show orders matching logged-in seller's UID
   const vendorOrders = useMemo(() => {
+    if (!selectedVendorId) return [];
     return orders.filter((order) => {
-      // Direct match on order.vendorId
-      if (order.vendorId === selectedVendorId) return true;
-      // Or match on any line item in order.items
+      if (order.sellerIds && order.sellerIds.includes(selectedVendorId)) return true;
+      if (order.sellerId === selectedVendorId || order.vendorId === selectedVendorId) return true;
       if (order.items && order.items.some((it) => it.vendorId === selectedVendorId)) return true;
       return false;
     });
@@ -280,9 +282,10 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
     });
   }, [vendorOrders, orderStatusFilter, orderSearch]);
 
-  // "Show vendor's own products"
+  // Show seller's own products (matched by sellerId or vendorId)
   const vendorProducts = useMemo(() => {
-    return products.filter((p) => p.vendorId === selectedVendorId);
+    if (!selectedVendorId) return [];
+    return products.filter((p) => (p.sellerId || p.vendorId) === selectedVendorId);
   }, [products, selectedVendorId]);
 
   // "total sales in GHS, total orders"
@@ -322,7 +325,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
     }
   };
 
-  // "Vendors can add new product with name, price GHS, image, stock"
+  // "Vendors can add new product with name, category, price GHS, image, stock"
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
@@ -330,6 +333,10 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
 
     if (!name.trim()) {
       setFormError('Please enter a product name.');
+      return;
+    }
+    if (!category || !category.trim()) {
+      setFormError('Please choose a Category for your product before publishing.');
       return;
     }
     const numPrice = Number(price);
@@ -344,25 +351,37 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
     }
 
     const defaultImages: Record<string, string> = {
-      'General Goods': 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&auto=format&fit=crop&q=80',
-      'Electronics & Gadgets': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80',
-      'Fashion & Apparel': 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600&auto=format&fit=crop&q=80',
+      'Food': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
+      'Phones': 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&auto=format&fit=crop&q=80',
+      'Laptops': 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=600&auto=format&fit=crop&q=80',
+      'Cars': 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=600&auto=format&fit=crop&q=80',
+      'Car Accessories': 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=600&auto=format&fit=crop&q=80',
       'Phone Accessories': 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=600&auto=format&fit=crop&q=80',
-      'Ghanaian Food': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
+      'Fashion': 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600&auto=format&fit=crop&q=80',
+      'Home Items': 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80',
+      'Electronics': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80',
+      'Everything': 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&auto=format&fit=crop&q=80',
     };
 
-    const finalImage = image.trim() || defaultImages[category] || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&auto=format&fit=crop&q=80';
+    if (!auth.currentUser) {
+      setFormError('Please sign in before publishing products.');
+      return;
+    }
+
+    const finalImage = image.trim() || defaultImages[category] || defaultImages['Everything'];
     const newProductId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const sellerUid = auth.currentUser.uid;
 
     const newProduct: Product = {
       id: newProductId,
       name: name.trim(),
       description: description.trim() || `${name.trim()} - Quality product from ${vendorInfo.name} for Ghanaian customers.`,
       price: numPrice,
-      category,
+      category: category as ProductCategory,
       imageUrl: finalImage,
       stock: numStock,
-      vendorId: selectedVendorId,
+      sellerId: sellerUid,
+      vendorId: sellerUid,
       vendorName: vendorInfo.name,
     };
 
@@ -370,13 +389,14 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
     try {
       await saveProductToFirestore(newProduct);
       setProducts((prev) => [newProduct, ...prev]);
-      setFormSuccess(`Product "${newProduct.name}" added successfully to your catalog!`);
-      showToast(`Product published to Firestore store!`);
+      setFormSuccess(`Product "${newProduct.name}" (${newProduct.category}) saved to Firestore!`);
+      showToast(`Product published to Firestore (${newProduct.category})!`);
       // Reset form
       setName('');
       setPrice('');
       setImage('');
       setStock('15');
+      setCategory('');
       setDescription('');
       setActiveTab('products');
     } catch (err: any) {
@@ -395,6 +415,50 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
       showToast('Product deleted from Firestore.');
     } catch (err) {
       console.error('Error deleting product:', err);
+    }
+  };
+
+  const handleClearTestData = async () => {
+    setIsClearingTestData(true);
+    setAdminCleanupResult(null);
+    try {
+      const result = await clearTestProductsFromFirestore();
+      const refreshed = await fetchProductsFromFirestore();
+      setProducts(refreshed);
+      const msg =
+        result.deletedCount > 0
+          ? `Cleared ${result.deletedCount} test product(s). Kept all ${result.keptCount} real marketplace products intact.`
+          : `No test products found. All ${result.keptCount} real marketplace products are safe.`;
+      setAdminCleanupResult(msg);
+      showToast(msg);
+    } catch (err: any) {
+      const errMsg = err?.message || 'Could not clear test data right now.';
+      setAdminCleanupResult(errMsg);
+      showToast(errMsg);
+    } finally {
+      setIsClearingTestData(false);
+    }
+  };
+
+  const handleRemoveDuplicates = async () => {
+    setIsClearingTestData(true);
+    setAdminCleanupResult(null);
+    try {
+      const result = await removeDuplicateProductsFromFirestore();
+      const refreshed = await fetchProductsFromFirestore();
+      setProducts(refreshed);
+      const msg =
+        result.deletedCount > 0
+          ? `Removed ${result.deletedCount} exact duplicate(s). Kept ${result.keptCount} unique real products.`
+          : `No exact duplicates found. All ${result.keptCount} products are unique.`;
+      setAdminCleanupResult(msg);
+      showToast(msg);
+    } catch (err: any) {
+      const errMsg = err?.message || 'Could not clean duplicates.';
+      setAdminCleanupResult(errMsg);
+      showToast(errMsg);
+    } finally {
+      setIsClearingTestData(false);
     }
   };
 
@@ -438,45 +502,72 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
                   </span>
                 </div>
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium hidden md:inline">
-                  Fire Protection & Safety Equipment Hub
+                  General Marketplace · Food, Phones, Laptops, Cars & Accessories
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Current Vendor Identity & Switcher */}
+          {/* Current Authenticated Seller Identity */}
           <div className="flex items-center gap-2.5">
-            <div className="text-right hidden sm:block">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-                Logged in Vendor
-              </span>
-              <span className="text-xs font-black text-slate-900 dark:text-white truncate max-w-[200px] block">
-                {vendorInfo.name}
-              </span>
-            </div>
-
-            {/* Vendor Switcher Dropdown (Allows switching to other certified vendors for demo / testing) */}
-            <select
-              value={selectedVendorId}
-              onChange={(e) => setSelectedVendorId(e.target.value)}
-              className="px-2.5 py-1.5 text-xs font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:border-red-500 cursor-pointer"
-              title="Switch active vendor store"
-              aria-label="Select Active Vendor"
-            >
-              <option value="vnd-ogya-central">OGYA Fire Direct Ltd (Accra)</option>
-              <option value="vnd-safeguard-gh">SafeGuard Fire Solutions Ghana</option>
-              <option value="vnd-volta-safety">Volta Industrial Safety</option>
-              {currentUser && (
-                <option value={currentUser.id}>
-                  My Account ({currentUser.name || 'Vendor'})
-                </option>
-              )}
-            </select>
+            {currentUser && auth.currentUser ? (
+              <div className="text-right">
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
+                  Verified Seller UID
+                </span>
+                <span className="text-xs font-black text-slate-900 dark:text-white truncate max-w-[200px] block">
+                  {vendorInfo.name}
+                </span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onOpenAuth('signin', 'seller')}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-red-600 text-white text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm"
+              >
+                <LogIn size={14} />
+                <span>Seller Sign In</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
 
-      {/* Main Vendor Dashboard Body */}
+      {!currentUser || !auth.currentUser ? (
+        <main className="max-w-xl mx-auto px-4 pt-16 pb-20 text-center">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 sm:p-10 shadow-lg space-y-5">
+            <div className="w-16 h-16 rounded-3xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
+              <Lock size={30} />
+            </div>
+            <div className="space-y-2">
+              <h1 className="text-2xl font-black text-slate-900 dark:text-white">
+                Seller Sign-In Required
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                To protect store inventory and customer order privacy, only signed-in sellers can view orders for their products or publish, update, and delete products.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => onOpenAuth('signin', 'seller')}
+                className="flex-1 py-3.5 px-5 bg-gradient-to-r from-amber-500 via-orange-500 to-red-600 text-white font-black text-sm rounded-2xl shadow-md flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <LogIn size={16} />
+                <span>Sign In / Register to Sell</span>
+              </button>
+              <button
+                type="button"
+                onClick={onNavigateHome}
+                className="py-3.5 px-5 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-sm rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                Back to Marketplace
+              </button>
+            </div>
+          </div>
+        </main>
+      ) : (
+      /* Main Vendor Dashboard Body */
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 space-y-6">
         {/* Vendor Profile Header Card */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 bg-white dark:bg-slate-900 p-6 sm:p-7 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm">
@@ -768,12 +859,12 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
           </div>
         </div>
 
-        {/* Tab Navigation: Orders vs Products vs Add Product */}
-        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-px">
+        {/* Tab Navigation: Orders vs Products vs Add Product vs Admin Dashboard */}
+        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-px overflow-x-auto no-scrollbar">
           <button
             type="button"
             onClick={() => setActiveTab('orders')}
-            className={`pb-3.5 px-4 text-xs sm:text-sm font-black border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+            className={`pb-3.5 px-4 text-xs sm:text-sm font-black border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'orders'
                 ? 'border-red-600 text-red-600 dark:text-red-400'
                 : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -786,7 +877,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('products')}
-            className={`pb-3.5 px-4 text-xs sm:text-sm font-black border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+            className={`pb-3.5 px-4 text-xs sm:text-sm font-black border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'products'
                 ? 'border-red-600 text-red-600 dark:text-red-400'
                 : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -799,7 +890,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('add_product')}
-            className={`pb-3.5 px-4 text-xs sm:text-sm font-black border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+            className={`pb-3.5 px-4 text-xs sm:text-sm font-black border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'add_product'
                 ? 'border-red-600 text-red-600 dark:text-red-400'
                 : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -807,6 +898,19 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
           >
             <Plus size={16} />
             <span>Add New Product</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('admin')}
+            className={`pb-3.5 px-4 text-xs sm:text-sm font-black border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'admin'
+                ? 'border-purple-600 text-purple-600 dark:text-purple-400'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <ShieldCheck size={16} />
+            <span>Admin Dashboard</span>
           </button>
         </div>
 
@@ -1140,10 +1244,14 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
                   </label>
                   <select
                     id="product_category"
+                    required
                     value={category}
-                    onChange={(e) => setCategory(e.target.value as ProductCategory)}
+                    onChange={(e) => setCategory(e.target.value)}
                     className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-red-500"
                   >
+                    <option value="" disabled>
+                      -- Choose a Category * --
+                    </option>
                     {PRODUCT_CATEGORIES.map((cat) => (
                       <option key={cat} value={cat}>
                         {cat}
@@ -1242,7 +1350,105 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
             </form>
           </div>
         )}
+
+        {/* =================== TAB 4: ADMIN DASHBOARD & TEST DATA CLEANUP =================== */}
+        {activeTab === 'admin' && (
+          <div className="space-y-5">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <ShieldCheck size={20} className="text-purple-600 dark:text-purple-400" />
+                    <span>Admin Dashboard — Marketplace Data Management</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Safely clear test products or exact duplicates from Firestore without ever touching real seller products (Food, Phones, Laptops, Cars, Phone Accessories, Fashion, Home Items, Electronics).
+                  </p>
+                </div>
+              </div>
+
+              {adminCleanupResult && (
+                <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2">
+                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                  <span>{adminCleanupResult}</span>
+                </div>
+              )}
+
+              {/* Metrics Summary */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                  <span className="text-[11px] font-bold uppercase text-slate-400 block">Total Active Products</span>
+                  <span className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">
+                    {products.length}
+                  </span>
+                </div>
+                <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                  <span className="text-[11px] font-bold uppercase text-amber-700 dark:text-amber-400 block">Products Marked as Test</span>
+                  <span className="text-2xl font-black text-amber-800 dark:text-amber-300 tabular-nums">
+                    {products.filter((p) => isTestProduct(p)).length}
+                  </span>
+                </div>
+                <div className="p-4 rounded-2xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800">
+                  <span className="text-[11px] font-bold uppercase text-purple-700 dark:text-purple-400 block">Exact Duplicates Detected</span>
+                  <span className="text-2xl font-black text-purple-800 dark:text-purple-300 tabular-nums">
+                    {getExactDuplicateProductIds(products).length}
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <button
+                  type="button"
+                  disabled={isClearingTestData}
+                  onClick={handleClearTestData}
+                  className="px-5 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-60"
+                  data-testid="clear-test-data-btn"
+                >
+                  {isClearingTestData ? <RefreshCw size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                  <span>Clear Test Data</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isClearingTestData}
+                  onClick={handleRemoveDuplicates}
+                  className="px-5 py-3 rounded-2xl bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs sm:text-sm shadow-sm border border-slate-700 flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-60"
+                >
+                  <Database size={15} />
+                  <span>Remove Exact Duplicates Only</span>
+                </button>
+              </div>
+
+              {/* Category Breakdown */}
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
+                  Products Organized by Category (All Real Products Preserved)
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {PRODUCT_CATEGORIES.map((cat) => {
+                    const count = products.filter(
+                      (p) => normalizeProductCategory(p.category).toLowerCase() === cat.toLowerCase()
+                    ).length;
+                    return (
+                      <div
+                        key={cat}
+                        className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center gap-2"
+                      >
+                        <span className="text-slate-700 dark:text-slate-200">{cat}</span>
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-mono text-[10px]">
+                          {count}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
+      )}
     </div>
   );
 };

@@ -247,6 +247,18 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [updatingListingId, setUpdatingListingId] = useState<string | null>(null);
   const [adsFilter, setAdsFilter] = useState<'all' | 'active' | 'sold'>('all');
 
+  // Keep edit fields synced with current user when modal opens or user changes
+  useEffect(() => {
+    if (user) {
+      setName(user.name || '');
+      setPhone(user.phone || '');
+      setWhatsapp(user.whatsapp || '');
+      setCity(user.city || '');
+      setRegion(user.region || REGIONS[0]);
+      setBio(user.bio || '');
+    }
+  }, [user, isOpen]);
+
   // Orders State
   const [orders, setOrders] = useState<Order[]>([]);
   const [isOrdersLoading, setIsOrdersLoading] = useState(false);
@@ -337,6 +349,58 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     setToast(`🛒 Re-added ${order.items.length} item${order.items.length > 1 ? 's' : ''} to your Cart!`);
     setTimeout(() => setToast(null), 3500);
   };
+
+  const isFoodOrder = (order: Order): boolean => {
+    return order.items.some((item) => {
+      const cat = String(item.category || '').toLowerCase();
+      const name = String(item.name || '').toLowerCase();
+      return (
+        cat.includes('food') ||
+        cat.includes('rice') ||
+        cat.includes('grill') ||
+        cat.includes('drink') ||
+        cat.includes('smoothie') ||
+        cat.includes('delicac') ||
+        cat.includes('pizza') ||
+        name.includes('jollof') ||
+        name.includes('waakye') ||
+        name.includes('tilapia') ||
+        name.includes('banku') ||
+        name.includes('pizza') ||
+        name.includes('kelewele') ||
+        name.includes('smoothie') ||
+        name.includes('juice') ||
+        name.includes('shawarma') ||
+        name.includes('koko') ||
+        name.includes('koose') ||
+        name.includes('chichinga')
+      );
+    });
+  };
+
+  // Filtered orders (MUST remain above any early return to preserve React Hooks order)
+  const filteredOrders = useMemo(() => {
+    return orders.filter((o) => {
+      const isFood = isFoodOrder(o);
+      if (ordersFilter === 'food' && !isFood) return false;
+      if (ordersFilter === 'products' && isFood) return false;
+      if (ordersFilter === 'pending' && o.status !== 'pending' && o.status !== 'pending_payment') return false;
+      if (ordersFilter === 'delivered' && o.status !== 'delivered' && o.status !== 'paid') return false;
+
+      if (orderSearchQuery.trim()) {
+        const q = orderSearchQuery.toLowerCase();
+        const matchId = o.id.toLowerCase().includes(q);
+        const matchVendor = (o.buyerName || '').toLowerCase().includes(q) || (o.vendorId || '').toLowerCase().includes(q);
+        const matchAddress = o.deliveryAddress.toLowerCase().includes(q);
+        const matchItems = o.items.some(
+          (it) => it.name.toLowerCase().includes(q) || it.category.toLowerCase().includes(q)
+        );
+        return matchId || matchVendor || matchAddress || matchItems;
+      }
+
+      return true;
+    });
+  }, [orders, ordersFilter, orderSearchQuery]);
 
   if (!isOpen || !user) return null;
 
@@ -474,34 +538,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     return String(dateVal);
   };
 
-  const isFoodOrder = (order: Order): boolean => {
-    return order.items.some((item) => {
-      const cat = String(item.category || '').toLowerCase();
-      const name = String(item.name || '').toLowerCase();
-      return (
-        cat.includes('food') ||
-        cat.includes('rice') ||
-        cat.includes('grill') ||
-        cat.includes('drink') ||
-        cat.includes('smoothie') ||
-        cat.includes('delicac') ||
-        cat.includes('pizza') ||
-        name.includes('jollof') ||
-        name.includes('waakye') ||
-        name.includes('tilapia') ||
-        name.includes('banku') ||
-        name.includes('pizza') ||
-        name.includes('kelewele') ||
-        name.includes('smoothie') ||
-        name.includes('juice') ||
-        name.includes('shawarma') ||
-        name.includes('koko') ||
-        name.includes('koose') ||
-        name.includes('chichinga')
-      );
-    });
-  };
-
   const renderOrderStatusBadge = (status: OrderStatus | string) => {
     const norm = String(status).toLowerCase();
 
@@ -557,32 +593,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       </span>
     );
   };
-
-  // Filtered orders
-  const filteredOrders = useMemo(() => {
-    return orders.filter((o) => {
-      // Category filter
-      const isFood = isFoodOrder(o);
-      if (ordersFilter === 'food' && !isFood) return false;
-      if (ordersFilter === 'products' && isFood) return false;
-      if (ordersFilter === 'pending' && o.status !== 'pending' && o.status !== 'pending_payment') return false;
-      if (ordersFilter === 'delivered' && o.status !== 'delivered' && o.status !== 'paid') return false;
-
-      // Search query
-      if (orderSearchQuery.trim()) {
-        const q = orderSearchQuery.toLowerCase();
-        const matchId = o.id.toLowerCase().includes(q);
-        const matchVendor = (o.buyerName || '').toLowerCase().includes(q) || (o.vendorId || '').toLowerCase().includes(q);
-        const matchAddress = o.deliveryAddress.toLowerCase().includes(q);
-        const matchItems = o.items.some(
-          (it) => it.name.toLowerCase().includes(q) || it.category.toLowerCase().includes(q)
-        );
-        return matchId || matchVendor || matchAddress || matchItems;
-      }
-
-      return true;
-    });
-  }, [orders, ordersFilter, orderSearchQuery]);
 
   const foodOrdersCount = orders.filter(isFoodOrder).length;
   const productOrdersCount = orders.filter((o) => !isFoodOrder(o)).length;

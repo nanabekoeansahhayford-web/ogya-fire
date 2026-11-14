@@ -34,7 +34,11 @@ import {
 } from 'lucide-react';
 import { Listing, UserProfile } from '../types/marketplace';
 import { formatPrice, markListingAsSold } from '../utils/storage';
-import { updateListingStatusInFirestore } from '../utils/firebase';
+import {
+  updateListingStatusInFirestore,
+  clearTestProductsFromFirestore,
+  removeDuplicateProductsFromFirestore,
+} from '../utils/firebase';
 import {
   getVerificationRequests,
   getVerificationRequestByUserId,
@@ -96,6 +100,7 @@ export const SellerDashboardModal: React.FC<SellerDashboardModalProps> = ({
   const [adminMode, setAdminMode] = useState(false);
   const [adminInspectionId, setAdminInspectionId] = useState<string | null>(null);
   const [adminInspectionUnblur, setAdminInspectionUnblur] = useState(false);
+  const [isClearingTestData, setIsClearingTestData] = useState(false);
 
   // MoMo Verification Form State
   const [momoName, setMomoName] = useState(currentUser.momoName || currentUser.name || 'Ansah Ford');
@@ -434,6 +439,38 @@ export const SellerDashboardModal: React.FC<SellerDashboardModalProps> = ({
         ? `🎉 Sale recorded! (${newCount} completed sales). ⭐ "Trusted Seller" badge UNLOCKED and active everywhere!`
         : `Sale recorded! (${newCount} completed sales). Reach 3 sales to unlock ⭐ Trusted Seller badge.`
     );
+  };
+
+  const handleClearTestData = async () => {
+    setIsClearingTestData(true);
+    try {
+      const result = await clearTestProductsFromFirestore();
+      onToast(
+        result.deletedCount > 0
+          ? `✅ Cleared ${result.deletedCount} test product(s). Kept all ${result.keptCount} real marketplace products.`
+          : `No test products found. All ${result.keptCount} real marketplace products are safe.`
+      );
+    } catch (err: any) {
+      onToast(`⚠️ ${err?.message || 'Could not clear test data.'}`);
+    } finally {
+      setIsClearingTestData(false);
+    }
+  };
+
+  const handleRemoveExactDuplicates = async () => {
+    setIsClearingTestData(true);
+    try {
+      const result = await removeDuplicateProductsFromFirestore();
+      onToast(
+        result.deletedCount > 0
+          ? `✅ Removed ${result.deletedCount} exact duplicate(s). Kept ${result.keptCount} unique products.`
+          : `No exact duplicates found. All ${result.keptCount} products are unique.`
+      );
+    } catch (err: any) {
+      onToast(`⚠️ ${err?.message || 'Could not remove duplicates.'}`);
+    } finally {
+      setIsClearingTestData(false);
+    }
   };
 
   const handleSampleCardSelect = () => {
@@ -1164,9 +1201,41 @@ export const SellerDashboardModal: React.FC<SellerDashboardModalProps> = ({
                 </button>
               </div>
 
-              {/* ADMIN VERIFICATION QUEUE */}
+              {/* ADMIN VERIFICATION QUEUE & DATA CLEANUP */}
               {adminMode ? (
                 <div className="space-y-6">
+                  {/* Marketplace Admin: Clear Test Data & Duplicates */}
+                  <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h4 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                        <Trash2 size={16} className="text-rose-600 dark:text-rose-400" />
+                        <span>Admin Marketplace Cleanup (Test Data Only)</span>
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Deletes ONLY products marked as test (&quot;TEST - Delete Me&quot;, &quot;test test&quot;, or isTest=true). Real products including Phone Accessories are never deleted.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                      <button
+                        type="button"
+                        disabled={isClearingTestData}
+                        onClick={handleClearTestData}
+                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
+                      >
+                        <Trash2 size={13} />
+                        <span>{isClearingTestData ? 'Clearing...' : 'Clear Test Data'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isClearingTestData}
+                        onClick={handleRemoveExactDuplicates}
+                        className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer disabled:opacity-60"
+                      >
+                        Remove Duplicates
+                      </button>
+                    </div>
+                  </div>
+
                   {/* MoMo Verification Applications Queue */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">

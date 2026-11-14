@@ -14,8 +14,8 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
   onSelectCategory,
   categoryCounts,
 }) => {
-  // Focus on the 9 primary super-app categories requested
-  const primaryCategories = CATEGORIES.slice(0, 9);
+  // Top Category Filter: Food, Phones, Laptops, Cars, Accessories, Fashion, Electronics, Home Items
+  const primaryCategories = CATEGORIES.slice(0, 8);
 
   return (
     <div className="bg-white dark:bg-slate-900 border-b border-slate-200/90 dark:border-slate-800 py-3 shadow-xs sticky top-16 z-30 transition-colors duration-200 backdrop-blur-md bg-white/95 dark:bg-slate-900/95">
@@ -24,7 +24,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-black text-[#FF6600] uppercase tracking-wider flex items-center gap-1.5">
               <span>🔥</span>
-              <span>Shop Ghana By Category</span>
+              <span>Shop Everything By Category</span>
             </span>
           </div>
           {selectedCategory !== 'all' && (
@@ -49,7 +49,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
             }`}
           >
             <CategoryIcon categoryId="all" size={16} />
-            <span>All Categories</span>
+            <span>All</span>
             <span
               className={`text-[11px] tabular-nums font-mono px-1.5 py-0.2 rounded-md ${
                 selectedCategory === 'all'

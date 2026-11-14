@@ -17,9 +17,11 @@ import {
   ShieldCheck,
   TrendingUp,
   Truck,
+  Lock,
+  LogIn,
 } from 'lucide-react';
 import { Product, ProductCategory, PRODUCT_CATEGORIES, Vendor } from '../types/store';
-import { saveProductToFirestore, deleteProductFromFirestore } from '../utils/firebase';
+import { auth, saveProductToFirestore, deleteProductFromFirestore } from '../utils/firebase';
 import { UserProfile } from '../types/marketplace';
 
 interface VendorDashboardModalProps {
@@ -29,6 +31,7 @@ interface VendorDashboardModalProps {
   vendor: Vendor | null;
   products: Product[];
   onProductUpdated: () => void;
+  onOpenAuth?: () => void;
 }
 
 export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
@@ -38,6 +41,7 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
   vendor,
   products,
   onProductUpdated,
+  onOpenAuth,
 }) => {
   const [activeTab, setActiveTab] = useState<'inventory' | 'add_product'>('inventory');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -46,7 +50,7 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
-  const [category, setCategory] = useState<ProductCategory>('General Goods');
+  const [category, setCategory] = useState<string>('');
   const [imageUrl, setImageUrl] = useState('');
   const [stock, setStock] = useState('10');
 
@@ -54,16 +58,16 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  const isAuthenticated = Boolean(currentUser && auth.currentUser);
+  const sellerUid = auth.currentUser?.uid || currentUser?.id || '';
+
   // Vendor's own products only
   const vendorProducts = useMemo(() => {
-    if (!currentUser) return [];
+    if (!sellerUid) return [];
     return products.filter(
-      (p) =>
-        p.vendorId === currentUser.id ||
-        (vendor && p.vendorId === vendor.id) ||
-        p.vendorName.toLowerCase().includes(currentUser.name.toLowerCase())
+      (p) => (p.sellerId || p.vendorId) === sellerUid
     );
-  }, [products, currentUser, vendor]);
+  }, [products, sellerUid]);
 
   if (!isOpen) return null;
 
@@ -71,7 +75,7 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
     setName('');
     setDescription('');
     setPrice('');
-    setCategory('General Goods');
+    setCategory('');
     setImageUrl('');
     setStock('10');
     setEditingProduct(null);
@@ -98,6 +102,10 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
       setErrorMessage('Product title is required.');
       return;
     }
+    if (!category || !category.trim()) {
+      setErrorMessage('Please choose a Category for your product before saving.');
+      return;
+    }
     const numPrice = Number(price);
     if (isNaN(numPrice) || numPrice < 0) {
       setErrorMessage('Please enter a valid price in GHS.');
@@ -110,16 +118,26 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
     }
 
     const defaultImages: Record<string, string> = {
-      'General Goods': 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&auto=format&fit=crop&q=80',
-      'Electronics & Gadgets': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80',
-      'Fashion & Apparel': 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600&auto=format&fit=crop&q=80',
+      'Food': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
+      'Phones': 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&auto=format&fit=crop&q=80',
+      'Laptops': 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=600&auto=format&fit=crop&q=80',
+      'Cars': 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=600&auto=format&fit=crop&q=80',
+      'Car Accessories': 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=600&auto=format&fit=crop&q=80',
       'Phone Accessories': 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=600&auto=format&fit=crop&q=80',
-      'Ghanaian Food': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
+      'Fashion': 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600&auto=format&fit=crop&q=80',
+      'Home Items': 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80',
+      'Electronics': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80',
+      'Everything': 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&auto=format&fit=crop&q=80',
     };
 
-    const finalImage = imageUrl.trim() || defaultImages[category] || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&auto=format&fit=crop&q=80';
-    const vendorId = currentUser?.id || vendor?.id || 'vnd-custom';
-    const vendorName = vendor?.shopName || currentUser?.name || 'Verified OGYA Vendor';
+    if (!auth.currentUser || !currentUser) {
+      setErrorMessage('Please sign in before publishing or updating products.');
+      return;
+    }
+
+    const finalImage = imageUrl.trim() || defaultImages[category] || defaultImages['Everything'];
+    const uid = auth.currentUser.uid;
+    const vendorName = vendor?.shopName || currentUser.businessName || currentUser.name || 'Verified OGYA Seller';
 
     const productId = editingProduct ? editingProduct.id : `prod-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
 
@@ -128,10 +146,11 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
       name: name.trim(),
       description: description.trim(),
       price: numPrice,
-      category,
+      category: category as ProductCategory,
       imageUrl: finalImage,
       stock: numStock,
-      vendorId,
+      sellerId: uid,
+      vendorId: uid,
       vendorName,
     };
 
@@ -306,6 +325,33 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
 
         {/* Content Body */}
         <div className="p-6 flex-1 overflow-y-auto">
+          {!isAuthenticated ? (
+            <div className="text-center py-10 px-4 space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center mx-auto">
+                <Lock size={28} />
+              </div>
+              <h4 className="text-base font-black text-slate-900 dark:text-white">
+                Seller Sign-In Required
+              </h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                Sign in with Email, Phone OTP, or Google to add, edit, or delete your store products.
+              </p>
+              {onOpenAuth && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenAuth();
+                  }}
+                  className="px-6 py-3 bg-gradient-to-r from-amber-500 to-red-600 text-white font-black text-xs rounded-xl shadow-md inline-flex items-center gap-2 cursor-pointer"
+                >
+                  <LogIn size={15} />
+                  <span>Sign In / Register to Sell</span>
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
           {successMessage && (
             <div className="mb-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2">
               <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
@@ -450,10 +496,14 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
                     Category *
                   </label>
                   <select
+                    required
                     value={category}
-                    onChange={(e) => setCategory(e.target.value as ProductCategory)}
+                    onChange={(e) => setCategory(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-red-500"
                   >
+                    <option value="" disabled>
+                      -- Choose a Category * --
+                    </option>
                     {PRODUCT_CATEGORIES.map((cat) => (
                       <option key={cat} value={cat}>
                         {cat}
@@ -546,6 +596,8 @@ export const VendorDashboardModal: React.FC<VendorDashboardModalProps> = ({
                 )}
               </button>
             </form>
+          )}
+            </>
           )}
         </div>
       </div>

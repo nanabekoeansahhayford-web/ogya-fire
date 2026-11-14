@@ -56,7 +56,7 @@ export const BecomeVendorModal: React.FC<BecomeVendorModalProps> = ({
     }
 
     if (!shopName.trim()) {
-      setError('Please enter your Fire Equipment Shop Name.');
+      setError('Please enter your Shop or Business Name.');
       return;
     }
     if (!phone.trim()) {

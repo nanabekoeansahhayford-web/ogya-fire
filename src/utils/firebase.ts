@@ -22,6 +22,12 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   sendPasswordResetEmail,
+  onAuthStateChanged,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  ConfirmationResult,
+  updateProfile,
+  User as FirebaseUser,
 } from 'firebase/auth';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { Listing, WantedItem } from '../types/marketplace';
@@ -33,68 +39,166 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId); /* CRITICAL: The app will break without this line */
 export const auth = getAuth(app);
 
+export type { FirebaseUser, ConfirmationResult };
+
+/**
+ * Subscribe to Firebase Auth state changes
+ */
+export function subscribeToAuthState(
+  callback: (user: FirebaseUser | null) => void
+): () => void {
+  return onAuthStateChanged(auth, callback);
+}
+
+/**
+ * Format Ghana or international phone numbers into E.164 format (+233...)
+ */
+export function formatGhanaPhoneE164(rawPhone: string): string {
+  const cleaned = rawPhone.replace(/[\s\-()]/g, '').trim();
+  if (!cleaned) return '';
+  if (cleaned.startsWith('+')) return cleaned;
+  if (cleaned.startsWith('233')) return `+${cleaned}`;
+  if (cleaned.startsWith('0')) return `+233${cleaned.slice(1)}`;
+  return `+233${cleaned}`;
+}
+
+let activeRecaptchaVerifier: RecaptchaVerifier | null = null;
+
+/**
+ * Send SMS OTP to phone number via Firebase Phone Auth
+ */
+export async function sendPhoneOtp(
+  rawPhoneNumber: string,
+  recaptchaContainerId: string = 'recaptcha-container'
+): Promise<{ confirmationResult?: ConfirmationResult; formattedPhone?: string; error?: string }> {
+  const formattedPhone = formatGhanaPhoneE164(rawPhoneNumber);
+  if (!formattedPhone || formattedPhone.length < 10) {
+    return { error: 'Please enter a valid Ghana or international phone number (e.g. 024 555 8899 or +233245558899).' };
+  }
+
+  try {
+    if (activeRecaptchaVerifier) {
+      try {
+        activeRecaptchaVerifier.clear();
+      } catch {
+        // ignore clear error
+      }
+      activeRecaptchaVerifier = null;
+    }
+
+    const verifier = new RecaptchaVerifier(auth, recaptchaContainerId, {
+      size: 'invisible',
+    });
+    activeRecaptchaVerifier = verifier;
+
+    const confirmationResult = await signInWithPhoneNumber(auth, formattedPhone, verifier);
+    return { confirmationResult, formattedPhone };
+  } catch (err: any) {
+    const code = err?.code || '';
+    let friendly = err?.message || 'Could not send SMS verification code.';
+    if (code === 'auth/operation-not-allowed') {
+      friendly = 'Phone Sign-In is not enabled yet in Firebase Console. Enable Phone provider under Authentication -> Sign-in method.';
+    } else if (code === 'auth/invalid-phone-number') {
+      friendly = 'Invalid phone number format. Use +233 followed by 9 digits (e.g. +233245558899).';
+    } else if (code === 'auth/too-many-requests') {
+      friendly = 'Too many SMS attempts. Please wait a moment before trying again.';
+    } else if (code === 'auth/captcha-check-failed') {
+      friendly = 'reCAPTCHA verification failed. Please ensure this domain is authorized in Firebase Console.';
+    }
+    return { error: friendly };
+  }
+}
+
+/**
+ * Verify SMS OTP code and complete Firebase Phone Auth sign-in
+ */
+export async function verifyPhoneOtp(
+  confirmationResult: ConfirmationResult,
+  code: string
+): Promise<{ uid?: string; phoneNumber?: string; user?: FirebaseUser; error?: string }> {
+  const cleanCode = code.trim();
+  if (!cleanCode || cleanCode.length < 6) {
+    return { error: 'Please enter the 6-digit SMS verification code.' };
+  }
+  try {
+    const cred = await confirmationResult.confirm(cleanCode);
+    return {
+      uid: cred.user.uid,
+      phoneNumber: cred.user.phoneNumber || undefined,
+      user: cred.user,
+    };
+  } catch (err: any) {
+    const errCode = err?.code || '';
+    if (errCode === 'auth/invalid-verification-code') {
+      return { error: 'Incorrect SMS verification code. Please check and try again.' };
+    }
+    if (errCode === 'auth/code-expired') {
+      return { error: 'Verification code expired. Please request a new SMS code.' };
+    }
+    return { error: err?.message || 'Failed to verify SMS code.' };
+  }
+}
+
 /**
  * Save user profile to Firestore in collection 'users'
- * with doc id = user uid, fields: email, createdAt = serverTimestamp, role = 'customer', displayName = email
- * Uses Firebase Firestore setDoc with merge: true
+ * Strictly scoped to authenticated user's own UID
  */
 export async function saveUserProfileToFirestore(
   uid: string,
-  email: string
+  email?: string,
+  phone?: string,
+  displayName?: string
 ): Promise<{ success: boolean; error?: string }> {
+  if (!auth.currentUser || auth.currentUser.uid !== uid) {
+    return { success: false, error: 'Authentication required to update user profile.' };
+  }
   const path = `users/${uid}`;
   try {
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanEmail = (email || auth.currentUser.email || '').trim().toLowerCase();
+    const cleanPhone = (phone || auth.currentUser.phoneNumber || '').trim();
+    const cleanDisplayName =
+      (displayName || auth.currentUser.displayName || cleanEmail || cleanPhone || 'OGYA User').trim();
+
     const userDocRef = doc(db, 'users', uid);
-    await setDoc(
-      userDocRef,
-      {
-        email: cleanEmail,
-        createdAt: serverTimestamp(),
-        role: 'customer',
-        displayName: cleanEmail,
-      },
-      { merge: true }
-    );
+    const existingSnap = await getDoc(userDocRef);
+
+    const payload: Record<string, any> = {
+      displayName: cleanDisplayName.slice(0, 256),
+      updatedAt: serverTimestamp(),
+    };
+    if (cleanEmail) payload.email = cleanEmail.slice(0, 256);
+    if (cleanPhone) payload.phone = cleanPhone.slice(0, 64);
+
+    if (!existingSnap.exists()) {
+      payload.role = 'customer';
+      payload.createdAt = serverTimestamp();
+    } else {
+      payload.role = existingSnap.data()?.role || 'customer';
+    }
+
+    await setDoc(userDocRef, payload, { merge: true });
     return { success: true };
   } catch (error) {
     console.error(`Failed to save user profile for uid ${uid} to Firestore:`, error);
-    try {
-      handleFirestoreError(error, OperationType.WRITE, path);
-    } catch {
-      // logged
-    }
     return { success: false, error: String(error) };
   }
 }
 
 /**
  * When user logs in, if no doc exists in 'users', create it.
- * Fields: email, createdAt = serverTimestamp, role = 'customer', displayName = email
- * Uses Firebase Firestore setDoc with merge: true
  */
 export async function ensureUserDocOnLogin(
   uid: string,
-  email: string
+  email?: string,
+  phone?: string,
+  displayName?: string
 ): Promise<void> {
-  if (!uid || !email) return;
-  const path = `users/${uid}`;
+  if (!uid || !auth.currentUser || auth.currentUser.uid !== uid) return;
   try {
-    const cleanEmail = email.trim().toLowerCase();
     const userDocRef = doc(db, 'users', uid);
     const snap = await getDoc(userDocRef);
     if (!snap.exists()) {
-      await setDoc(
-        userDocRef,
-        {
-          email: cleanEmail,
-          createdAt: serverTimestamp(),
-          role: 'customer',
-          displayName: cleanEmail,
-        },
-        { merge: true }
-      );
-      console.log(`Created user profile document in Firestore users/${uid} on login.`);
+      await saveUserProfileToFirestore(uid, email, phone, displayName);
     }
   } catch (error) {
     console.warn(`Could not verify or create user doc on login for uid ${uid}:`, error);
@@ -102,39 +206,62 @@ export async function ensureUserDocOnLogin(
 }
 
 /**
- * Register user in Firebase Auth
+ * Register user in Firebase Auth (Email + Password)
  */
 export async function firebaseAuthSignUp(
   email: string,
-  password?: string
-): Promise<{ uid?: string; user?: any; error?: string }> {
+  password?: string,
+  displayName?: string
+): Promise<{ uid?: string; user?: FirebaseUser; error?: string }> {
   const cleanEmail = email.trim().toLowerCase();
-  if (!password) {
-    return { error: 'Password required' };
+  if (!password || password.length < 6) {
+    return { error: 'Password must be at least 6 characters.' };
   }
   try {
     const cred = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+    if (displayName?.trim()) {
+      await updateProfile(cred.user, { displayName: displayName.trim() }).catch(() => {});
+    }
     return { uid: cred.user.uid, user: cred.user };
   } catch (err: any) {
-    console.warn('Firebase createUserWithEmailAndPassword notice:', err?.code || err?.message);
-    return { error: err?.code || err?.message };
+    const code = err?.code || '';
+    let friendly = err?.message || 'Sign up failed.';
+    if (code === 'auth/email-already-in-use') {
+      friendly = 'An account with this email already exists. Please switch to Sign In.';
+    } else if (code === 'auth/weak-password') {
+      friendly = 'Password is too weak. Please choose at least 6 characters.';
+    } else if (code === 'auth/operation-not-allowed') {
+      friendly = 'Email/Password sign-up is not enabled yet in Firebase Console Authentication settings.';
+    } else if (code === 'auth/invalid-email') {
+      friendly = 'Please enter a valid email address.';
+    }
+    return { error: friendly };
   }
 }
 
 /**
- * Sign in user with Firebase Auth (non-blocking)
+ * Sign in user with Firebase Auth (Email + Password)
  */
 export async function firebaseAuthSignIn(
   email: string,
   password?: string
-): Promise<{ uid?: string; user?: any; error?: string }> {
+): Promise<{ uid?: string; user?: FirebaseUser; error?: string }> {
   const cleanEmail = email.trim().toLowerCase();
-  if (!password) return { error: 'Password required' };
+  if (!password) return { error: 'Password is required.' };
   try {
     const cred = await signInWithEmailAndPassword(auth, cleanEmail, password);
     return { uid: cred.user.uid, user: cred.user };
   } catch (err: any) {
-    return { error: err?.code || err?.message };
+    const code = err?.code || '';
+    let friendly = err?.message || 'Sign in failed.';
+    if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+      friendly = 'Invalid email or password. Please check your credentials or create an account.';
+    } else if (code === 'auth/too-many-requests') {
+      friendly = 'Too many failed login attempts. Please wait a few minutes or reset your password.';
+    } else if (code === 'auth/operation-not-allowed') {
+      friendly = 'Email/Password sign-in is not enabled yet in Firebase Console Authentication settings.';
+    }
+    return { error: friendly };
   }
 }
 
@@ -156,6 +283,8 @@ export async function firebaseGoogleSignIn(): Promise<{
   uid?: string;
   email?: string;
   displayName?: string;
+  photoURL?: string;
+  user?: FirebaseUser;
   error?: string;
 }> {
   try {
@@ -165,10 +294,18 @@ export async function firebaseGoogleSignIn(): Promise<{
       uid: cred.user.uid,
       email: cred.user.email || undefined,
       displayName: cred.user.displayName || undefined,
+      photoURL: cred.user.photoURL || undefined,
+      user: cred.user,
     };
   } catch (err: any) {
-    console.warn('Firebase Google Sign-In notice:', err?.code || err?.message);
-    return { error: err?.code || err?.message };
+    const code = err?.code || '';
+    let friendly = err?.message || 'Google Sign-In failed.';
+    if (code === 'auth/popup-closed-by-user') {
+      friendly = 'Google Sign-In window was closed before completing login.';
+    } else if (code === 'auth/popup-blocked') {
+      friendly = 'Pop-up was blocked by your browser. Please allow pop-ups for this site and try again.';
+    }
+    return { error: friendly };
   }
 }
 
@@ -282,30 +419,39 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 }
 
 /**
- * Save product listing directly to Firestore
+ * Save product listing directly to Firestore (requires Firebase Auth; binds userId & sellerId = auth.currentUser.uid)
  */
 export async function saveListingToFirestore(listing: Listing): Promise<Listing> {
+  if (!auth.currentUser) {
+    throw new Error('You must be signed in to publish a product listing.');
+  }
+  const uid = auth.currentUser.uid;
   const path = `listings/${listing.id}`;
   try {
-    // Ensure all required fields exist and sanitize undefined values
+    const safeImages = Array.isArray(listing.images)
+      ? listing.images.filter((img) => typeof img === 'string' && img.length <= 2048).slice(0, 12)
+      : [];
+
     const docData: Record<string, any> = {
       id: listing.id,
-      title: listing.title,
+      userId: uid,
+      sellerId: uid,
+      title: listing.title.trim().slice(0, 200),
       categoryId: listing.categoryId,
-      categoryName: listing.categoryName,
-      subcategory: listing.subcategory,
-      price: Number(listing.price),
-      currency: listing.currency || 'GHS',
+      categoryName: (listing.categoryName || '').slice(0, 128),
+      subcategory: (listing.subcategory || '').slice(0, 128),
+      price: Number(listing.price) || 0,
+      currency: (listing.currency || 'GHS').slice(0, 16),
       isNegotiable: Boolean(listing.isNegotiable),
-      location: listing.location,
-      region: listing.region,
-      condition: listing.condition,
-      description: listing.description || '',
-      images: Array.isArray(listing.images) ? listing.images : [],
+      location: listing.location.trim().slice(0, 256),
+      region: (listing.region || '').slice(0, 128),
+      condition: (listing.condition || 'Brand New').slice(0, 64),
+      description: (listing.description || '').slice(0, 5000),
+      images: safeImages,
       seller: {
-        name: listing.seller?.name || 'Seller',
-        phone: listing.seller?.phone || '+233 24 000 0000',
-        whatsapp: listing.seller?.whatsapp || listing.seller?.phone || '+233 24 000 0000',
+        name: (listing.seller?.name || 'Seller').slice(0, 128),
+        phone: (listing.seller?.phone || '+233 24 000 0000').slice(0, 64),
+        whatsapp: (listing.seller?.whatsapp || listing.seller?.phone || '+233 24 000 0000').slice(0, 64),
         isVerified: Boolean(listing.seller?.isVerified),
         memberSince: listing.seller?.memberSince || 'November 2026',
         rating: Number(listing.seller?.rating) || 5.0,
@@ -320,16 +466,16 @@ export async function saveListingToFirestore(listing: Listing): Promise<Listing>
       status: listing.status || 'active',
       isSold: Boolean(listing.isSold),
       createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     };
 
     if (listing.soldAt) docData.soldAt = listing.soldAt;
-    if (listing.userId) docData.userId = listing.userId;
     if (listing.attributes) docData.attributes = listing.attributes;
     if (listing.cvDetails) docData.cvDetails = listing.cvDetails;
     if (listing.jobDetails) docData.jobDetails = listing.jobDetails;
 
     await setDoc(doc(db, 'listings', listing.id), docData);
-    return listing;
+    return { ...listing, userId: uid, sellerId: uid };
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
     return listing;
@@ -337,13 +483,16 @@ export async function saveListingToFirestore(listing: Listing): Promise<Listing>
 }
 
 /**
- * Update a listing status in Firestore (e.g. mark as sold or active)
+ * Update a listing status in Firestore (owner-only)
  */
 export async function updateListingStatusInFirestore(
   listingId: string,
   status: 'active' | 'sold',
   isSold: boolean = status === 'sold'
 ): Promise<boolean> {
+  if (!auth.currentUser) {
+    throw new Error('You must be signed in to update your listing.');
+  }
   const path = `listings/${listingId}`;
   try {
     const docRef = doc(db, 'listings', listingId);
@@ -355,7 +504,7 @@ export async function updateListingStatusInFirestore(
     if (isSold) {
       updates.soldAt = new Date().toISOString();
     }
-    await setDoc(docRef, updates, { merge: true });
+    await updateDoc(docRef, updates);
     return true;
   } catch (error) {
     console.error(`Failed to update listing ${listingId} status in Firestore:`, error);
@@ -414,28 +563,94 @@ export function subscribeToListingsFromFirestore(
 }
 
 /* =========================================================================
-   PRODUCTS (FIRE SAFETY STORE)
+   PRODUCTS (GENERAL MARKETPLACE STORE - ALL CATEGORIES)
    ========================================================================= */
 
+let hasRunInitialProductCleanup = false;
+
 /**
- * Save or update a product in Firestore collection 'products'
+ * Returns true ONLY if the product is explicitly flagged as test data (`isTest: true`)
+ * or has exact test title "TEST - Delete Me" or "test test".
+ * NEVER returns true for real products (e.g., Phone Accessories, Earbuds, Chargers, etc.).
+ */
+export function isTestProduct(product: Partial<Product>): boolean {
+  if (!product) return false;
+  if (product.isTest === true) return true;
+  const normalizedName = (product.name || '').trim().replace(/\s+/g, ' ').toLowerCase();
+  return normalizedName === 'test - delete me' || normalizedName === 'test test';
+}
+
+/**
+ * Finds exact duplicate products: same normalized name + same numeric price + same seller twice.
+ * Keeps the first occurrence and returns Firestore IDs of exact duplicate copies only.
+ */
+export function getExactDuplicateProductIds(items: Product[]): string[] {
+  const seen = new Set<string>();
+  const duplicateIds: string[] = [];
+
+  for (const item of items) {
+    const normName = (item.name || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    const normPrice = Number(item.price) || 0;
+    const normSeller = (item.vendorId || item.vendorName || '').trim().toLowerCase();
+    const key = `${normName}||${normPrice}||${normSeller}`;
+
+    if (seen.has(key)) {
+      if (item.id) {
+        duplicateIds.push(item.id);
+      }
+    } else {
+      seen.add(key);
+    }
+  }
+  return duplicateIds;
+}
+
+/**
+ * Deduplicate product list in-memory (keeping first copy of exact duplicates)
+ */
+export function deduplicateProductsList(items: Product[]): Product[] {
+  const duplicateIdSet = new Set(getExactDuplicateProductIds(items));
+  return items.filter((item) => !duplicateIdSet.has(item.id));
+}
+
+/**
+ * Save or update a product in Firestore collection 'products'.
+ * Strictly requires Firebase Auth and enforces sellerId === auth.currentUser.uid.
  */
 export async function saveProductToFirestore(product: Product): Promise<boolean> {
+  if (!auth.currentUser) {
+    throw new Error('Please sign in with Email, Phone, or Google before publishing a product.');
+  }
+  if (!product.category || !product.category.trim()) {
+    throw new Error('Product category is required before saving to Firestore.');
+  }
+  const uid = auth.currentUser.uid;
   const path = `products/${product.id}`;
+
+  const safeImageUrl = (product.imageUrl || '').trim();
+  if (safeImageUrl.length > 2048) {
+    throw new Error('Image URL must be 2048 characters or less.');
+  }
+
   try {
     const docRef = doc(db, 'products', product.id);
     const data: Record<string, any> = {
       id: product.id,
-      name: product.name.trim(),
-      description: product.description || '',
-      price: Number(product.price),
-      category: product.category,
-      imageUrl: product.imageUrl || '',
-      stock: Number(product.stock) || 0,
-      vendorId: product.vendorId,
-      vendorName: product.vendorName,
+      name: product.name.trim().slice(0, 256),
+      description: (product.description || '').slice(0, 5000),
+      price: Math.max(0, Number(product.price) || 0),
+      category: product.category.trim().slice(0, 100),
+      imageUrl: safeImageUrl,
+      stock: Math.max(0, Number(product.stock) || 0),
+      sellerId: uid,
+      vendorId: uid,
+      vendorName: (product.vendorName || auth.currentUser.displayName || 'Verified OGYA Seller').slice(0, 256),
       createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     };
+    if (typeof product.isTest === 'boolean') {
+      data.isTest = product.isTest;
+    }
     await setDoc(docRef, data, { merge: true });
     return true;
   } catch (error) {
@@ -445,14 +660,17 @@ export async function saveProductToFirestore(product: Product): Promise<boolean>
     } catch {
       // logged
     }
-    return false;
+    throw error;
   }
 }
 
 /**
- * Delete a product from Firestore
+ * Delete a product from Firestore (only allowed for product owner)
  */
 export async function deleteProductFromFirestore(productId: string): Promise<boolean> {
+  if (!auth.currentUser) {
+    throw new Error('Please sign in to delete your product.');
+  }
   const path = `products/${productId}`;
   try {
     await deleteDoc(doc(db, 'products', productId));
@@ -464,29 +682,110 @@ export async function deleteProductFromFirestore(productId: string): Promise<boo
     } catch {
       // logged
     }
-    return false;
+    throw error;
   }
 }
 
 /**
- * Fetch all products from Firestore, seeding with initial marketplace catalog if collection is fresh
+ * Clear ONLY test products owned by the signed-in user (isTest === true or named "TEST - Delete Me" / "test test").
+ * NEVER deletes real marketplace products or products owned by other sellers.
+ */
+export async function clearTestProductsFromFirestore(): Promise<{
+  deletedCount: number;
+  keptCount: number;
+  deletedNames: string[];
+}> {
+  if (!auth.currentUser) {
+    throw new Error('Please sign in to manage your test products.');
+  }
+  const uid = auth.currentUser.uid;
+  const path = 'products';
+  const snap = await getDocs(collection(db, path));
+  const allProducts: Product[] = [];
+  snap.forEach((d) => {
+    const data = d.data() as Product;
+    allProducts.push({ ...data, id: data.id || d.id });
+  });
+
+  const ownTestProducts = allProducts.filter(
+    (p) => isTestProduct(p) && ((p.sellerId || p.vendorId) === uid)
+  );
+  const realProductsCount = allProducts.length - ownTestProducts.length;
+  const deletedNames: string[] = [];
+
+  for (const tp of ownTestProducts) {
+    try {
+      await deleteDoc(doc(db, path, tp.id));
+      deletedNames.push(tp.name || tp.id);
+    } catch (err) {
+      console.error(`Failed to delete test product ${tp.id}:`, err);
+    }
+  }
+
+  return {
+    deletedCount: deletedNames.length,
+    keptCount: realProductsCount,
+    deletedNames,
+  };
+}
+
+/**
+ * Delete ONLY exact duplicate products owned by the signed-in user.
+ */
+export async function removeDuplicateProductsFromFirestore(): Promise<{
+  deletedCount: number;
+  keptCount: number;
+}> {
+  if (!auth.currentUser) {
+    throw new Error('Please sign in to remove duplicate products from your store.');
+  }
+  const uid = auth.currentUser.uid;
+  const path = 'products';
+  const snap = await getDocs(collection(db, path));
+  const allProducts: Product[] = [];
+  snap.forEach((d) => {
+    const data = d.data() as Product;
+    allProducts.push({ ...data, id: data.id || d.id });
+  });
+
+  const ownProducts = allProducts.filter((p) => (p.sellerId || p.vendorId) === uid);
+  const duplicateIds = getExactDuplicateProductIds(ownProducts);
+  let deletedCount = 0;
+
+  for (const dupId of duplicateIds) {
+    try {
+      await deleteDoc(doc(db, path, dupId));
+      deletedCount += 1;
+    } catch (err) {
+      console.error(`Failed to delete duplicate product ${dupId}:`, err);
+    }
+  }
+
+  return {
+    deletedCount,
+    keptCount: allProducts.length - deletedCount,
+  };
+}
+
+/**
+ * Fetch all products from Firestore (public read for guest & logged-in buyers).
+ * Filters exact duplicates & test items safely in-memory without unauthorized mutations.
  */
 export async function fetchProductsFromFirestore(): Promise<Product[]> {
   const path = 'products';
   try {
     const snap = await getDocs(collection(db, path));
     if (snap.empty) {
-      // Seed default marketplace products in background
-      for (const p of SEED_PRODUCTS) {
-        saveProductToFirestore(p).catch(() => {});
-      }
       return SEED_PRODUCTS;
     }
     const items: Product[] = [];
     snap.forEach((d) => {
-      items.push(d.data() as Product);
+      const data = d.data() as Product;
+      items.push({ ...data, id: data.id || d.id });
     });
-    return items;
+
+    const filtered = deduplicateProductsList(items).filter((p) => !isTestProduct(p));
+    return filtered.length > 0 ? filtered : SEED_PRODUCTS;
   } catch (error) {
     console.warn('Could not fetch products from Firestore, returning seed products:', error);
     return SEED_PRODUCTS;
@@ -494,7 +793,7 @@ export async function fetchProductsFromFirestore(): Promise<Product[]> {
 }
 
 /**
- * Subscribe to real-time products updates
+ * Subscribe to real-time products updates (public read)
  */
 export function subscribeToProductsFromFirestore(
   onUpdate: (products: Product[]) => void
@@ -505,15 +804,16 @@ export function subscribeToProductsFromFirestore(
       collection(db, path),
       (snapshot) => {
         if (snapshot.empty) {
-          // If Firestore collection is empty, provide seed products
           onUpdate(SEED_PRODUCTS);
           return;
         }
         const items: Product[] = [];
         snapshot.forEach((d) => {
-          items.push(d.data() as Product);
+          const data = d.data() as Product;
+          items.push({ ...data, id: data.id || d.id });
         });
-        onUpdate(items);
+        const cleanItems = deduplicateProductsList(items).filter((p) => !isTestProduct(p));
+        onUpdate(cleanItems);
       },
       (error) => {
         console.warn('Firestore products listener warning:', error);
@@ -526,26 +826,49 @@ export function subscribeToProductsFromFirestore(
 }
 
 /* =========================================================================
-   VENDOR SHOPS & VENDOR ROLE
+   VENDOR SHOPS, SELLER PUBLIC PROFILES & VENDOR ROLE
    ========================================================================= */
 
 /**
- * Save vendor shop in Firestore collection 'vendors'
+ * Save vendor shop in Firestore collection 'vendors' & public profile in 'sellers'
  */
 export async function saveVendorToFirestore(vendor: Vendor): Promise<boolean> {
+  if (!auth.currentUser) {
+    throw new Error('Please sign in to register a vendor shop.');
+  }
+  const uid = auth.currentUser.uid;
   const path = `vendors/${vendor.id}`;
   try {
     const docRef = doc(db, 'vendors', vendor.id);
     const data: Record<string, any> = {
       id: vendor.id,
-      ownerId: vendor.ownerId,
-      shopName: vendor.shopName.trim(),
-      phone: vendor.phone.trim(),
-      location: vendor.location.trim(),
-      description: vendor.description?.trim() || '',
+      ownerId: uid,
+      shopName: vendor.shopName.trim().slice(0, 256),
+      phone: vendor.phone.trim().slice(0, 64),
+      location: vendor.location.trim().slice(0, 256),
+      description: (vendor.description?.trim() || '').slice(0, 3000),
       createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     };
     await setDoc(docRef, data, { merge: true });
+
+    // Also keep public seller profile synced in /sellers/{uid}
+    await setDoc(
+      doc(db, 'sellers', uid),
+      {
+        id: uid,
+        sellerId: uid,
+        ownerId: uid,
+        shopName: vendor.shopName.trim().slice(0, 256),
+        phone: vendor.phone.trim().slice(0, 64),
+        location: vendor.location.trim().slice(0, 256),
+        bio: (vendor.description?.trim() || '').slice(0, 3000),
+        isVerified: true,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+
     return true;
   } catch (error) {
     console.error(`Failed to save vendor ${vendor.id}:`, error);
@@ -554,19 +877,27 @@ export async function saveVendorToFirestore(vendor: Vendor): Promise<boolean> {
     } catch {
       // logged
     }
-    return false;
+    throw error;
   }
 }
 
 /**
- * Update user profile role in collection 'users' to 'vendor'
+ * Update user profile role in collection 'users' to 'vendor' (owner-only)
  */
 export async function updateUserRoleToVendor(uid: string): Promise<boolean> {
+  if (!auth.currentUser || auth.currentUser.uid !== uid) {
+    throw new Error('Authentication required to update vendor role.');
+  }
   const path = `users/${uid}`;
   try {
+    await ensureUserDocOnLogin(
+      uid,
+      auth.currentUser.email || undefined,
+      auth.currentUser.phoneNumber || undefined,
+      auth.currentUser.displayName || undefined
+    );
     const userDocRef = doc(db, 'users', uid);
-    await setDoc(userDocRef, { role: 'vendor' }, { merge: true });
-    console.log(`Updated user ${uid} role to 'vendor' in Firestore.`);
+    await updateDoc(userDocRef, { role: 'vendor', updatedAt: serverTimestamp() });
     return true;
   } catch (error) {
     console.error(`Failed to update user role to vendor in Firestore:`, error);
@@ -580,7 +911,7 @@ export async function updateUserRoleToVendor(uid: string): Promise<boolean> {
 }
 
 /**
- * Fetch vendor shop by owner uid
+ * Fetch vendor shop by owner uid (public read)
  */
 export async function fetchVendorByOwnerId(ownerId: string): Promise<Vendor | null> {
   const path = 'vendors';
@@ -602,44 +933,68 @@ export async function fetchVendorByOwnerId(ownerId: string): Promise<Vendor | nu
    ========================================================================= */
 
 /**
- * Create order in Firestore collection 'orders'
- * fields: userId, items, total, deliveryAddress, phone, status, paymentMethod, createdAt
+ * Create order in Firestore collection 'orders'.
+ * Strictly requires logged-in buyer (`userId === buyerId === auth.currentUser.uid`)
+ * and records `sellerIds` so only product sellers can read orders for their products.
  */
 export async function createOrderInFirestore(order: Order): Promise<boolean> {
+  if (!auth.currentUser) {
+    throw new Error('Please sign in to place an order.');
+  }
+  const buyerUid = auth.currentUser.uid;
   const path = `orders/${order.id}`;
+
+  const itemSellerIds = (order.items || [])
+    .map((it) => it.vendorId)
+    .filter((v): v is string => typeof v === 'string' && v.trim().length > 0);
+  const combinedSellerIds = Array.from(
+    new Set([
+      ...(order.sellerIds || []),
+      ...itemSellerIds,
+      ...(order.sellerId ? [order.sellerId] : []),
+      ...(order.vendorId ? [order.vendorId] : []),
+    ])
+  ).slice(0, 50);
+
+  if (combinedSellerIds.length === 0) {
+    combinedSellerIds.push('vnd-ogya-central');
+  }
+  const primarySellerId = combinedSellerIds[0];
+
   try {
     const docRef = doc(db, 'orders', order.id);
     const data: Record<string, any> = {
       id: order.id,
-      userId: order.userId,
+      userId: buyerUid,
+      buyerId: buyerUid,
+      sellerId: primarySellerId,
+      vendorId: primarySellerId,
+      sellerIds: combinedSellerIds,
       items: order.items,
-      total: Number(order.total),
-      deliveryAddress: order.deliveryAddress.trim(),
-      phone: order.phone.trim(),
+      total: Math.max(0, Number(order.total) || 0),
+      deliveryAddress: order.deliveryAddress.trim().slice(0, 500),
+      phone: order.phone.trim().slice(0, 64),
       status: order.status,
       paymentMethod: order.paymentMethod,
       createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     };
     if (order.buyerName) {
-      data.buyerName = order.buyerName.trim();
-    }
-    if (order.vendorId) {
-      data.vendorId = order.vendorId.trim();
+      data.buyerName = order.buyerName.trim().slice(0, 128);
     }
     if (order.momoNumber) {
-      data.momoNumber = order.momoNumber.trim();
+      data.momoNumber = order.momoNumber.trim().slice(0, 64);
     }
-    await setDoc(docRef, data, { merge: true });
-    console.log(`Order ${order.id} created in Firestore successfully.`);
+    await setDoc(docRef, data);
     return true;
   } catch (error) {
     console.error(`Failed to create order ${order.id} in Firestore:`, error);
     try {
-      handleFirestoreError(error, OperationType.WRITE, path);
+      handleFirestoreError(error, OperationType.CREATE, path);
     } catch {
       // logged
     }
-    return false;
+    throw error;
   }
 }
 
@@ -735,45 +1090,46 @@ export const SEED_ORDERS: Order[] = [
 ];
 
 /**
- * Fetch all orders from Firestore, seeding initial orders if empty
+ * Fetch orders ONLY for the currently authenticated seller's products
  */
-export async function fetchAllOrdersFromFirestore(): Promise<Order[]> {
+export async function fetchAllOrdersFromFirestore(sellerUid?: string): Promise<Order[]> {
+  const uid = sellerUid || auth.currentUser?.uid;
+  if (!uid || !auth.currentUser) {
+    return [];
+  }
   const path = 'orders';
   try {
-    const snap = await getDocs(collection(db, path));
-    if (snap.empty) {
-      // Seed initial sample vendor orders in background
-      for (const order of SEED_ORDERS) {
-        createOrderInFirestore(order).catch(() => {});
-      }
-      return SEED_ORDERS;
-    }
+    const q = query(collection(db, path), where('sellerIds', 'array-contains', uid));
+    const snap = await getDocs(q);
     const list: Order[] = [];
     snap.forEach((d) => {
       list.push(d.data() as Order);
     });
     return list;
   } catch (error) {
-    console.warn('Could not fetch all orders from Firestore:', error);
-    return SEED_ORDERS;
+    console.warn('Could not fetch seller orders from Firestore:', error);
+    return [];
   }
 }
 
 /**
- * Subscribe to all orders from Firestore in real-time
+ * Subscribe in real-time ONLY to orders for the authenticated seller's products
  */
 export function subscribeToAllOrdersFromFirestore(
-  onUpdate: (orders: Order[]) => void
+  onUpdate: (orders: Order[]) => void,
+  sellerUid?: string
 ): () => void {
+  const uid = sellerUid || auth.currentUser?.uid;
+  if (!uid || !auth.currentUser) {
+    onUpdate([]);
+    return () => {};
+  }
   const path = 'orders';
   try {
+    const q = query(collection(db, path), where('sellerIds', 'array-contains', uid));
     return onSnapshot(
-      collection(db, path),
+      q,
       (snapshot) => {
-        if (snapshot.empty) {
-          onUpdate(SEED_ORDERS);
-          return;
-        }
         const list: Order[] = [];
         snapshot.forEach((d) => {
           list.push(d.data() as Order);
@@ -781,26 +1137,29 @@ export function subscribeToAllOrdersFromFirestore(
         onUpdate(list);
       },
       (error) => {
-        console.warn('Firestore all orders listener warning:', error);
+        console.warn('Firestore seller orders listener warning:', error);
       }
     );
   } catch (error) {
-    console.warn('Error setting up onSnapshot for all orders:', error);
+    console.warn('Error setting up onSnapshot for seller orders:', error);
     return () => {};
   }
 }
 
 /**
- * Update order status in Firestore (e.g. pending -> shipped, or shipped -> delivered)
+ * Update order status in Firestore (restricted by rules to buyer or involved seller)
  */
 export async function updateOrderStatusInFirestore(
   orderId: string,
   status: OrderStatus
 ): Promise<boolean> {
+  if (!auth.currentUser) {
+    throw new Error('Please sign in to update order status.');
+  }
   const path = `orders/${orderId}`;
   try {
     const docRef = doc(db, 'orders', orderId);
-    await setDoc(docRef, { status, updatedAt: serverTimestamp() }, { merge: true });
+    await updateDoc(docRef, { status, updatedAt: serverTimestamp() });
     return true;
   } catch (error) {
     console.error(`Failed to update order ${orderId} status:`, error);
@@ -814,9 +1173,12 @@ export async function updateOrderStatusInFirestore(
 }
 
 /**
- * Fetch customer orders by userId from Firestore
+ * Fetch customer orders strictly for the authenticated buyer
  */
 export async function fetchOrdersByUserId(userId: string): Promise<Order[]> {
+  if (!auth.currentUser || auth.currentUser.uid !== userId) {
+    return [];
+  }
   const path = 'orders';
   try {
     const q = query(collection(db, path), where('userId', '==', userId));
@@ -833,12 +1195,16 @@ export async function fetchOrdersByUserId(userId: string): Promise<Order[]> {
 }
 
 /**
- * Subscribe in real-time to orders by userId
+ * Subscribe in real-time strictly to the authenticated buyer's own orders
  */
 export function subscribeToOrdersByUserId(
   userId: string,
   onUpdate: (orders: Order[]) => void
 ): () => void {
+  if (!auth.currentUser || auth.currentUser.uid !== userId) {
+    onUpdate([]);
+    return () => {};
+  }
   const path = 'orders';
   try {
     const q = query(collection(db, path), where('userId', '==', userId));
@@ -956,53 +1322,48 @@ export const saveLocalWantedItem = (item: WantedItem) => {
 };
 
 /**
- * Save a wanted item request to Firestore collection 'wanted_items'
+ * Save a wanted item request to Firestore collection 'wanted_items' (authenticated write, local fallback)
  */
 export async function saveWantedItemToFirestore(item: WantedItem): Promise<boolean> {
   const path = `wanted_items/${item.id}`;
-  // Always update local storage first so UI updates immediately and works offline
   saveLocalWantedItem(item);
+
+  if (!auth.currentUser) {
+    return false;
+  }
 
   try {
     const docRef = doc(db, 'wanted_items', item.id);
     const data: Record<string, any> = {
       id: item.id,
-      item: item.item.trim(),
-      budget: Number(item.budget),
-      location: item.location.trim(),
-      whatsapp: item.whatsapp.trim(),
+      userId: auth.currentUser.uid,
+      item: item.item.trim().slice(0, 256),
+      budget: Math.max(0, Number(item.budget) || 0),
+      location: item.location.trim().slice(0, 256),
+      whatsapp: item.whatsapp.trim().slice(0, 64),
       status: item.status || 'active',
       createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     };
     if (item.notes) {
-      data.notes = item.notes.trim();
+      data.notes = item.notes.trim().slice(0, 1000);
     }
     await setDoc(docRef, data, { merge: true });
-    console.log(`Wanted item ${item.id} successfully saved to Firestore wanted_items.`);
     return true;
   } catch (error) {
     console.warn(`Could not save wanted item ${item.id} to Firestore (saved locally):`, error);
-    try {
-      handleFirestoreError(error, OperationType.WRITE, path);
-    } catch {
-      // logged
-    }
     return false;
   }
 }
 
 /**
- * Fetch all wanted items from Firestore, falling back to local storage
+ * Fetch all wanted items from Firestore (public read), falling back to local storage
  */
 export async function fetchWantedItemsFromFirestore(): Promise<WantedItem[]> {
   const path = 'wanted_items';
   try {
     const snap = await getDocs(collection(db, path));
     if (snap.empty) {
-      // Seed initial sample wanted items in background
-      for (const item of SEED_WANTED_ITEMS) {
-        saveWantedItemToFirestore(item).catch(() => {});
-      }
       return getLocalWantedItems();
     }
     const list: WantedItem[] = [];

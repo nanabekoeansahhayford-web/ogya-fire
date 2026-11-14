@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Sparkles, Send, MapPin, DollarSign, MessageCircle, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { WantedItem } from '../types/marketplace';
-import { saveWantedItemToFirestore } from '../utils/firebase';
+import { auth, saveWantedItemToFirestore } from '../utils/firebase';
 
 interface IWantThisModalProps {
   isOpen: boolean;
@@ -76,6 +76,7 @@ export const IWantThisModal: React.FC<IWantThisModalProps> = ({
 
     const newItem: WantedItem = {
       id: `wanted-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      userId: auth.currentUser?.uid,
       item: trimmedItem,
       budget: numBudget,
       location: trimmedLocation,
@@ -296,7 +297,7 @@ export const IWantThisModal: React.FC<IWantThisModalProps> = ({
               <div className="bg-emerald-50 dark:bg-emerald-950/30 p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-900/40 text-[11px] text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
                 <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span>
-                  <strong>No login required.</strong> 100% free for Ghanaian buyers. Your phone is only used by sellers who have what you want.
+                  100% free for Ghanaian buyers. Your phone is only used by sellers who have what you want.{!auth.currentUser ? ' Sign in anytime to sync requests across devices.' : ''}
                 </span>
               </div>
 

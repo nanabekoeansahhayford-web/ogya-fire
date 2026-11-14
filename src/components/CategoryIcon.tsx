@@ -18,7 +18,9 @@ import {
   FileText,
   Factory,
   Grid,
-  Utensils
+  Utensils,
+  Headphones,
+  Tv
 } from 'lucide-react';
 import { CategoryId } from '../types/marketplace';
 
@@ -36,8 +38,12 @@ export const CategoryIcon: React.FC<Props> = ({ categoryId, className = 'w-5 h-5
       return <Building2 className={className} size={size} />;
     case 'phones-tablets':
       return <Smartphone className={className} size={size} />;
-    case 'electronics':
+    case 'laptops':
       return <Laptop className={className} size={size} />;
+    case 'accessories':
+      return <Headphones className={className} size={size} />;
+    case 'electronics':
+      return <Tv className={className} size={size} />;
     case 'home-furniture':
       return <Armchair className={className} size={size} />;
     case 'fashion':

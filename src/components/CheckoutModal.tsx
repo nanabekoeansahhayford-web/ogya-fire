@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   CheckCircle2,
@@ -14,10 +14,12 @@ import {
   Check,
   RefreshCw,
   Clock,
+  Lock,
+  LogIn,
 } from 'lucide-react';
 import { CartItem, PaymentMethod, Order } from '../types/store';
 import { getCartTotal, savePlacedOrderLocally } from '../utils/cartStorage';
-import { createOrderInFirestore } from '../utils/firebase';
+import { auth, createOrderInFirestore } from '../utils/firebase';
 import { UserProfile } from '../types/marketplace';
 
 interface CheckoutModalProps {
@@ -42,6 +44,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   cart,
   currentUser,
   onOrderSuccess,
+  onRequireAuth,
 }) => {
   const [deliveryAddress, setDeliveryAddress] = useState(
     currentUser?.city ? `${currentUser.city}, ${currentUser.region}` : 'East Legon, Accra'
@@ -58,8 +61,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
 
+  useEffect(() => {
+    if (currentUser) {
+      if (currentUser.city) {
+        setDeliveryAddress(`${currentUser.city}${currentUser.region ? `, ${currentUser.region}` : ''}`);
+      }
+      if (currentUser.phone) {
+        setPhone(currentUser.phone);
+        setMomoNumber(currentUser.phone.replace(/\s+/g, ''));
+      }
+    }
+  }, [currentUser]);
+
   if (!isOpen) return null;
 
+  const isAuthenticated = Boolean(currentUser && auth.currentUser);
   const total = getCartTotal(cart);
   const isMoMo = paymentMethod === 'MTN MoMo' || paymentMethod === 'Telecel Cash';
 
@@ -67,6 +83,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!auth.currentUser || !currentUser) {
+      setError('Please sign in to place your order.');
+      onRequireAuth();
+      return;
+    }
 
     if (cart.length === 0) {
       setError('Your cart is empty. Please add items to your cart before placing an order.');
@@ -83,7 +105,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return;
     }
 
-    // If MoMo or Telecel Cash: show payment popup: "Pay 250 GHS to OGYA" with MoMo number input & "Approve Payment" button
+    // If MoMo or Telecel Cash: show payment popup
     if (isMoMo) {
       if (!momoNumber.trim()) {
         setMomoNumber(phone.replace(/\s+/g, '') || '0244123456');
@@ -92,16 +114,23 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return;
     }
 
-    // Cash on Delivery flow: save order with status pending and show "Pay on Delivery"
-    const userId = currentUser?.id || `usr_guest_${Date.now()}`;
+    // Cash on Delivery flow
+    const userId = auth.currentUser.uid;
     const orderId = `ord_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const primaryVendorId = cart[0]?.vendorId || 'vnd-ogya-central';
+    const sellerIds = Array.from(
+      new Set(cart.map((it) => it.vendorId).filter((v): v is string => Boolean(v && v.trim())))
+    );
+    const primaryVendorId = sellerIds[0] || 'vnd-ogya-central';
+    if (sellerIds.length === 0) sellerIds.push(primaryVendorId);
 
     const codOrder: Order = {
       id: orderId,
       userId,
-      buyerName: currentUser?.name || 'Ghana Customer',
+      buyerId: userId,
+      buyerName: currentUser.name || auth.currentUser.displayName || 'OGYA Customer',
+      sellerId: primaryVendorId,
       vendorId: primaryVendorId,
+      sellerIds,
       items: cart.map((it) => ({
         id: String(it.id),
         name: String(it.name),
@@ -116,7 +145,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       total,
       deliveryAddress: deliveryAddress.trim(),
       phone: phone.trim(),
-      status: 'pending', // status pending for Cash on Delivery
+      status: 'pending',
       paymentMethod: 'Cash on Delivery',
     };
 
@@ -135,11 +164,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
-  // Handle MoMo Popup "Approve Payment" click:
-  // On click, show loading "Waiting for approval on your phone..." for 3 seconds,
-  // then show success "Payment Approved" and save order with status paid.
+  // Handle MoMo Popup "Approve Payment" click
   const handleApprovePayment = () => {
     setError(null);
+    if (!auth.currentUser || !currentUser) {
+      setError('Please sign in to approve payment and complete checkout.');
+      onRequireAuth();
+      return;
+    }
     if (!momoNumber.trim()) {
       setError('Please provide a valid Mobile Money number.');
       return;
@@ -148,15 +180,28 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setStep('awaiting_approval');
 
     setTimeout(async () => {
-      const userId = currentUser?.id || `usr_guest_${Date.now()}`;
+      if (!auth.currentUser || !currentUser) {
+        setStep('form');
+        setError('Session expired. Please sign in again.');
+        return;
+      }
+
+      const userId = auth.currentUser.uid;
       const orderId = `ord_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      const primaryVendorId = cart[0]?.vendorId || 'vnd-ogya-central';
+      const sellerIds = Array.from(
+        new Set(cart.map((it) => it.vendorId).filter((v): v is string => Boolean(v && v.trim())))
+      );
+      const primaryVendorId = sellerIds[0] || 'vnd-ogya-central';
+      if (sellerIds.length === 0) sellerIds.push(primaryVendorId);
 
       const paidOrder: Order = {
         id: orderId,
         userId,
-        buyerName: currentUser?.name || 'Ghana Customer',
+        buyerId: userId,
+        buyerName: currentUser.name || auth.currentUser.displayName || 'OGYA Customer',
+        sellerId: primaryVendorId,
         vendorId: primaryVendorId,
+        sellerIds,
         items: cart.map((it) => ({
           id: String(it.id),
           name: String(it.name),
@@ -171,21 +216,22 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         total,
         deliveryAddress: deliveryAddress.trim(),
         phone: phone.trim(),
-        status: 'paid', // Saved with status 'paid' upon MoMo approval
+        status: 'paid',
         paymentMethod,
         momoNumber: momoNumber.trim(),
       };
 
       try {
         await createOrderInFirestore(paidOrder);
-      } catch (err) {
+        savePlacedOrderLocally(paidOrder);
+        setPlacedOrder(paidOrder);
+        setStep('momo_success');
+        onOrderSuccess(paidOrder);
+      } catch (err: any) {
         console.error('Failed to save paid order in Firestore:', err);
+        setError(err?.message || 'Could not record your order in Firestore. Please try again.');
+        setStep('form');
       }
-
-      savePlacedOrderLocally(paidOrder);
-      setPlacedOrder(paidOrder);
-      setStep('momo_success');
-      onOrderSuccess(paidOrder);
     }, 3000);
   };
 
@@ -500,9 +546,52 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
           )}
 
-          {/* =================== STEP 1: INITIAL CHECKOUT FORM =================== */}
-          {step === 'form' && (
-            <form onSubmit={handlePlaceOrder} className="space-y-4" data-testid="checkout-form">
+          {/* =================== GUEST AUTHENTICATION GATE =================== */}
+          {!isAuthenticated ? (
+            <div className="py-6 px-2 text-center space-y-5" data-testid="checkout-auth-gate">
+              <div className="w-16 h-16 rounded-3xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto shadow-sm">
+                <Lock size={30} />
+              </div>
+
+              <div className="space-y-1.5">
+                <h4 className="text-xl font-black text-slate-900 dark:text-white">
+                  Sign In Required to Complete Order
+                </h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+                  You can browse OGYA FIRE freely as a guest, and your cart ({cart.length} {cart.length === 1 ? 'item' : 'items'} · <strong className="text-red-600 dark:text-red-400">GHS {total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong>) is saved. Sign in quickly with Google, Email, or Phone OTP to place your order securely.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 text-left text-xs text-emerald-900 dark:text-emerald-200 flex items-start gap-2.5">
+                <ShieldCheck size={18} className="text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                <span>
+                  Your orders are private and encrypted to your account so only you and the seller of your items can track delivery.
+                </span>
+              </div>
+
+              <div className="space-y-2.5">
+                <button
+                  type="button"
+                  onClick={onRequireAuth}
+                  className="w-full py-4 px-6 bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 hover:opacity-95 text-white font-black text-sm rounded-2xl shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-all"
+                >
+                  <LogIn size={18} />
+                  <span>Sign In / Register to Checkout</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full py-2.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                >
+                  Continue Browsing as Guest
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* =================== STEP 1: INITIAL CHECKOUT FORM =================== */}
+              {step === 'form' && (
+                <form onSubmit={handlePlaceOrder} className="space-y-4" data-testid="checkout-form">
               {/* Form field: deliveryAddress */}
               <div>
                 <label
@@ -719,6 +808,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <ArrowRight size={18} />
               </button>
             </form>
+              )}
+            </>
           )}
         </div>
       </div>
