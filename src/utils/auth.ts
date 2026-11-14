@@ -281,12 +281,13 @@ export async function loginUser(
  */
 export async function loginWithGoogle(
   asRole: 'buyer' | 'seller' = 'buyer'
-): Promise<{ success: boolean; user?: UserProfile; error?: string }> {
+): Promise<{ success: boolean; user?: UserProfile; error?: string; errorCode?: string }> {
   const googleRes = await firebaseGoogleSignIn();
   if (googleRes.error || !googleRes.user) {
     return {
       success: false,
       error: googleRes.error || 'Google Sign-In did not complete.',
+      errorCode: googleRes.errorCode,
     };
   }
 

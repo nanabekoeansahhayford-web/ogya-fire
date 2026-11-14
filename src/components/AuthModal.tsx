@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   User,
@@ -70,6 +70,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setMode(initialMode);
       setSelectedRole(defaultRole);
       setError(null);
+      setGoogleDomainBlocked(false);
       setPhoneConfirmation(null);
       setOtpCode('');
     }
@@ -108,7 +109,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   // UI state
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [googleDomainBlocked, setGoogleDomainBlocked] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const signInEmailInputRef = useRef<HTMLInputElement>(null);
+  const registerEmailInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
@@ -202,20 +207,73 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
+  const switchToEmailLoginFallback = () => {
+    setMode('signin');
+    setAuthMethod('email');
+    setPhoneConfirmation(null);
+    setTimeout(() => {
+      signInEmailInputRef.current?.focus();
+    }, 50);
+  };
+
   const handleGoogleSignIn = async (asRole: 'buyer' | 'seller') => {
     setError(null);
+    setGoogleDomainBlocked(false);
     setIsSubmitting(true);
     try {
       const res = await loginWithGoogle(asRole);
       if (!res.success || !res.user) {
-        setError(res.error || 'Google Sign-In failed. Please try again.');
+        const errMsg = res.error || 'Google Sign-In failed. Please try again.';
+        const isUnauthorizedDomain =
+          res.errorCode === 'auth/unauthorized-domain' ||
+          errMsg.includes('unauthorized-domain') ||
+          errMsg.includes('Firebase Authorized Domains');
+
+        if (isUnauthorizedDomain) {
+          setGoogleDomainBlocked(true);
+          setError(
+            'Google Sign-In not enabled for this preview domain. Please use Email & Password or add this domain to Firebase Authorized Domains'
+          );
+          // Fallback directly to Email & Password login
+          setAuthMethod('email');
+          setPhoneConfirmation(null);
+          setTimeout(() => {
+            if (mode === 'signin') {
+              signInEmailInputRef.current?.focus();
+            } else {
+              registerEmailInputRef.current?.focus();
+            }
+          }, 50);
+        } else {
+          setError(errMsg);
+        }
         return;
       }
 
       onAuthSuccess(res.user, `Signed in with Google as ${res.user.name}.`);
       onClose();
     } catch (err: any) {
-      setError(err?.message || 'Google Sign-In failed.');
+      const rawMsg = String(err?.message || '');
+      const isUnauthorizedDomain =
+        err?.code === 'auth/unauthorized-domain' ||
+        rawMsg.includes('auth/unauthorized-domain');
+      if (isUnauthorizedDomain) {
+        setGoogleDomainBlocked(true);
+        setError(
+          'Google Sign-In not enabled for this preview domain. Please use Email & Password or add this domain to Firebase Authorized Domains'
+        );
+        setAuthMethod('email');
+        setPhoneConfirmation(null);
+        setTimeout(() => {
+          if (mode === 'signin') {
+            signInEmailInputRef.current?.focus();
+          } else {
+            registerEmailInputRef.current?.focus();
+          }
+        }, 50);
+      } else {
+        setError(err?.message || 'Google Sign-In failed.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -419,9 +477,48 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* Form Body */}
         <div className="p-6 sm:p-7 max-h-[75vh] overflow-y-auto space-y-4">
           {error && mode !== 'forgot_password' && (
-            <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 text-rose-800 dark:text-rose-300 text-xs flex items-start gap-2">
-              <AlertCircle size={15} className="text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-              <span className="leading-tight font-semibold">{error}</span>
+            <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 text-rose-800 dark:text-rose-300 text-xs space-y-2.5">
+              <div className="flex items-start gap-2">
+                <AlertCircle size={15} className="text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                <span className="leading-tight font-semibold">{error}</span>
+              </div>
+
+              {googleDomainBlocked && (
+                <div className="pl-5.5 space-y-2 border-t border-rose-200/80 dark:border-rose-900/60 pt-2">
+                  {typeof window !== 'undefined' && window.location?.hostname && (
+                    <div className="text-[11px] text-rose-700 dark:text-rose-300">
+                      Preview domain:{' '}
+                      <code className="px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-900/70 font-mono font-bold select-all">
+                        {window.location.hostname}
+                      </code>
+                    </div>
+                  )}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={switchToEmailLoginFallback}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-950 font-extrabold text-[11px] shadow-xs hover:opacity-90 transition-opacity cursor-pointer"
+                    >
+                      <Mail size={12} />
+                      <span>Use Email &amp; Password Login</span>
+                    </button>
+                    {mode !== 'register' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode('register');
+                          setAuthMethod('email');
+                          setTimeout(() => registerEmailInputRef.current?.focus(), 50);
+                        }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 font-bold text-[11px] hover:bg-rose-100/70 dark:hover:bg-rose-900/40 cursor-pointer"
+                      >
+                        <UserPlus size={12} />
+                        <span>Create Account with Email</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -793,6 +890,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       <div className="relative">
                         <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input
+                          ref={registerEmailInputRef}
                           type="email"
                           required
                           value={email}
@@ -954,6 +1052,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <div className="relative">
                       <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
+                        ref={signInEmailInputRef}
                         type="email"
                         required
                         value={signInEmail}

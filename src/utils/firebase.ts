@@ -297,6 +297,7 @@ export async function firebaseGoogleSignIn(): Promise<{
   photoURL?: string;
   user?: FirebaseUser;
   error?: string;
+  errorCode?: string;
 }> {
   try {
     const provider = new GoogleAuthProvider();
@@ -310,13 +311,35 @@ export async function firebaseGoogleSignIn(): Promise<{
     };
   } catch (err: any) {
     const code = err?.code || '';
-    let friendly = err?.message || 'Google Sign-In failed.';
-    if (code === 'auth/popup-closed-by-user') {
+    const rawMsg = String(err?.message || '');
+    let friendly = rawMsg || 'Google Sign-In failed.';
+
+    if (
+      code === 'auth/unauthorized-domain' ||
+      rawMsg.includes('auth/unauthorized-domain')
+    ) {
+      friendly =
+        'Google Sign-In not enabled for this preview domain. Please use Email & Password or add this domain to Firebase Authorized Domains';
+    } else if (code === 'auth/popup-closed-by-user') {
       friendly = 'Google Sign-In window was closed before completing login.';
+    } else if (code === 'auth/cancelled-popup-request') {
+      friendly = 'Google Sign-In request was cancelled. Please try again or use Email & Password.';
     } else if (code === 'auth/popup-blocked') {
-      friendly = 'Pop-up was blocked by your browser. Please allow pop-ups for this site and try again.';
+      friendly = 'Pop-up was blocked by your browser. Please allow pop-ups or use Email & Password.';
+    } else if (code === 'auth/operation-not-allowed') {
+      friendly = 'Google Sign-In is not enabled in Firebase Console. Please use Email & Password.';
+    } else if (code === 'auth/network-request-failed') {
+      friendly = 'Network error while connecting to Google Sign-In. Please check your connection or use Email & Password.';
     }
-    return { error: friendly };
+
+    return {
+      error: friendly,
+      errorCode:
+        code ||
+        (rawMsg.includes('auth/unauthorized-domain')
+          ? 'auth/unauthorized-domain'
+          : undefined),
+    };
   }
 }
 
@@ -1507,6 +1530,17 @@ export async function deleteCurrentAccountAndData(password?: string): Promise<{
         success: false,
         requiresRecentLogin: true,
         error: 'Google verification popup was closed before confirming deletion.',
+      };
+    }
+    if (
+      code === 'auth/unauthorized-domain' ||
+      String(reauthErr?.message || '').includes('auth/unauthorized-domain')
+    ) {
+      return {
+        success: false,
+        requiresRecentLogin: true,
+        error:
+          'Google Sign-In not enabled for this preview domain. Please use Email & Password or add this domain to Firebase Authorized Domains',
       };
     }
     return {
