@@ -77,10 +77,12 @@ export const PWAInstallBanner: React.FC = () => {
   return (
     <>
       <div className="fixed bottom-20 md:bottom-5 left-3 right-3 sm:left-auto sm:right-5 sm:max-w-sm z-40 bg-slate-950 text-white border border-[#FF6600]/60 rounded-2xl p-3.5 shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-4 duration-200">
-        <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-orange-600 via-[#FF6600] to-amber-500 flex items-center justify-center shrink-0 shadow-md">
-          <span className="text-xl" aria-hidden="true">
-            🔥
-          </span>
+        <div className="w-11 h-11 rounded-xl overflow-hidden flex items-center justify-center shrink-0 shadow-md bg-[#FF6B00]">
+          <img
+            src="/assets/aistudio/OGYA_SPECIAL_11_d4fab9c1.jpeg"
+            alt="OGYA (FIRE) App Icon"
+            className="w-full h-full object-cover scale-[1.06]"
+          />
         </div>
 
         <div className="flex-1 min-w-0">
@@ -132,8 +134,12 @@ const IOSInstallModal: React.FC<{ onClose: () => void }> = ({ onClose }) => (
       onClick={(e) => e.stopPropagation()}
     >
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-600 via-[#FF6600] to-amber-500 flex items-center justify-center shrink-0">
-          <span className="text-lg">🔥</span>
+        <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center shrink-0 bg-[#FF6B00]">
+          <img
+            src="/assets/aistudio/OGYA_SPECIAL_11_d4fab9c1.jpeg"
+            alt="OGYA (FIRE) App Icon"
+            className="w-full h-full object-cover scale-[1.06]"
+          />
         </div>
         <div>
           <h3 className="text-base font-black text-white">

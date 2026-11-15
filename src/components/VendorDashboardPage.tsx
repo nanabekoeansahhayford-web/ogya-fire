@@ -545,8 +545,12 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
 
             {/* Logo / Brand */}
             <div className="flex items-center gap-2">
-              <span className="bg-gradient-to-tr from-orange-600 via-[#FF6600] to-amber-500 text-white w-8 h-8 rounded-xl flex items-center justify-center font-black text-base shadow-sm">
-                🔥
+              <span className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center shadow-sm shrink-0 bg-[#FF6B00]">
+                <img
+                  src="/assets/aistudio/OGYA_SPECIAL_11_d4fab9c1.jpeg"
+                  alt="OGYA (FIRE) Logo"
+                  className="w-full h-full object-cover scale-[1.06]"
+                />
               </span>
               <div>
                 <div className="flex items-center gap-1.5 leading-tight">

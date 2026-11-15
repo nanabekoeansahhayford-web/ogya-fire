@@ -1,5 +1,14 @@
-const CACHE_NAME = 'ogya-fire-v1';
-const CORE_ASSETS = ['/', '/manifest.webmanifest', '/icon.svg', '/pwa-192x192.png', '/pwa-512x512.png'];
+const CACHE_NAME = 'ogya-fire-v2';
+const CORE_ASSETS = [
+  '/',
+  '/manifest.webmanifest',
+  '/favicon.ico',
+  '/pwa-192x192.png',
+  '/pwa-512x512.png',
+  '/pwa-maskable-192x192.png',
+  '/pwa-maskable-512x512.png',
+  '/apple-touch-icon.png',
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

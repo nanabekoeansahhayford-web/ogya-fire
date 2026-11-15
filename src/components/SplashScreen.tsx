@@ -39,15 +39,17 @@ export const SplashScreen: React.FC = () => {
       aria-label="OGYA (FIRE) Splash Screen"
     >
       <div className="flex flex-col items-center text-center space-y-4">
-        <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-orange-600 via-[#FF6600] to-amber-400 flex items-center justify-center shadow-2xl shadow-orange-600/30 border border-orange-400/40 animate-pulse">
-          <span className="text-4xl" role="img" aria-label="OGYA (FIRE) Flame Logo">
-            🔥
-          </span>
+        <div className="w-20 h-20 rounded-3xl overflow-hidden flex items-center justify-center shadow-2xl shadow-orange-600/40 border border-white/25 bg-[#FF6B00]">
+          <img
+            src="/assets/aistudio/OGYA_SPECIAL_11_d4fab9c1.jpeg"
+            alt="OGYA (FIRE) App Icon"
+            className="w-full h-full object-cover scale-[1.06]"
+          />
         </div>
 
         <div className="space-y-1">
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white">
-            OGYA <span className="text-[#FF6600]">(FIRE)</span>
+            OGYA <span className="text-[#FF6B00]">(FIRE)</span>
           </h1>
           <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-amber-400">
             Ghana Marketplace
@@ -55,7 +57,7 @@ export const SplashScreen: React.FC = () => {
         </div>
 
         <div className="w-28 h-1 rounded-full bg-slate-800 overflow-hidden mt-2">
-          <div className="h-full w-2/3 bg-gradient-to-r from-[#FF6600] to-amber-400 rounded-full animate-pulse" />
+          <div className="h-full w-2/3 bg-gradient-to-r from-[#FF6B00] to-amber-400 rounded-full animate-pulse" />
         </div>
       </div>
     </div>

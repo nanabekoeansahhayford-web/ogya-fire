@@ -171,8 +171,12 @@ export const Header: React.FC<HeaderProps> = ({
           className="text-lg sm:text-xl md:text-2xl font-black tracking-tight text-slate-950 dark:text-white hover:opacity-90 transition-opacity whitespace-nowrap shrink-0 flex items-center gap-2 cursor-pointer text-left"
           title="OGYA (FIRE) - Ghana Marketplace"
         >
-          <span className="bg-gradient-to-tr from-orange-600 via-[#FF6600] to-amber-500 text-white w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center font-black text-base sm:text-lg shadow-sm">
-            🔥
+          <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl overflow-hidden flex items-center justify-center shadow-sm shrink-0 bg-[#FF6B00]">
+            <img
+              src="/assets/aistudio/OGYA_SPECIAL_11_d4fab9c1.jpeg"
+              alt="OGYA (FIRE) Logo"
+              className="w-full h-full object-cover scale-[1.06]"
+            />
           </span>
           <span className="tracking-tight flex items-center gap-1 sm:gap-1.5">
             <span className="text-slate-950 dark:text-white">OGYA</span>

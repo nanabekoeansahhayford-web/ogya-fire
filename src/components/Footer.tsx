@@ -38,8 +38,12 @@ export const Footer: React.FC<FooterProps> = ({
           {/* Brand Col */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2">
-              <span className="bg-gradient-to-tr from-orange-600 via-[#FF6600] to-amber-500 text-white w-9 h-9 rounded-xl flex items-center justify-center font-black text-base shadow-sm">
-                🔥
+              <span className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center shadow-sm shrink-0 bg-[#FF6B00]">
+                <img
+                  src="/assets/aistudio/OGYA_SPECIAL_11_d4fab9c1.jpeg"
+                  alt="OGYA (FIRE) Logo"
+                  className="w-full h-full object-cover scale-[1.06]"
+                />
               </span>
               <span className="text-xl font-black text-white tracking-tight flex items-center gap-1.5">
                 <span>OGYA</span>
