@@ -1,7 +1,7 @@
 import { Listing } from '../types/marketplace';
-import spotlightVehiclesAutoImg from '../assets/images/spotlight_vehicles_auto_1792291776565.jpg';
-import spotlightDevicesTechImg from '../assets/images/spotlight_devices_tech_1792291775880.jpg';
-import spotlightModernPropertyImg from '../assets/images/spotlight_modern_property_1792291776719.jpg';
+import spotlightVehiclesAutoImg from '../assets/images/spotlight_vehicles_auto_1792291776565.webp';
+import spotlightDevicesTechImg from '../assets/images/spotlight_devices_tech_1792291775880.webp';
+import spotlightModernPropertyImg from '../assets/images/spotlight_modern_property_1792291776719.webp';
 
 export const SEED_LISTINGS: Listing[] = [
   // ==========================================
@@ -26,8 +26,8 @@ export const SEED_LISTINGS: Listing[] = [
     description: 'Immaculate 2023 Toyota Land Cruiser Prado TX-L 2.8L D-4D Turbo Diesel. 7-seater luxury leather interior, sunroof, 360-degree cameras, cool box, keyless entry and push start. Full documentation with GRA customs duty fully cleared. In-person physical inspection required before payment.',
     images: [
       spotlightVehiclesAutoImg,
-      'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Ansah Auto Motors',
@@ -77,8 +77,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Fairly Used',
     description: 'Clean direct US import Toyota Corolla LE. Reverse camera, touch display screen, lane assist, alloy wheels, excellent fuel economy, pure buy and drive. Custom duty fully paid with Kumasi DVLA registration. Come for test drive at Ahodwo Kumasi.',
     images: [
-      'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Osei Kwame Motors',
@@ -124,8 +124,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Brand new 2024 Royal 125cc motorcycle. Built rugged for dispatch riders, delivery fleets, and daily commuting. Low fuel consumption (45km per litre), strong shock absorbers, helmet included. Full papers and DVLA registration.',
     images: [
-      'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Tema Motors Hub',
@@ -170,8 +170,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Fairly Used',
     description: 'Fully active commercial Mercedes-Benz Sprinter 313 CDI High-Roof 16-seater trotro. Strong diesel turbo engine, manual 5-speed transmission, brand new tires, reinforced suspension, heavy duty interior seats with seatbelts. Tested and ready for road service.',
     images: [
-      'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Nana Yaw Commercial Fleets',
@@ -225,7 +225,7 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Stereo Earphone True Wireless Earbuds with Noise Reduction, Wireless 6.0 Bluetooth, and fast charging case. 100% genuine accessory from Daniel Arnan Aboagye at Amasaman Taxi Rank. Fast doorstep delivery across Accra.',
     images: [
-      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.08_de1a57b7.jpeg'
+      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.08_de1a57b7.webp'
     ],
     seller: {
       name: 'Daniel Arnan Aboagye',
@@ -280,7 +280,7 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'JBL Dare To Listen over-ear wireless headphones with dynamic RGB glow lighting, deep bass sound, comfortable ear cushions, and built-in microphone for calls. Sold by Daniel Arnan Aboagye at Amasaman Taxi Rank.',
     images: [
-      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.07_2fbc910b.jpeg'
+      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.07_2fbc910b.webp'
     ],
     seller: {
       name: 'Daniel Arnan Aboagye',
@@ -332,10 +332,10 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Austin Zion New Series fancy luxury phone case with designer decorative beads wristlet strap. Crystal transparent floral design available for Samsung Galaxy A17 4G, Tecno POP series, and Apple iPhone models. Available at Amasaman Taxi Rank from Daniel Arnan Aboagye.',
     images: [
-      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.07__1__66c5fd97.jpeg',
-      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.09_c7309b52.jpeg',
-      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.10_abf4bd8f.jpeg',
-      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.11_b5ac1cc4.jpeg'
+      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.07__1__66c5fd97.webp',
+      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.09_c7309b52.webp',
+      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.10_abf4bd8f.webp',
+      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.11_b5ac1cc4.webp'
     ],
     seller: {
       name: 'Daniel Arnan Aboagye',
@@ -388,7 +388,7 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'High power Ora C-60 120W Fast Charger with 45W Power Delivery (PD) adapter. Rapid multi-device charging for all Android and iPhone models. Surge protection, smart heat dissipation, UK 3-pin wall plug. Direct from Daniel Arnan Aboagye at Amasaman Taxi Rank.',
     images: [
-      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.08__1__07041aa4.jpeg'
+      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.08__1__07041aa4.webp'
     ],
     seller: {
       name: 'Daniel Arnan Aboagye',
@@ -440,7 +440,7 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Original EarPods with Lightning Uconnector for iPhone 14 Pro Max, 14, 13, 12, 11, and all Lightning devices. Features crisp call microphone, volume inline controller, and stereo bass. Boxed pack direct from Daniel Arnan Aboagye at Amasaman Taxi Rank.',
     images: [
-      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.09__1__bc913b1a.jpeg'
+      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.09__1__bc913b1a.webp'
     ],
     seller: {
       name: 'Daniel Arnan Aboagye',
@@ -492,7 +492,7 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Cheapest Deal in Amasaman! Complete combo including 9D full cover tempered glass screen protector with wipes + premium silicone/fashion protective phone case. Fits Samsung, iPhone, Tecno, Infinix. Direct from Daniel Arnan Aboagye at Amasaman Taxi Rank.',
     images: [
-      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.10__1__744ac20c.jpeg'
+      '/assets/aistudio/WhatsApp_Image_2026-11-06_at_10.37.10__1__744ac20c.webp'
     ],
     seller: {
       name: 'Daniel Arnan Aboagye',
@@ -545,8 +545,8 @@ export const SEED_LISTINGS: Listing[] = [
     description: 'Brand new factory sealed box Apple iPhone 15 Pro Max 256GB Natural Titanium. Direct US Import, A2849 Factory Unlocked with 1 year AppleCare warranty. Same-day Accra door delivery with MoMo Paystack payment.',
     images: [
       spotlightDevicesTechImg,
-      'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Ansah iStore Ghana',
@@ -593,7 +593,7 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Official Samsung Galaxy S24 Ultra 512GB Titanium Black. 200MP camera with Galaxy AI features, titanium frame, Snapdragon 8 Gen 3, 5000mAh battery. Complete sealed pack with receipt & 2-year warranty.',
     images: [
-      'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?auto=format&fit=crop&w=720&fm=webp&q=75',
       spotlightDevicesTechImg
     ],
     seller: {
@@ -639,8 +639,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Hot seller Tecno Camon 30 Pro 5G. Flagship Sony IMX890 50MP OIS sensor, 144Hz AMOLED screen, 70W Ultra Charge, dual stereo speakers with Dolby Atmos. Brand new sealed with Carlcare 13-month Ghana warranty.',
     images: [
-      'https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1580910051074-3eb694886505?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1580910051074-3eb694886505?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Tema Tech Express',
@@ -685,8 +685,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Brand new Infinix Note 40 Pro+ 5G. 108MP OIS super-zoom camera, 3D-Curved 120Hz AMOLED display, Cheetah X1 power chip with 100W multi-speed charge and magnetic wireless charging kit. Carlcare warranty valid across Takoradi and nationwide.',
     images: [
-      'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Western Gadgets Center',
@@ -735,8 +735,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Factory sealed Apple MacBook Pro 14-inch with powerful M3 Pro chip. Liquid Retina XDR display, 18 hours battery life, 70W USB-C power adapter. Direct US import. Add to cart with Paystack MoMo or pick up in Osu.',
     images: [
-      'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Osu Mac & PC Hub',
@@ -781,8 +781,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Original Samsung 65-inch Crystal UHD 4K Smart TV. PurColor technology, Object Tracking Sound Lite, built-in Netflix, YouTube, Prime Video, Apple AirPlay. Comes with original smart solar remote and 2-year warranty.',
     images: [
-      'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1593784991095-a205069470b6?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1593784991095-a205069470b6?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Kumasi Appliances World',
@@ -827,8 +827,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Nasco 250 Litre double-door no-frost refrigerator. Fast cooling system, vegetable crisper with humidity control, LED interior light, toughened glass shelves, works perfectly with ECG low voltage stability.',
     images: [
-      'https://images.unsplash.com/photo-1584992236310-6edddc08acff?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1584992236310-6edddc08acff?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Tema Home Essentials',
@@ -873,8 +873,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'High power Binatone 18-inch industrial standing fan (model A-1805). Unbreakable metal blades, sturdy round base, height adjustable, 3 quiet high-velocity speed controls. Ideal for Ghanaian homes, shops, and churches.',
     images: [
-      'https://images.unsplash.com/photo-1618941716939-553df3c6c278?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1584992236310-6edddc08acff?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1618941716939-553df3c6c278?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1584992236310-6edddc08acff?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Cape Coast Electricals',
@@ -923,8 +923,8 @@ export const SEED_LISTINGS: Listing[] = [
     description: 'Modern Chamber and Hall Self Contain in a peaceful gated house at Ahodwo, Kumasi. Has private bathroom, fitted kitchen sink, own ECG prepaid meter, 24/7 Ghana Water flow with backup polytank, tiled floor and ceiling fan. In-person inspection required with landlord before signing.',
     images: [
       spotlightModernPropertyImg,
-      'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Kwame Asante Properties',
@@ -971,8 +971,8 @@ export const SEED_LISTINGS: Listing[] = [
     description: 'Executive 2-bedroom en-suite apartment in a serene gated estate at Tema Community 25. Spacious hall with dining area, modern fitted kitchen with granite tops, water heaters, paved compound, dedicated parking, electric fencing and security guard post. Inspect in person before tenancy payment.',
     images: [
       spotlightModernPropertyImg,
-      'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Tema Prime Realty',
@@ -1018,8 +1018,8 @@ export const SEED_LISTINGS: Listing[] = [
     description: 'Stunning 4-bedroom executive furnished house in prime East Legon. Features Olympic-grade swimming pool, standby generator, en-suite bedrooms, open plan Italian kitchen, rooftop terrace, 2-bedroom boys quarters, electric gate. Physical site tour arranged on WhatsApp.',
     images: [
       spotlightModernPropertyImg,
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Ansah Luxury Real Estate',
@@ -1067,8 +1067,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Genuine handwoven Ghanaian Bonwire Asante Kente cloth (Adwiniasa / Obaakofo Mmu Man royal design). 3 full pieces (6 yards total) woven with heavy pure cotton and metallic gold threading. Perfect for weddings, graduations, and state ceremonies.',
     images: [
-      'https://images.unsplash.com/photo-1590736969955-71cc94801759?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1528459801416-a9e53bbf4e17?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1590736969955-71cc94801759?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1528459801416-a9e53bbf4e17?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Bonwire Heritage Weavers',
@@ -1112,8 +1112,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Authentic Nike Air Jordan 4 Retro Military Black. Premium white tumbled leather upper with neutral grey suede overlay and contrasting black accents. Air-sole cushioning unit, iconic Jumpman branding, and original receipt. Fast courier delivery across Accra.',
     images: [
-      'https://images.unsplash.com/photo-1552346154-21d32810aba3?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1552346154-21d32810aba3?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Kicks Ghana Official',
@@ -1158,8 +1158,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: '100% Raw Vietnamese Bone Straight human hair wig. 13x4 invisible Swiss HD lace frontal, pre-plucked natural hairline with bleached knots, 250% full density, silky soft texture that does not tangle or shed. Tongs and takes heat up to 450 degrees.',
     images: [
-      'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Glamour Hair Studio Accra',
@@ -1204,8 +1204,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Designer structured luxury tote and shoulder handbag. Scratch-resistant saffiano calfskin leather, gold-tone hardware, multiple interior zipped compartments, magnetic snap closure. Fits iPads, makeup kit, wallet, and everyday essentials.',
     images: [
-      'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Tema Fashion Boutique',
@@ -1249,8 +1249,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Original Casio G-Shock GA-B2100 with Bluetooth smartphone link and Tough Solar charging. Shock resistant carbon core guard, 200-meter water resistance, dual LED backlight, world time in 300 cities. In metal tin box with international guarantee card.',
     images: [
-      'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Western Timepieces',
@@ -1298,8 +1298,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Solid seasoned Ghanaian mahogany king size (6x6 feet) designer bed with upholstered headboard and 2 matching bedside nightstands. Comes bundled with an orthopedic high-density memory foam 12-inch mattress with 10-year warranty. Delivered and assembled in Kumasi or Accra.',
     images: [
-      'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1540518614846-7ede433c4ef7?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1540518614846-7ede433c4ef7?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Ashanti Royal Woodworks',
@@ -1343,8 +1343,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Custom built 7-seater sectional sofa with washable stain-resistant velvet fabric. High-density resilience foam seating that does not sag, solid hardwood internal timber frame, stylish gold metallic accent legs, and 6 throw pillows included. Ready for delivery across Accra.',
     images: [
-      'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Spintex Living Furniture',
@@ -1388,8 +1388,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Sophisticated 6-seater dining set. 12mm heavy shatterproof tempered glass top with marble visual effect, stainless steel anti-rust base, and 6 high-back comfortable dining chairs upholstered in charcoal grey velvet.',
     images: [
-      'https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1530018607912-eff2daa1bac4?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1530018607912-eff2daa1bac4?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Tema Elegant Living',
@@ -1437,8 +1437,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: '100% Grade A raw cold-pressed yellow shea butter handcrafted by women cooperatives in Tamale, paired with rich natural cocoa butter. Heals dry skin, fades dark spots and stretch marks, moisturizes natural hair, free from chemical fragrances.',
     images: [
-      'https://images.unsplash.com/photo-1608248597359-bb436a56e7e1?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1608248597359-bb436a56e7e1?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Tamale Shea Organics',
@@ -1482,8 +1482,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Original US imported CeraVe skincare duopack. Includes 473ml Hydrating Facial Cleanser with hyaluronic acid + 473ml Daily Moisturizing Lotion with 3 essential ceramides. Restores skin barrier, non-comedogenic, fragrance-free.',
     images: [
-      'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1608248597359-bb436a56e7e1?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1608248597359-bb436a56e7e1?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Accra Glow Pharmacy',
@@ -1527,8 +1527,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Potent natural hair restoration kit. Extra dark roasted castor oil that thickens edges, fills patches, and seals moisture, with pure Chébé powder hair butter that prevents breakage and promotes length retention. Works on 4C, relaxed, and locked hair.',
     images: [
-      'https://images.unsplash.com/photo-1608248597359-bb436a56e7e1?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1608248597359-bb436a56e7e1?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Ohemaa Hair Wellness',
@@ -1575,8 +1575,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Smoky, firewood-infused Ghanaian party jollof rice made with aromatic basmati rice, tender seasoned quarter grilled chicken, fried sweet dodo plantain, and homemade spicy shito sauce. Fast 25-35 min delivery across Osu and Accra.',
     images: [
-      'https://images.unsplash.com/photo-1574484284002-952d92456975?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1574484284002-952d92456975?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Mama Efua\'s Kitchen Osu',
@@ -1623,8 +1623,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Accra\'s favorite waakye cooked in genuine red sorghum leaves. Served with steaming spaghetti (talin), garri fotor, slow-cooked black pepper shito, tomato stew, boiled egg, soft wele, and crispy fried fish.',
     images: [
-      'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1574484284002-952d92456975?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1574484284002-952d92456975?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Auntie Muni Waakye',
@@ -1668,8 +1668,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Fresh giant Volta Lake Tilapia seasoned with ginger, garlic, cloves, and country spices, grilled slowly over hot charcoal. Served piping hot with 2 soft fermented corn & cassava banku, red and green crushed pepper with fresh sliced onions.',
     images: [
-      'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Accra Grill House',
@@ -1713,8 +1713,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Large 14-inch hand-tossed artisan pizza loaded with double mozzarella cheese, spicy beef pepperoni, grilled BBQ chicken chunks, sweet bell peppers, onions, and rich herbed marinara sauce. Delivered hot in thermal bag.',
     images: [
-      'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Pizza Fire Accra',
@@ -1758,8 +1758,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: 'Golden, crispy-edged ripe plantain cubes marinated in freshly ground ginger, calabash nutmeg, onions, and spicy cayenne pepper, deep-fried to perfection. Served in brown paper packaging with a generous portion of salted roasted peanuts.',
     images: [
-      'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1574484284002-952d92456975?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1574484284002-952d92456975?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Kelewele King Adenta',
@@ -1803,8 +1803,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Brand New',
     description: '100% natural cold-pressed fruit smoothie with sweet Ghanaian mangoes, tangy passion fruit, spicy ginger root, and natural honey. No added sugars, no artificial preservatives or colorants. Chilled on ice and delivered fast.',
     images: [
-      'https://images.unsplash.com/photo-1553530666-ba11a7da3888?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1505252585461-04db1eb84625?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1553530666-ba11a7da3888?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1505252585461-04db1eb84625?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Fresh Juice & Smoothie Bar',
@@ -1848,8 +1848,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Not Applicable',
     description: 'Licensed professional Ghanaian master plumber with 12 years experience. Rapid emergency response for leaking pipes, clogged drains, toilet and shower installations, borehole and poly tank pumping systems, and modern biofil digester construction across Accra and Tema.',
     images: [
-      'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Kofi Mensah Plumbing Pro',
@@ -1889,8 +1889,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Not Applicable',
     description: 'Energy Commission licensed certified electrician. Specializes in surface and conduit wiring for new buildings, troubleshooting ECG short circuits, generator changeover switches, solar inverter setups, and electrical breaker box installations across Kumasi and Ashanti region.',
     images: [
-      'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Osei Yaw Electricals',
@@ -1930,8 +1930,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Not Applicable',
     description: 'Mature, polite, non-smoker professional driver with 9 years of unblemished corporate and executive VIP driving experience. Possesses valid License F, defensive driving certification, comprehensive navigation knowledge of Greater Accra and interstate routes. Available immediately for full-time or contract chauffeur roles.',
     images: [
-      'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1508974239320-0a029497e820?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1508974239320-0a029497e820?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'Emmanuel Addo (Professional Driver)',
@@ -1971,8 +1971,8 @@ export const SEED_LISTINGS: Listing[] = [
     condition: 'Not Applicable',
     description: 'Eco-friendly deep cleaning specialists for homes, offices, airbnbs, and post-construction sites. Steam carpet and upholstery sofa washing, tile grout scrubbing, window washing, and certified pest fumigation against cockroaches, bedbugs, and termites.',
     images: [
-      'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=720&fm=webp&q=75',
+      'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&w=720&fm=webp&q=75'
     ],
     seller: {
       name: 'CleanPro Ghana Services',

@@ -31,6 +31,7 @@ import {
   recordWhatsAppClick,
 } from '../utils/whatsapp';
 import { isListingSellerVerified, getReviewSummary } from '../utils/marketplaceHelpers';
+import { OptimizedImage } from './OptimizedImage';
 
 interface ListingCardProps {
   listing: Listing;
@@ -223,7 +224,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   return (
     <div
       onClick={handleCardClick}
-      className="group bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 hover:border-[#00875A]/60 dark:hover:border-emerald-500/50 shadow-xs hover:shadow-xl hover:shadow-emerald-950/5 dark:hover:shadow-black/50 transition-all duration-250 ease-out flex flex-col overflow-hidden cursor-pointer transform hover:scale-[1.01] hover:-translate-y-1 active:scale-[0.99] will-change-transform"
+      className="group min-w-0 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 hover:border-[#00875A]/60 dark:hover:border-emerald-500/50 shadow-xs hover:shadow-xl hover:shadow-emerald-950/5 dark:hover:shadow-black/50 transition-all duration-250 ease-out flex flex-col overflow-hidden cursor-pointer transform hover:scale-[1.01] hover:-translate-y-1 active:scale-[0.99] will-change-transform"
     >
       {/* Visual media zone with Multi-Image Carousel */}
       <div
@@ -233,13 +234,14 @@ export const ListingCard: React.FC<ListingCardProps> = ({
         onTouchEnd={handleTouchEnd}
       >
         {images.length > 0 && !failedImages[currentImageIndex] ? (
-          <img
+          <OptimizedImage
             key={currentImageIndex}
             src={images[currentImageIndex]}
             alt={`${listing.title} - image ${currentImageIndex + 1}`}
             onError={() => setFailedImages((prev) => ({ ...prev, [currentImageIndex]: true }))}
             referrerPolicy="no-referrer"
-            className="w-full h-full object-cover transition-all duration-300 group-hover:scale-103 animate-in fade-in duration-200"
+            wrapperClassName="w-full h-full"
+            className="w-full h-full object-cover transition-all duration-300 group-hover:scale-103"
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 text-slate-400 dark:text-slate-500 p-4 text-center">
@@ -630,32 +632,33 @@ export const ListingCard: React.FC<ListingCardProps> = ({
                 e.stopPropagation();
                 onOpenBoost?.(listing, e);
               }}
-              className="py-1.5 px-1 bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 hover:opacity-95 text-white text-[11px] font-black rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer shadow-2xs"
+              className="min-w-0 py-1.5 px-1 bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 hover:opacity-95 text-white text-[10px] sm:text-[11px] font-black rounded-lg transition-all flex items-center justify-center gap-0.5 sm:gap-1 cursor-pointer shadow-2xs"
               title="Pin this product to the top for 7 days (50 GHS via Paystack)"
             >
-              <Zap size={11} fill="currentColor" className="shrink-0" />
-              <span className="truncate">{listing.isPromoted ? 'Promoted' : 'Boost 50 GHS'}</span>
+              <Zap size={10} fill="currentColor" className="shrink-0" />
+              <span className="truncate sm:hidden">{listing.isPromoted ? 'Top' : 'Boost'}</span>
+              <span className="truncate hidden sm:inline">{listing.isPromoted ? 'Promoted' : 'Boost 50 GHS'}</span>
             </button>
 
             <button
               type="button"
               onClick={handleCallClick}
-              className="py-1.5 px-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-[11px] font-bold rounded-lg border border-slate-200 dark:border-slate-700 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+              className="min-w-0 py-1.5 px-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-[10px] sm:text-[11px] font-bold rounded-lg border border-slate-200 dark:border-slate-700 transition-colors flex items-center justify-center gap-0.5 sm:gap-1 cursor-pointer"
               title={`Direct phone call to seller (${listing.seller.phone})`}
             >
-              <Phone size={11} className="text-amber-600 dark:text-amber-400 shrink-0" />
-              <span>Call</span>
+              <Phone size={10} className="text-amber-600 dark:text-amber-400 shrink-0" />
+              <span className="truncate">Call</span>
             </button>
 
             <button
               type="button"
               onClick={handleReportClick}
-              className="py-1.5 px-1 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-950/70 text-rose-700 dark:text-rose-400 text-[11px] font-bold rounded-lg border border-rose-200/80 dark:border-rose-900/60 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+              className="min-w-0 py-1.5 px-1 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-950/70 text-rose-700 dark:text-rose-400 text-[10px] sm:text-[11px] font-bold rounded-lg border border-rose-200/80 dark:border-rose-900/60 transition-colors flex items-center justify-center gap-0.5 sm:gap-1 cursor-pointer"
               title="Report User / Report Listing"
               aria-label="Report User or Report Listing"
             >
-              <ShieldAlert size={11} className="text-rose-600 dark:text-rose-400 shrink-0" />
-              <span>Report</span>
+              <ShieldAlert size={10} className="text-rose-600 dark:text-rose-400 shrink-0" />
+              <span className="truncate">Report</span>
             </button>
           </div>
         </div>

@@ -13,6 +13,10 @@ import {
   deleteDoc,
   query,
   where,
+  limit,
+  startAfter,
+  QueryDocumentSnapshot,
+  DocumentData,
 } from 'firebase/firestore';
 import {
   getAuth,
@@ -44,7 +48,113 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId); /* CRITICAL: The app will break without this line */
 export const auth = getAuth(app);
 
-export type { FirebaseUser, ConfirmationResult };
+export type { FirebaseUser, ConfirmationResult, QueryDocumentSnapshot, DocumentData };
+
+/* =========================================================================
+   5-MINUTE CLIENT CACHE FOR PRODUCTS & LISTINGS
+   ========================================================================= */
+
+export const MARKETPLACE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const PRODUCTS_CACHE_KEY = 'ogya_fire_products_cache_5m';
+const LISTINGS_CACHE_KEY = 'ogya_fire_listings_cache_5m';
+
+interface CacheEnvelope<T> {
+  timestamp: number;
+  items: T[];
+}
+
+let memoryProductsCache: CacheEnvelope<Product> | null = null;
+let memoryListingsCache: CacheEnvelope<Listing> | null = null;
+
+export function getCachedProducts(maxAgeMs: number = MARKETPLACE_CACHE_TTL_MS): Product[] | null {
+  const now = Date.now();
+  if (memoryProductsCache && now - memoryProductsCache.timestamp < maxAgeMs) {
+    return memoryProductsCache.items;
+  }
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const raw = localStorage.getItem(PRODUCTS_CACHE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as CacheEnvelope<Product>;
+        if (parsed && Array.isArray(parsed.items) && now - parsed.timestamp < maxAgeMs) {
+          memoryProductsCache = parsed;
+          return parsed.items;
+        }
+      }
+    }
+  } catch {
+    // ignore storage errors
+  }
+  return null;
+}
+
+export function setCachedProducts(items: Product[]): void {
+  const env: CacheEnvelope<Product> = { timestamp: Date.now(), items };
+  memoryProductsCache = env;
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(env));
+    }
+  } catch {
+    // ignore quota errors
+  }
+}
+
+export function invalidateProductsCache(): void {
+  memoryProductsCache = null;
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.removeItem(PRODUCTS_CACHE_KEY);
+    }
+  } catch {
+    // ignore
+  }
+}
+
+export function getCachedListings(maxAgeMs: number = MARKETPLACE_CACHE_TTL_MS): Listing[] | null {
+  const now = Date.now();
+  if (memoryListingsCache && now - memoryListingsCache.timestamp < maxAgeMs) {
+    return memoryListingsCache.items;
+  }
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const raw = localStorage.getItem(LISTINGS_CACHE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as CacheEnvelope<Listing>;
+        if (parsed && Array.isArray(parsed.items) && now - parsed.timestamp < maxAgeMs) {
+          memoryListingsCache = parsed;
+          return parsed.items;
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+export function setCachedListings(items: Listing[]): void {
+  const env: CacheEnvelope<Listing> = { timestamp: Date.now(), items };
+  memoryListingsCache = env;
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(LISTINGS_CACHE_KEY, JSON.stringify(env));
+    }
+  } catch {
+    // ignore
+  }
+}
+
+export function invalidateListingsCache(): void {
+  memoryListingsCache = null;
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.removeItem(LISTINGS_CACHE_KEY);
+    }
+  } catch {
+    // ignore
+  }
+}
 
 /**
  * Subscribe to Firebase Auth state changes
@@ -510,6 +620,7 @@ export async function saveListingToFirestore(listing: Listing): Promise<Listing>
     if (listing.jobDetails) docData.jobDetails = listing.jobDetails;
 
     await setDoc(doc(db, 'listings', listing.id), docData);
+    invalidateListingsCache();
     return { ...listing, userId: uid, sellerId: uid };
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
@@ -540,6 +651,7 @@ export async function updateListingStatusInFirestore(
       updates.soldAt = new Date().toISOString();
     }
     await updateDoc(docRef, updates);
+    invalidateListingsCache();
     return true;
   } catch (error) {
     console.error(`Failed to update listing ${listingId} status in Firestore:`, error);
@@ -552,61 +664,89 @@ export async function updateListingStatusInFirestore(
   }
 }
 
+function mapDocToListing(d: QueryDocumentSnapshot<DocumentData>): Listing {
+  const data = d.data() as Listing;
+  const normalizedImages =
+    Array.isArray(data.images) && data.images.length > 0
+      ? data.images
+      : data.imageUrl
+      ? [data.imageUrl]
+      : [];
+  return {
+    ...data,
+    imageUrl: data.imageUrl || normalizedImages[0] || undefined,
+    images: normalizedImages,
+  };
+}
+
 /**
- * Fetch all listings from Firestore
+ * Fetch paginated listings from Firestore using limit(20) + startAfter cursor
  */
-export async function fetchListingsFromFirestore(): Promise<Listing[]> {
+export async function fetchListingsPage(
+  pageSize: number = 20,
+  cursor?: QueryDocumentSnapshot<DocumentData> | null
+): Promise<{
+  items: Listing[];
+  lastDoc: QueryDocumentSnapshot<DocumentData> | null;
+  hasMore: boolean;
+}> {
   const path = 'listings';
   try {
-    const snap = await getDocs(collection(db, path));
-    const items: Listing[] = [];
-    snap.forEach((d) => {
-      const data = d.data() as Listing;
-      const normalizedImages =
-        Array.isArray(data.images) && data.images.length > 0
-          ? data.images
-          : data.imageUrl
-          ? [data.imageUrl]
-          : [];
-      items.push({
-        ...data,
-        imageUrl: data.imageUrl || normalizedImages[0] || undefined,
-        images: normalizedImages,
-      });
-    });
-    return items;
+    const q = cursor
+      ? query(collection(db, path), startAfter(cursor), limit(pageSize))
+      : query(collection(db, path), limit(pageSize));
+    const snap = await getDocs(q);
+    const items: Listing[] = snap.docs.map(mapDocToListing);
+    const lastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
+    if (!cursor && items.length > 0) {
+      setCachedListings(items);
+    }
+    return {
+      items,
+      lastDoc,
+      hasMore: snap.docs.length === pageSize,
+    };
   } catch (error) {
-    console.warn('Could not fetch listings from Firestore, falling back to local:', error);
-    return [];
+    console.warn('Could not fetch paginated listings from Firestore, falling back to cache:', error);
+    const cached = getCachedListings(Infinity) || [];
+    return { items: cached.slice(0, pageSize), lastDoc: null, hasMore: false };
   }
 }
 
 /**
- * Real-time listener for Firestore listings
+ * Fetch initial listings from Firestore with 5-minute cache and limit(20)
+ */
+export async function fetchListingsFromFirestore(
+  options: { limitCount?: number; forceRefresh?: boolean } = {}
+): Promise<Listing[]> {
+  const { limitCount = 20, forceRefresh = false } = options;
+  if (!forceRefresh) {
+    const cached = getCachedListings();
+    if (cached && cached.length > 0) {
+      return cached;
+    }
+  }
+  const { items } = await fetchListingsPage(limitCount);
+  return items;
+}
+
+/**
+ * Real-time listener for Firestore listings (capped with limit(20))
  */
 export function subscribeToListingsFromFirestore(
-  onUpdate: (listings: Listing[]) => void
+  onUpdate: (listings: Listing[]) => void,
+  limitCount: number = 20
 ): () => void {
   const path = 'listings';
   try {
+    const q = query(collection(db, path), limit(limitCount));
     return onSnapshot(
-      collection(db, path),
+      q,
       (snapshot) => {
-        const items: Listing[] = [];
-        snapshot.forEach((d) => {
-          const data = d.data() as Listing;
-          const normalizedImages =
-            Array.isArray(data.images) && data.images.length > 0
-              ? data.images
-              : data.imageUrl
-              ? [data.imageUrl]
-              : [];
-          items.push({
-            ...data,
-            imageUrl: data.imageUrl || normalizedImages[0] || undefined,
-            images: normalizedImages,
-          });
-        });
+        const items: Listing[] = snapshot.docs.map(mapDocToListing);
+        if (items.length > 0) {
+          setCachedListings(items);
+        }
         onUpdate(items);
       },
       (error) => {
@@ -716,6 +856,7 @@ export async function saveProductToFirestore(product: Product): Promise<boolean>
       data.isTest = product.isTest;
     }
     await setDoc(docRef, data, { merge: true });
+    invalidateProductsCache();
     return true;
   } catch (error) {
     console.error(`Failed to save product ${product.id} to Firestore:`, error);
@@ -738,6 +879,7 @@ export async function deleteProductFromFirestore(productId: string): Promise<boo
   const path = `products/${productId}`;
   try {
     await deleteDoc(doc(db, 'products', productId));
+    invalidateProductsCache();
     return true;
   } catch (error) {
     console.error(`Failed to delete product ${productId}:`, error);
@@ -819,12 +961,13 @@ export async function removeDuplicateProductsFromFirestore(): Promise<{
   for (const dupId of duplicateIds) {
     try {
       await deleteDoc(doc(db, path, dupId));
-      deletedCount += 1;
+    deletedCount += 1;
     } catch (err) {
       console.error(`Failed to delete duplicate product ${dupId}:`, err);
     }
   }
 
+  invalidateProductsCache();
   return {
     deletedCount,
     keptCount: allProducts.length - deletedCount,
@@ -832,40 +975,79 @@ export async function removeDuplicateProductsFromFirestore(): Promise<{
 }
 
 /**
- * Fetch all products from Firestore (public read for guest & logged-in buyers).
- * Filters exact duplicates & test items safely in-memory without unauthorized mutations.
+ * Fetch a paginated slice of products from Firestore using limit(20) + startAfter cursor.
  */
-export async function fetchProductsFromFirestore(): Promise<Product[]> {
+export async function fetchProductsPage(
+  pageSize: number = 20,
+  cursor?: QueryDocumentSnapshot<DocumentData> | null
+): Promise<{
+  items: Product[];
+  lastDoc: QueryDocumentSnapshot<DocumentData> | null;
+  hasMore: boolean;
+}> {
   const path = 'products';
   try {
-    const snap = await getDocs(collection(db, path));
+    const q = cursor
+      ? query(collection(db, path), startAfter(cursor), limit(pageSize))
+      : query(collection(db, path), limit(pageSize));
+    const snap = await getDocs(q);
     if (snap.empty) {
-      return SEED_PRODUCTS;
+      if (!cursor) {
+        setCachedProducts(SEED_PRODUCTS);
+        return { items: SEED_PRODUCTS, lastDoc: null, hasMore: false };
+      }
+      return { items: [], lastDoc: null, hasMore: false };
     }
-    const items: Product[] = [];
-    snap.forEach((d) => {
+    const rawItems: Product[] = snap.docs.map((d) => {
       const data = d.data() as Product;
-      items.push({ ...data, id: data.id || d.id });
+      return { ...data, id: data.id || d.id };
     });
-
-    const filtered = deduplicateProductsList(items).filter((p) => !isTestProduct(p));
-    return filtered.length > 0 ? filtered : SEED_PRODUCTS;
+    const cleanItems = deduplicateProductsList(rawItems).filter((p) => !isTestProduct(p));
+    const lastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
+    if (!cursor && cleanItems.length > 0) {
+      setCachedProducts(cleanItems);
+    }
+    return {
+      items: cleanItems.length > 0 ? cleanItems : !cursor ? SEED_PRODUCTS : [],
+      lastDoc,
+      hasMore: snap.docs.length === pageSize,
+    };
   } catch (error) {
-    console.warn('Could not fetch products from Firestore, returning seed products:', error);
-    return SEED_PRODUCTS;
+    console.warn('Could not fetch paginated products from Firestore, returning cached/seed products:', error);
+    const cached = getCachedProducts(Infinity);
+    return { items: cached || SEED_PRODUCTS, lastDoc: null, hasMore: false };
   }
 }
 
 /**
- * Subscribe to real-time products updates (public read)
+ * Fetch products from Firestore with 5-minute TTL cache and limit(20) default.
+ */
+export async function fetchProductsFromFirestore(
+  options: { limitCount?: number; forceRefresh?: boolean } = {}
+): Promise<Product[]> {
+  const { limitCount = 20, forceRefresh = false } = options;
+  if (!forceRefresh) {
+    const cached = getCachedProducts();
+    if (cached && cached.length > 0) {
+      return cached;
+    }
+  }
+  const { items } = await fetchProductsPage(limitCount);
+  return items;
+}
+
+/**
+ * Subscribe to real-time products updates (capped with limit(20) to keep bandwidth low)
  */
 export function subscribeToProductsFromFirestore(
-  onUpdate: (products: Product[]) => void
+  onUpdate: (products: Product[]) => void,
+  limitCount: number = 20
 ): () => void {
   const path = 'products';
   try {
+    const q = query(collection(db, path), limit(limitCount));
     return onSnapshot(
-      collection(db, path),
+      q,
       (snapshot) => {
         if (snapshot.empty) {
           onUpdate(SEED_PRODUCTS);
@@ -877,6 +1059,9 @@ export function subscribeToProductsFromFirestore(
           items.push({ ...data, id: data.id || d.id });
         });
         const cleanItems = deduplicateProductsList(items).filter((p) => !isTestProduct(p));
+        if (cleanItems.length > 0) {
+          setCachedProducts(cleanItems);
+        }
         onUpdate(cleanItems);
       },
       (error) => {
@@ -1101,7 +1286,7 @@ export const SEED_ORDERS: Order[] = [
         name: '6KG ABC Dry Powder Fire Extinguisher (ISO & GNFS Approved)',
         price: 450,
         category: 'Fire Extinguisher',
-        imageUrl: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=600&auto=format&fit=crop&q=80',
+        imageUrl: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=400&auto=format&fit=crop&fm=webp&q=75',
         quantity: 2,
         stock: 24,
         vendorId: 'vnd-ogya-central',
@@ -1126,7 +1311,7 @@ export const SEED_ORDERS: Order[] = [
         name: 'Dual Photoelectric Smoke & Heat Detector with 85dB Siren',
         price: 180,
         category: 'Smoke Detector',
-        imageUrl: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&auto=format&fit=crop&q=80',
+        imageUrl: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=400&auto=format&fit=crop&fm=webp&q=75',
         quantity: 4,
         stock: 40,
         vendorId: 'vnd-ogya-central',
@@ -1151,7 +1336,7 @@ export const SEED_ORDERS: Order[] = [
         name: '2KG CO2 Clean Agent Fire Extinguisher for Server Rooms & Tech',
         price: 520,
         category: 'Fire Extinguisher',
-        imageUrl: 'https://images.unsplash.com/photo-1554744512-d6c603f27c54?w=600&auto=format&fit=crop&q=80',
+        imageUrl: 'https://images.unsplash.com/photo-1554744512-d6c603f27c54?w=400&auto=format&fit=crop&fm=webp&q=75',
         quantity: 1,
         stock: 15,
         vendorId: 'vnd-ogya-central',
@@ -1162,7 +1347,7 @@ export const SEED_ORDERS: Order[] = [
         name: 'Manual Call Point Break-Glass Emergency Fire Alarm Station',
         price: 210,
         category: 'Alarm',
-        imageUrl: 'https://images.unsplash.com/photo-1541888946425-d0fbb186c5f7?w=600&auto=format&fit=crop&q=80',
+        imageUrl: 'https://images.unsplash.com/photo-1541888946425-d0fbb186c5f7?w=400&auto=format&fit=crop&fm=webp&q=75',
         quantity: 2,
         stock: 30,
         vendorId: 'vnd-ogya-central',
@@ -1438,10 +1623,10 @@ export async function saveReviewToFirestore(review: Review): Promise<{ savedToFi
   }
 }
 
-export async function fetchReviewsFromFirestore(): Promise<Review[]> {
+export async function fetchReviewsFromFirestore(limitCount: number = 20): Promise<Review[]> {
   const local = getLocalReviews();
   try {
-    const snap = await getDocs(collection(db, 'reviews'));
+    const snap = await getDocs(query(collection(db, 'reviews'), limit(limitCount)));
     const remote: Review[] = [];
     snap.forEach((d) => {
       const data = d.data() as Review;
@@ -1459,11 +1644,14 @@ export async function fetchReviewsFromFirestore(): Promise<Review[]> {
   }
 }
 
-export function subscribeToReviewsFromFirestore(onUpdate: (reviews: Review[]) => void): () => void {
+export function subscribeToReviewsFromFirestore(
+  onUpdate: (reviews: Review[]) => void,
+  limitCount: number = 20
+): () => void {
   const local = getLocalReviews();
   try {
     return onSnapshot(
-      collection(db, 'reviews'),
+      query(collection(db, 'reviews'), limit(limitCount)),
       (snapshot) => {
         const remote: Review[] = [];
         snapshot.forEach((d) => {
@@ -1747,10 +1935,10 @@ export async function saveWantedItemToFirestore(item: WantedItem): Promise<boole
 /**
  * Fetch all wanted items from Firestore (public read), falling back to local storage
  */
-export async function fetchWantedItemsFromFirestore(): Promise<WantedItem[]> {
+export async function fetchWantedItemsFromFirestore(limitCount: number = 20): Promise<WantedItem[]> {
   const path = 'wanted_items';
   try {
-    const snap = await getDocs(collection(db, path));
+    const snap = await getDocs(query(collection(db, path), limit(limitCount)));
     if (snap.empty) {
       return getLocalWantedItems();
     }
@@ -1780,15 +1968,16 @@ export async function fetchWantedItemsFromFirestore(): Promise<WantedItem[]> {
 }
 
 /**
- * Subscribe in real-time to wanted items collection in Firestore
+ * Subscribe in real-time to wanted items collection in Firestore (capped with limit(20))
  */
 export function subscribeToWantedItemsFromFirestore(
-  onUpdate: (items: WantedItem[]) => void
+  onUpdate: (items: WantedItem[]) => void,
+  limitCount: number = 20
 ): () => void {
   const path = 'wanted_items';
   try {
     return onSnapshot(
-      collection(db, path),
+      query(collection(db, path), limit(limitCount)),
       (snapshot) => {
         if (snapshot.empty) {
           onUpdate(getLocalWantedItems());

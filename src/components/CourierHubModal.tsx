@@ -42,7 +42,7 @@ import {
   DELIVERY_SPEED_OPTIONS,
 } from '../utils/courierStorage';
 import { formatPrice } from '../utils/storage';
-import ghanaCourierDeliveryImg from '../assets/images/ghana_courier_delivery_1792921463636.jpg';
+import ghanaCourierDeliveryImg from '../assets/images/ghana_courier_delivery_1792921463636.webp';
 
 interface CourierHubModalProps {
   isOpen: boolean;

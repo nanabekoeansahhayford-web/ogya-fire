@@ -1,44 +1,17 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { Header } from './components/Header';
 import { CategoryNav } from './components/CategoryNav';
 import { HeroBanner } from './components/HeroBanner';
 import { ListingCard } from './components/ListingCard';
-import { ListingDetailModal } from './components/ListingDetailModal';
-import { ChatModal } from './components/ChatModal';
-import { PostAdModal } from './components/PostAdModal';
-import { SavedAdsDrawer } from './components/SavedAdsDrawer';
-import { SafetyModal } from './components/SafetyModal';
-import { FilterSidebar } from './components/FilterSidebar';
-import { Footer } from './components/Footer';
-import { SellerProfileModal } from './components/SellerProfileModal';
-import { BoostAdModal } from './components/BoostAdModal';
-import { RecentlyViewed } from './components/RecentlyViewed';
-import { AuthModal } from './components/AuthModal';
-import { UserProfileModal } from './components/UserProfileModal';
-import { SellerDashboardModal } from './components/SellerDashboardModal';
-import { ReportListingModal } from './components/ReportListingModal';
-import { CourierHubModal } from './components/CourierHubModal';
-import { CourierOrderModal } from './components/CourierOrderModal';
-import { CourierTrackingModal } from './components/CourierTrackingModal';
-import { VerifiedSubscriptionModal } from './components/VerifiedSubscriptionModal';
-import { ProductDetailModal } from './components/ProductDetailModal';
-import { CartModal } from './components/CartModal';
-import { CheckoutModal } from './components/CheckoutModal';
-import { MyOrdersModal } from './components/MyOrdersModal';
-import { BecomeVendorModal } from './components/BecomeVendorModal';
-import { VendorDashboardModal } from './components/VendorDashboardModal';
-import { VendorDashboardPage } from './components/VendorDashboardPage';
-import { FoodVendorsSection } from './components/FoodVendorsSection';
-import { StoreProductsSection } from './components/StoreProductsSection';
-import { IWantThisModal } from './components/IWantThisModal';
-import { BuyersWantFeed } from './components/BuyersWantFeed';
-import { LegalPagesModal, LegalPageId } from './components/LegalPagesModal';
-import { LegalPageView } from './components/LegalPageView';
-import { WhatsAppOrderModal, WhatsAppOrderTarget } from './components/WhatsAppOrderModal';
-import { BecomeVerifiedPage } from './components/BecomeVerifiedPage';
 import { SplashScreen } from './components/SplashScreen';
 import { PWAInstallBanner } from './components/PWAInstallPrompt';
-import { FoodVendor, FoodMenuItem } from './data/foodVendors';
+import {
+  ProductGridSkeleton,
+  SectionSkeleton,
+  PageLoadingSkeleton,
+  ModalLoadingFallback,
+} from './components/LoadingSkeleton';
+import type { FoodVendor, FoodMenuItem } from './data/foodVendors';
 import { Product, Vendor, Order, CartItem, Review, matchesProductCategoryFilter } from './types/store';
 import { SEED_PRODUCTS } from './data/seedProducts';
 import {
@@ -49,7 +22,7 @@ import {
   clearCart,
   getCartItemCount,
 } from './utils/cartStorage';
-import { CourierOrder } from './types/courier';
+import type { CourierOrder } from './types/courier';
 import { CategoryId, FilterState, Listing, SellerInfo, UserProfile, WantedItem } from './types/marketplace';
 import { CATEGORIES } from './data/categories';
 import {
@@ -69,72 +42,212 @@ import {
   testConnection,
   subscribeToAuthState,
   ensureUserDocOnLogin,
-  subscribeToListingsFromFirestore,
+  fetchListingsPage,
+  fetchProductsPage,
   fetchProductsFromFirestore,
-  subscribeToProductsFromFirestore,
   fetchVendorByOwnerId,
-  subscribeToWantedItemsFromFirestore,
+  fetchWantedItemsFromFirestore,
   getLocalWantedItems,
-  subscribeToReviewsFromFirestore,
+  fetchReviewsFromFirestore,
+  getLocalReviews,
+  getCachedProducts,
+  getCachedListings,
+  QueryDocumentSnapshot,
+  DocumentData,
 } from './utils/firebase';
 import {
   HOME_LOCATIONS,
   matchesLocationFilter,
   isListingSellerVerified,
 } from './utils/marketplaceHelpers';
-import { SlidersHorizontal, CheckCircle2, ShieldCheck, Sparkles, Plus, AlertCircle, BellRing, Zap, UserPlus, Award, Home, Store, ShoppingCart, Flame, MapPin } from 'lucide-react';
+import type { LegalPageId } from './components/LegalPagesModal';
+import type { WhatsAppOrderTarget } from './components/WhatsAppOrderModal';
+import { SlidersHorizontal, CheckCircle2, ShieldCheck, Plus, AlertCircle, Award, Home, Store, ShoppingCart, MapPin, Search, User } from 'lucide-react';
+
+// Lazy-loaded standalone route pages
+const VendorDashboardPage = lazy(() =>
+  import('./components/VendorDashboardPage').then((m) => ({ default: m.VendorDashboardPage }))
+);
+const BecomeVerifiedPage = lazy(() =>
+  import('./components/BecomeVerifiedPage').then((m) => ({ default: m.BecomeVerifiedPage }))
+);
+const LegalPageView = lazy(() =>
+  import('./components/LegalPageView').then((m) => ({ default: m.LegalPageView }))
+);
+
+// Lazy-loaded below-the-fold sections & layout chrome
+const BuyersWantFeed = lazy(() =>
+  import('./components/BuyersWantFeed').then((m) => ({ default: m.BuyersWantFeed }))
+);
+const FoodVendorsSection = lazy(() =>
+  import('./components/FoodVendorsSection').then((m) => ({ default: m.FoodVendorsSection }))
+);
+const StoreProductsSection = lazy(() =>
+  import('./components/StoreProductsSection').then((m) => ({ default: m.StoreProductsSection }))
+);
+const FilterSidebar = lazy(() =>
+  import('./components/FilterSidebar').then((m) => ({ default: m.FilterSidebar }))
+);
+const RecentlyViewed = lazy(() =>
+  import('./components/RecentlyViewed').then((m) => ({ default: m.RecentlyViewed }))
+);
+const Footer = lazy(() =>
+  import('./components/Footer').then((m) => ({ default: m.Footer }))
+);
+
+// Lazy-loaded modals & drawers (fetched on demand when opened)
+const ListingDetailModal = lazy(() =>
+  import('./components/ListingDetailModal').then((m) => ({ default: m.ListingDetailModal }))
+);
+const SellerProfileModal = lazy(() =>
+  import('./components/SellerProfileModal').then((m) => ({ default: m.SellerProfileModal }))
+);
+const ChatModal = lazy(() =>
+  import('./components/ChatModal').then((m) => ({ default: m.ChatModal }))
+);
+const PostAdModal = lazy(() =>
+  import('./components/PostAdModal').then((m) => ({ default: m.PostAdModal }))
+);
+const SavedAdsDrawer = lazy(() =>
+  import('./components/SavedAdsDrawer').then((m) => ({ default: m.SavedAdsDrawer }))
+);
+const SafetyModal = lazy(() =>
+  import('./components/SafetyModal').then((m) => ({ default: m.SafetyModal }))
+);
+const BoostAdModal = lazy(() =>
+  import('./components/BoostAdModal').then((m) => ({ default: m.BoostAdModal }))
+);
+const AuthModal = lazy(() =>
+  import('./components/AuthModal').then((m) => ({ default: m.AuthModal }))
+);
+const UserProfileModal = lazy(() =>
+  import('./components/UserProfileModal').then((m) => ({ default: m.UserProfileModal }))
+);
+const SellerDashboardModal = lazy(() =>
+  import('./components/SellerDashboardModal').then((m) => ({ default: m.SellerDashboardModal }))
+);
+const ReportListingModal = lazy(() =>
+  import('./components/ReportListingModal').then((m) => ({ default: m.ReportListingModal }))
+);
+const CourierHubModal = lazy(() =>
+  import('./components/CourierHubModal').then((m) => ({ default: m.CourierHubModal }))
+);
+const CourierOrderModal = lazy(() =>
+  import('./components/CourierOrderModal').then((m) => ({ default: m.CourierOrderModal }))
+);
+const CourierTrackingModal = lazy(() =>
+  import('./components/CourierTrackingModal').then((m) => ({ default: m.CourierTrackingModal }))
+);
+const VerifiedSubscriptionModal = lazy(() =>
+  import('./components/VerifiedSubscriptionModal').then((m) => ({ default: m.VerifiedSubscriptionModal }))
+);
+const ProductDetailModal = lazy(() =>
+  import('./components/ProductDetailModal').then((m) => ({ default: m.ProductDetailModal }))
+);
+const CartModal = lazy(() =>
+  import('./components/CartModal').then((m) => ({ default: m.CartModal }))
+);
+const CheckoutModal = lazy(() =>
+  import('./components/CheckoutModal').then((m) => ({ default: m.CheckoutModal }))
+);
+const MyOrdersModal = lazy(() =>
+  import('./components/MyOrdersModal').then((m) => ({ default: m.MyOrdersModal }))
+);
+const BecomeVendorModal = lazy(() =>
+  import('./components/BecomeVendorModal').then((m) => ({ default: m.BecomeVendorModal }))
+);
+const VendorDashboardModal = lazy(() =>
+  import('./components/VendorDashboardModal').then((m) => ({ default: m.VendorDashboardModal }))
+);
+const IWantThisModal = lazy(() =>
+  import('./components/IWantThisModal').then((m) => ({ default: m.IWantThisModal }))
+);
+const LegalPagesModal = lazy(() =>
+  import('./components/LegalPagesModal').then((m) => ({ default: m.LegalPagesModal }))
+);
+const WhatsAppOrderModal = lazy(() =>
+  import('./components/WhatsAppOrderModal').then((m) => ({ default: m.WhatsAppOrderModal }))
+);
 
 export default function App() {
   const { isDark, toggleTheme } = useDarkMode();
-  const [listings, setListings] = useState<Listing[]>(() => getStoredListings());
+  const [listings, setListings] = useState<Listing[]>(() => {
+    const cached = getCachedListings();
+    const local = getStoredListings();
+    if (cached && cached.length > 0) {
+      const remoteMap = new Map(cached.map((l) => [l.id, l]));
+      const merged = [...cached];
+      local.forEach((item) => {
+        if (!remoteMap.has(item.id)) merged.push(item);
+      });
+      return merged;
+    }
+    return local;
+  });
+  const [isLoadingListings, setIsLoadingListings] = useState<boolean>(() => !getCachedListings());
+  const [listingsCursor, setListingsCursor] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const [hasMoreRemoteListings, setHasMoreRemoteListings] = useState<boolean>(false);
+  const [isLoadingMoreListings, setIsLoadingMoreListings] = useState<boolean>(false);
+  const [visibleListingsCount, setVisibleListingsCount] = useState<number>(20);
+
   const [savedIds, setSavedIds] = useState<string[]>(() => getSavedListingIds());
   const [priceAlerts, setPriceAlerts] = useState<string[]>(() => getPriceAlertIds());
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviews, setReviews] = useState<Review[]>(() => getLocalReviews());
   const [whatsAppOrderTarget, setWhatsAppOrderTarget] = useState<WhatsAppOrderTarget | null>(null);
 
   // "I WANT THIS" Buyer requests state
   const [wantedItems, setWantedItems] = useState<WantedItem[]>(() => getLocalWantedItems());
   const [isIWantThisOpen, setIsIWantThisOpen] = useState(false);
 
-  // Real-time Firestore sync & verification
+  // Cached + limit(20) Firestore sync (no full-collection download on boot)
   useEffect(() => {
-    testConnection().then((connected) => {
-      if (connected) {
-        console.log('Firebase Firestore connection verified.');
-      }
-    });
+    let cancelled = false;
+    testConnection().catch(() => false);
 
-    const unsubscribe = subscribeToListingsFromFirestore((remoteListings) => {
-      if (remoteListings && remoteListings.length > 0) {
-        setListings((prev) => {
-          const remoteMap = new Map(remoteListings.map((l) => [l.id, l]));
-          const merged = [...remoteListings];
-          prev.forEach((localItem) => {
-            if (!remoteMap.has(localItem.id)) {
-              merged.push(localItem);
-            }
-          });
-          return merged;
+    const cachedListings = getCachedListings();
+    if (cachedListings && cachedListings.length > 0) {
+      setIsLoadingListings(false);
+    } else {
+      fetchListingsPage(20)
+        .then(({ items, lastDoc, hasMore }) => {
+          if (cancelled) return;
+          if (items && items.length > 0) {
+            setListings((prev) => {
+              const remoteMap = new Map(items.map((l) => [l.id, l]));
+              const merged = [...items];
+              prev.forEach((localItem) => {
+                if (!remoteMap.has(localItem.id)) merged.push(localItem);
+              });
+              return merged;
+            });
+          }
+          setListingsCursor(lastDoc);
+          setHasMoreRemoteListings(hasMore);
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (!cancelled) setIsLoadingListings(false);
         });
-      }
-    });
+    }
 
-    // Real-time listener for buyer requests
-    const unsubscribeWanted = subscribeToWantedItemsFromFirestore((items) => {
-      if (items && items.length > 0) {
-        setWantedItems(items);
-      }
-    });
+    fetchWantedItemsFromFirestore(20)
+      .then((items) => {
+        if (!cancelled && items && items.length > 0) {
+          setWantedItems(items);
+        }
+      })
+      .catch(() => {});
 
-    // Real-time listener for buyer reviews
-    const unsubscribeReviews = subscribeToReviewsFromFirestore((remoteReviews) => {
-      setReviews(remoteReviews);
-    });
+    fetchReviewsFromFirestore(20)
+      .then((remoteReviews) => {
+        if (!cancelled && remoteReviews) {
+          setReviews(remoteReviews);
+        }
+      })
+      .catch(() => {});
 
     return () => {
-      unsubscribe();
-      unsubscribeWanted();
-      unsubscribeReviews();
+      cancelled = true;
     };
   }, []);
 
@@ -267,8 +380,12 @@ export default function App() {
     setIsProfileOpen(true);
   };
 
-  // Products, Cart, Vendors & Orders State (Fire Safety Store)
-  const [products, setProducts] = useState<Product[]>(() => SEED_PRODUCTS);
+  // Products, Cart, Vendors & Orders State (5-min cached + limit(20) paginated)
+  const [products, setProducts] = useState<Product[]>(() => getCachedProducts() || SEED_PRODUCTS);
+  const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(() => !getCachedProducts());
+  const [productsCursor, setProductsCursor] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const [hasMoreRemoteProducts, setHasMoreRemoteProducts] = useState<boolean>(false);
+  const [isLoadingMoreProducts, setIsLoadingMoreProducts] = useState<boolean>(false);
   const [cart, setCart] = useState<CartItem[]>(() => getCart());
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -280,24 +397,72 @@ export default function App() {
 
   const isVendor = currentUser?.userRole === 'vendor' || currentUser?.role === 'vendor' || Boolean(currentVendor);
 
-  // Sync fire safety products from Firestore
+  // Fetch initial 20 products using 5-minute cache
   useEffect(() => {
-    fetchProductsFromFirestore().then((items) => {
-      if (items && items.length > 0) {
-        setProducts(items);
-      }
-    });
+    let cancelled = false;
+    const cached = getCachedProducts();
+    if (cached && cached.length > 0) {
+      setProducts(cached);
+      setIsLoadingProducts(false);
+      return;
+    }
 
-    const unsubscribe = subscribeToProductsFromFirestore((realtimeProducts) => {
-      if (realtimeProducts && realtimeProducts.length > 0) {
-        setProducts(realtimeProducts);
-      }
-    });
+    fetchProductsPage(20)
+      .then(({ items, lastDoc, hasMore }) => {
+        if (cancelled) return;
+        if (items && items.length > 0) {
+          setProducts(items);
+        }
+        setProductsCursor(lastDoc);
+        setHasMoreRemoteProducts(hasMore);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setIsLoadingProducts(false);
+      });
 
     return () => {
-      unsubscribe();
+      cancelled = true;
     };
   }, []);
+
+  const handleLoadMoreProducts = async () => {
+    if (isLoadingMoreProducts || !hasMoreRemoteProducts || !productsCursor) return;
+    setIsLoadingMoreProducts(true);
+    try {
+      const { items, lastDoc, hasMore } = await fetchProductsPage(20, productsCursor);
+      if (items.length > 0) {
+        setProducts((prev) => {
+          const existingIds = new Set(prev.map((p) => p.id));
+          return [...prev, ...items.filter((it) => !existingIds.has(it.id))];
+        });
+      }
+      setProductsCursor(lastDoc);
+      setHasMoreRemoteProducts(hasMore);
+    } finally {
+      setIsLoadingMoreProducts(false);
+    }
+  };
+
+  const handleLoadMoreListings = async () => {
+    setVisibleListingsCount((prev) => prev + 20);
+    if (hasMoreRemoteListings && listingsCursor && !isLoadingMoreListings) {
+      setIsLoadingMoreListings(true);
+      try {
+        const { items, lastDoc, hasMore } = await fetchListingsPage(20, listingsCursor);
+        if (items.length > 0) {
+          setListings((prev) => {
+            const existingIds = new Set(prev.map((l) => l.id));
+            return [...prev, ...items.filter((it) => !existingIds.has(it.id))];
+          });
+        }
+        setListingsCursor(lastDoc);
+        setHasMoreRemoteListings(hasMore);
+      } finally {
+        setIsLoadingMoreListings(false);
+      }
+    }
+  };
 
   // Keep currentUser synchronized with real Firebase Auth session (null for guests)
   useEffect(() => {
@@ -756,10 +921,12 @@ export default function App() {
   };
 
   const handleFilterUpdate = (updates: Partial<FilterState>) => {
+    setVisibleListingsCount(20);
     setFilters((prev) => ({ ...prev, ...updates }));
   };
 
   const handleResetFilters = () => {
+    setVisibleListingsCount(20);
     setFilters({
       searchQuery: '',
       category: 'all',
@@ -775,6 +942,7 @@ export default function App() {
   };
 
   const handleSelectCategory = (catId: CategoryId | 'all') => {
+    setVisibleListingsCount(20);
     setFilters((prev) => ({
       ...prev,
       category: catId,
@@ -973,11 +1141,13 @@ export default function App() {
     return (
       <>
         <SplashScreen />
-        <LegalPageView
-          page={activeLegalPage}
-          onSelectPage={navigateToLegalPage}
-          onNavigateHome={navigateToHome}
-        />
+        <Suspense fallback={<PageLoadingSkeleton />}>
+          <LegalPageView
+            page={activeLegalPage}
+            onSelectPage={navigateToLegalPage}
+            onNavigateHome={navigateToHome}
+          />
+        </Suspense>
         <PWAInstallBanner />
       </>
     );
@@ -988,27 +1158,33 @@ export default function App() {
     return (
       <>
         <SplashScreen />
-        <BecomeVerifiedPage
-          currentUser={currentUser}
-          onNavigateHome={navigateToHome}
-          onOpenAuth={handleOpenAuth}
-          onVerificationSuccess={(updatedUser, message) => {
-            handleSubscriptionSuccess(updatedUser, message);
-          }}
-        />
-        <AuthModal
-          isOpen={isAuthOpen}
-          onClose={() => setIsAuthOpen(false)}
-          initialMode={authMode}
-          defaultRole={authDefaultRole}
-          onAuthSuccess={handleAuthSuccess}
-          onOpenLegalPage={openLegalPage}
-        />
-        <LegalPagesModal
-          isOpen={isLegalModalOpen}
-          initialPage={legalModalPage}
-          onClose={() => setIsLegalModalOpen(false)}
-        />
+        <Suspense fallback={<PageLoadingSkeleton />}>
+          <BecomeVerifiedPage
+            currentUser={currentUser}
+            onNavigateHome={navigateToHome}
+            onOpenAuth={handleOpenAuth}
+            onVerificationSuccess={(updatedUser, message) => {
+              handleSubscriptionSuccess(updatedUser, message);
+            }}
+          />
+          {isAuthOpen && (
+            <AuthModal
+              isOpen={isAuthOpen}
+              onClose={() => setIsAuthOpen(false)}
+              initialMode={authMode}
+              defaultRole={authDefaultRole}
+              onAuthSuccess={handleAuthSuccess}
+              onOpenLegalPage={openLegalPage}
+            />
+          )}
+          {isLegalModalOpen && (
+            <LegalPagesModal
+              isOpen={isLegalModalOpen}
+              initialPage={legalModalPage}
+              onClose={() => setIsLegalModalOpen(false)}
+            />
+          )}
+        </Suspense>
         <PWAInstallBanner />
       </>
     );
@@ -1019,33 +1195,39 @@ export default function App() {
     return (
       <>
         <SplashScreen />
-        <VendorDashboardPage
-          currentUser={currentUser}
-          vendor={currentVendor}
-          onNavigateHome={navigateToHome}
-          onOpenAuth={handleOpenAuth}
-          onOpenBecomeVerified={navigateToBecomeVerified}
-        />
-        <AuthModal
-          isOpen={isAuthOpen}
-          onClose={() => setIsAuthOpen(false)}
-          initialMode={authMode}
-          defaultRole={authDefaultRole}
-          onAuthSuccess={handleAuthSuccess}
-          onOpenLegalPage={openLegalPage}
-        />
-        <LegalPagesModal
-          isOpen={isLegalModalOpen}
-          initialPage={legalModalPage}
-          onClose={() => setIsLegalModalOpen(false)}
-        />
+        <Suspense fallback={<PageLoadingSkeleton />}>
+          <VendorDashboardPage
+            currentUser={currentUser}
+            vendor={currentVendor}
+            onNavigateHome={navigateToHome}
+            onOpenAuth={handleOpenAuth}
+            onOpenBecomeVerified={navigateToBecomeVerified}
+          />
+          {isAuthOpen && (
+            <AuthModal
+              isOpen={isAuthOpen}
+              onClose={() => setIsAuthOpen(false)}
+              initialMode={authMode}
+              defaultRole={authDefaultRole}
+              onAuthSuccess={handleAuthSuccess}
+              onOpenLegalPage={openLegalPage}
+            />
+          )}
+          {isLegalModalOpen && (
+            <LegalPagesModal
+              isOpen={isLegalModalOpen}
+              initialPage={legalModalPage}
+              onClose={() => setIsLegalModalOpen(false)}
+            />
+          )}
+        </Suspense>
         <PWAInstallBanner />
       </>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8F9FA] dark:bg-[#0b0f19] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200 pb-20 md:pb-0">
+    <div className="min-h-screen w-full overflow-x-hidden flex flex-col bg-[#F8F9FA] dark:bg-[#0b0f19] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200 pb-20 sm:pb-0">
       <SplashScreen />
       <PWAInstallBanner />
       {/* Toast Notification */}
@@ -1143,11 +1325,11 @@ export default function App() {
 
       {/* Trust & Safe Verification Strip */}
       <div className="bg-white dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-600 dark:text-slate-400 font-medium">
-          <div className="flex items-center gap-6 flex-wrap">
+        <div className="max-w-[1280px] mx-auto px-3 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-2.5 sm:gap-4 text-xs text-slate-600 dark:text-slate-400 font-medium">
+          <div className="flex items-center gap-3 sm:gap-6 flex-wrap min-w-0">
             <span className="flex items-center gap-1.5 text-slate-900 dark:text-slate-200 font-semibold">
-              <ShieldCheck size={16} className="text-emerald-500" />
-              100% Direct Seller & Recruiter Contacts
+              <ShieldCheck size={16} className="text-emerald-500 shrink-0" />
+              <span>100% Direct Seller &amp; Recruiter Contacts</span>
             </span>
             <span className="hidden sm:inline" aria-hidden="true">·</span>
             <span>Zero Broker Commissions</span>
@@ -1155,13 +1337,13 @@ export default function App() {
             <button
               type="button"
               onClick={handleOpenCourierHub}
-              className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold hover:underline cursor-pointer"
+              className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold hover:underline cursor-pointer text-left"
             >
               <span>🚚 Door Courier Across Ghana (16 Regions)</span>
             </button>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
             <button
               onClick={() => setIsIWantThisOpen(true)}
               className="text-orange-600 dark:text-orange-400 hover:text-orange-700 font-black flex items-center gap-1 cursor-pointer transition-colors"
@@ -1187,31 +1369,35 @@ export default function App() {
       </div>
 
       {/* "Buyers Want" Feed on Homepage (Live Buyer Demands & WhatsApp Connections) */}
-      <BuyersWantFeed
-        wantedItems={wantedItems}
-        onOpenIWantThis={() => setIsIWantThisOpen(true)}
-      />
+      <Suspense fallback={<SectionSkeleton titleWidth="w-48" cardCount={4} />}>
+        <BuyersWantFeed
+          wantedItems={wantedItems}
+          onOpenIWantThis={() => setIsIWantThisOpen(true)}
+        />
+      </Suspense>
 
       {/* Featured Food Vendors in Accra (shown on All & Food tabs) */}
       {(filters.category === 'all' || filters.category === 'food') && (
-        <FoodVendorsSection
-          onAddToCart={handleAddFoodToCart}
-          cartItemCount={getCartItemCount(cart)}
-          getItemQuantityInCart={getItemQuantityInCart}
-          searchQuery={filters.searchQuery}
-        />
+        <Suspense fallback={<SectionSkeleton titleWidth="w-64" cardCount={3} />}>
+          <FoodVendorsSection
+            onAddToCart={handleAddFoodToCart}
+            cartItemCount={getCartItemCount(cart)}
+            getItemQuantityInCart={getItemQuantityInCart}
+            searchQuery={filters.searchQuery}
+          />
+        </Suspense>
       )}
 
       {/* Home Location Filter Bar (All, Accra, Amasaman, Madina, Kasoa, Kumasi, Tema, Legon) */}
       <section className="bg-slate-950 border-b border-slate-800/90 py-3">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="max-w-[1280px] mx-auto px-3 sm:px-6 lg:px-8 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="flex items-center gap-2 shrink-0">
             <MapPin size={15} className="text-[#FF6600]" />
             <span className="text-xs font-black uppercase tracking-wider text-white">
               Shop by Location
             </span>
           </div>
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar touch-pan-x pb-0.5">
             {HOME_LOCATIONS.map((loc) => {
               const targetValue = loc === 'All' ? 'all' : loc;
               const isSelected =
@@ -1225,7 +1411,7 @@ export default function App() {
                   key={loc}
                   type="button"
                   onClick={() => handleFilterUpdate({ region: targetValue })}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all cursor-pointer border ${
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap shrink-0 transition-all cursor-pointer border ${
                     isSelected
                       ? 'bg-[#FF6600] text-white border-[#FF6600] shadow-xs'
                       : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-[#F59E0B]/60 hover:text-white'
@@ -1240,34 +1426,40 @@ export default function App() {
       </section>
 
       {/* General Marketplace Store Products Organized by Category (Food, Phones, Laptops, Cars, Accessories, Fashion, Home Items, Electronics) */}
-      <StoreProductsSection
-        products={products}
-        selectedCategory={filters.category}
-        selectedLocation={filters.region}
-        searchQuery={filters.searchQuery}
-        reviews={reviews}
-        onSelectProduct={(p) => setSelectedProduct(p)}
-        onAddToCart={(p) => handleAddToCart(p, 1)}
-        onOrderWhatsApp={(p) => openWhatsAppOrderForProduct(p)}
-        onSelectCategory={handleSelectCategory}
-        onReportProduct={(product) => {
-          setReportTargetType('listing');
-          setFraudReportingListing(buildReportListingFromProduct(product));
-        }}
-      />
+      <Suspense fallback={<SectionSkeleton titleWidth="w-60" cardCount={8} />}>
+        <StoreProductsSection
+          products={products}
+          selectedCategory={filters.category}
+          selectedLocation={filters.region}
+          searchQuery={filters.searchQuery}
+          reviews={reviews}
+          isLoading={isLoadingProducts}
+          hasMore={hasMoreRemoteProducts}
+          isLoadingMore={isLoadingMoreProducts}
+          onLoadMore={handleLoadMoreProducts}
+          onSelectProduct={(p) => setSelectedProduct(p)}
+          onAddToCart={(p) => handleAddToCart(p, 1)}
+          onOrderWhatsApp={(p) => openWhatsAppOrderForProduct(p)}
+          onSelectCategory={handleSelectCategory}
+          onReportProduct={(product) => {
+            setReportTargetType('listing');
+            setFraudReportingListing(buildReportListingFromProduct(product));
+          }}
+        />
+      </Suspense>
 
       {/* Main Content Area: Sidebar Filters + Listings Grid */}
-      <main id="browse-listings" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full scroll-mt-20">
-        {/* Mobile Filter Toggle & Quick Recent Badge */}
-        <div className="lg:hidden mb-4 flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+      <main id="browse-listings" className="max-w-[1280px] mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 flex-1 w-full min-w-0 scroll-mt-20">
+        {/* Mobile & Tablet Filter Toggle & Quick Recent Badge (<= 1024px) */}
+        <div className="min-[1025px]:hidden mb-4 flex items-center justify-between gap-2 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
               {filteredListings.length} results
             </span>
             {recentlyViewed.length > 0 && (
               <a
                 href="#recently-viewed"
-                className="text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-900/50 flex items-center gap-1 hover:opacity-80 transition-opacity"
+                className="text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-900/50 flex items-center gap-1 hover:opacity-80 transition-opacity whitespace-nowrap"
               >
                 <span>🕒 Recent ({recentlyViewed.length})</span>
               </a>
@@ -1275,64 +1467,68 @@ export default function App() {
           </div>
           <button
             onClick={() => setShowMobileFilter(!showMobileFilter)}
-            className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
+            className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer border border-slate-200 dark:border-slate-700 shrink-0 whitespace-nowrap"
           >
             <SlidersHorizontal size={14} />
             <span>{showMobileFilter ? 'Hide Filters' : 'Filter & Sort'}</span>
           </button>
         </div>
 
-        {/* Mobile Filter Drawer / Collapsible Box */}
+        {/* Mobile & Tablet Filter Drawer / Collapsible Box */}
         {showMobileFilter && (
-          <div className="lg:hidden mb-6 space-y-4">
-            <FilterSidebar
-              filters={filters}
-              onFilterChange={handleFilterUpdate}
-              onResetFilters={handleResetFilters}
-              totalResults={filteredListings.length}
-            />
-
-            {recentlyViewed.length > 0 && (
-              <RecentlyViewed
-                items={recentlyViewed}
-                onOpenDetails={handleOpenListing}
-                onToggleSave={handleToggleSave}
-                savedIds={savedIds}
-                onClear={handleClearRecentlyViewed}
-                variant="sidebar"
+          <div className="min-[1025px]:hidden mb-6 space-y-4">
+            <Suspense fallback={<div className="h-64 rounded-2xl bg-slate-200 dark:bg-slate-800 animate-pulse" />}>
+              <FilterSidebar
+                filters={filters}
+                onFilterChange={handleFilterUpdate}
+                onResetFilters={handleResetFilters}
+                totalResults={filteredListings.length}
               />
-            )}
+
+              {recentlyViewed.length > 0 && (
+                <RecentlyViewed
+                  items={recentlyViewed}
+                  onOpenDetails={handleOpenListing}
+                  onToggleSave={handleToggleSave}
+                  savedIds={savedIds}
+                  onClear={handleClearRecentlyViewed}
+                  variant="sidebar"
+                />
+              )}
+            </Suspense>
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
-          {/* Desktop Left Sidebar: Filters & Session Recently Viewed Widget */}
-          <aside className="hidden lg:block lg:col-span-1 sticky top-20 space-y-6">
-            <FilterSidebar
-              filters={filters}
-              onFilterChange={handleFilterUpdate}
-              onResetFilters={handleResetFilters}
-              totalResults={filteredListings.length}
-            />
-
-            {recentlyViewed.length > 0 && (
-              <RecentlyViewed
-                items={recentlyViewed}
-                onOpenDetails={handleOpenListing}
-                onToggleSave={handleToggleSave}
-                savedIds={savedIds}
-                onClear={handleClearRecentlyViewed}
-                variant="sidebar"
+        <div className="grid grid-cols-1 min-[1025px]:grid-cols-4 gap-6 min-[1025px]:gap-8 items-start">
+          {/* Desktop Left Sidebar: Filters & Session Recently Viewed Widget (> 1024px) */}
+          <aside className="hidden min-[1025px]:block min-[1025px]:col-span-1 sticky top-20 space-y-6">
+            <Suspense fallback={<div className="h-96 rounded-2xl bg-slate-200 dark:bg-slate-800 animate-pulse" />}>
+              <FilterSidebar
+                filters={filters}
+                onFilterChange={handleFilterUpdate}
+                onResetFilters={handleResetFilters}
+                totalResults={filteredListings.length}
               />
-            )}
+
+              {recentlyViewed.length > 0 && (
+                <RecentlyViewed
+                  items={recentlyViewed}
+                  onOpenDetails={handleOpenListing}
+                  onToggleSave={handleToggleSave}
+                  savedIds={savedIds}
+                  onClear={handleClearRecentlyViewed}
+                  variant="sidebar"
+                />
+              )}
+            </Suspense>
           </aside>
 
-          {/* Right 3 Columns: Active Feed */}
-          <section className="lg:col-span-3 space-y-6">
+          {/* Right 3 Columns on Desktop, Full Width on Phone/Tablet */}
+          <section className="min-[1025px]:col-span-3 min-w-0 space-y-5 sm:space-y-6">
             {/* Sector Heading & Result Metadata */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white flex items-center gap-2">
+              <div className="min-w-0">
+                <h2 className="text-[clamp(1.15rem,3vw,1.5rem)] font-black text-slate-950 dark:text-white flex items-center gap-2 flex-wrap">
                   <span>{currentCategoryInfo ? currentCategoryInfo.name : '🔥 Top Marketplace Listings'}</span>
                   <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/60 text-[#FF6600] border border-orange-200 dark:border-orange-900/50">
                     {filteredListings.length}
@@ -1506,8 +1702,10 @@ export default function App() {
               </div>
             )}
 
-            {/* Grid of Listings */}
-            {filteredListings.length === 0 ? (
+            {/* Grid of Listings with Loading Skeleton & limit(20) Pagination */}
+            {isLoadingListings && listings.length === 0 ? (
+              <ProductGridSkeleton count={8} variant="listings" />
+            ) : filteredListings.length === 0 ? (
               <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 sm:p-12 text-center shadow-xs animate-in fade-in duration-200">
                 <AlertCircle size={48} className="mx-auto text-amber-500 mb-3 stroke-1" />
                 <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1.5">
@@ -1557,568 +1755,620 @@ export default function App() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
-                {filteredListings.map((item) => (
-                  <ListingCard
-                    key={item.id}
-                    listing={item}
-                    isSaved={savedIds.includes(item.id)}
-                    onToggleSave={handleToggleSave}
-                    onOpenDetails={(listing) => handleOpenListing(listing)}
-                    hasPriceAlert={priceAlerts.includes(item.id)}
-                    onTogglePriceAlert={handleTogglePriceAlert}
-                    onOpenSellerProfile={(seller) => setSelectedSeller(seller)}
-                    onOpenBoost={(item, e) => {
-                      e.stopPropagation();
-                      setBoostListing(item);
-                    }}
-                    onReportListing={(item) => {
-                      setReportTargetType('listing');
-                      setFraudReportingListing(item);
-                    }}
-                    onAddToCart={handleAddToCartFromListing}
-                    onOrderWhatsApp={(listing, e) => {
-                      e.stopPropagation();
-                      openWhatsAppOrderForListing(listing);
-                    }}
-                    reviews={reviews}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 min-[1025px]:grid-cols-4 gap-2.5 sm:gap-4 min-[1025px]:gap-5">
+                  {filteredListings.slice(0, visibleListingsCount).map((item) => (
+                    <ListingCard
+                      key={item.id}
+                      listing={item}
+                      isSaved={savedIds.includes(item.id)}
+                      onToggleSave={handleToggleSave}
+                      onOpenDetails={(listing) => handleOpenListing(listing)}
+                      hasPriceAlert={priceAlerts.includes(item.id)}
+                      onTogglePriceAlert={handleTogglePriceAlert}
+                      onOpenSellerProfile={(seller) => setSelectedSeller(seller)}
+                      onOpenBoost={(item, e) => {
+                        e.stopPropagation();
+                        setBoostListing(item);
+                      }}
+                      onReportListing={(item) => {
+                        setReportTargetType('listing');
+                        setFraudReportingListing(item);
+                      }}
+                      onAddToCart={handleAddToCartFromListing}
+                      onOrderWhatsApp={(listing, e) => {
+                        e.stopPropagation();
+                        openWhatsAppOrderForListing(listing);
+                      }}
+                      reviews={reviews}
+                    />
+                  ))}
+                </div>
+
+                {(visibleListingsCount < filteredListings.length || hasMoreRemoteListings) && (
+                  <div className="pt-4 flex flex-col items-center gap-2">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      Showing {Math.min(visibleListingsCount, filteredListings.length)} of {filteredListings.length} listings
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleLoadMoreListings}
+                      disabled={isLoadingMoreListings}
+                      className="px-6 py-3 rounded-xl bg-slate-900 dark:bg-[#FF6600] hover:bg-slate-800 dark:hover:bg-orange-600 text-white text-xs font-black transition-all cursor-pointer shadow-sm disabled:opacity-60"
+                    >
+                      {isLoadingMoreListings ? 'Loading more listings...' : 'Load More Marketplace Listings (+20)'}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </section>
         </div>
 
         {/* Recently Viewed Section Below Main Feed */}
-        <RecentlyViewed
-          items={recentlyViewed}
-          onOpenDetails={handleOpenListing}
-          onToggleSave={handleToggleSave}
-          savedIds={savedIds}
-          onClear={handleClearRecentlyViewed}
-          variant="feed"
-          onReportListing={(item) => {
-            setReportTargetType('listing');
-            setFraudReportingListing(item);
-          }}
-        />
+        <Suspense fallback={<div className="h-32 rounded-2xl bg-slate-200 dark:bg-slate-800 animate-pulse mt-8" />}>
+          <RecentlyViewed
+            items={recentlyViewed}
+            onOpenDetails={handleOpenListing}
+            onToggleSave={handleToggleSave}
+            savedIds={savedIds}
+            onClear={handleClearRecentlyViewed}
+            variant="feed"
+            onReportListing={(item) => {
+              setReportTargetType('listing');
+              setFraudReportingListing(item);
+            }}
+          />
+        </Suspense>
       </main>
 
       {/* Footer */}
-      <Footer
-        onSelectCategory={handleSelectCategory}
-        onOpenSafety={() => navigateToLegalPage('safety')}
-        onOpenLegalPage={navigateToLegalPage}
-        onOpenPostAd={() => setIsPostAdOpen(true)}
-        onOpenAuth={handleOpenAuth}
-        onOpenCourierHub={handleOpenCourierHub}
-        onOpenVerifiedSubscription={navigateToBecomeVerified}
-      />
-
-      {/* Listing Detail Modal / PDP */}
-      <ListingDetailModal
-        listing={selectedListing}
-        isOpen={Boolean(selectedListing)}
-        onClose={() => setSelectedListing(null)}
-        isSaved={selectedListing ? savedIds.includes(selectedListing.id) : false}
-        onToggleSave={handleToggleSave}
-        onOpenChat={(listing) => {
-          setSelectedListing(null);
-          setChatListing(listing);
-        }}
-        hasPriceAlert={selectedListing ? priceAlerts.includes(selectedListing.id) : false}
-        onTogglePriceAlert={handleTogglePriceAlert}
-        onOpenSellerProfile={(seller) => {
-          setSelectedListing(null);
-          setSelectedSeller(seller);
-        }}
-        onOpenBoost={(listing) => {
-          setBoostListing(listing);
-        }}
-        onShareSuccess={showToast}
-        onOrderCourier={(listing) => {
-          setSelectedListing(null);
-          handleOpenCourierOrder(listing);
-        }}
-        allListings={listings}
-        onSelectListing={handleOpenListing}
-        onAddToCart={(listing) => {
-          handleAddToCartFromListing(listing);
-          setIsCartOpen(true);
-        }}
-        onOrderWhatsApp={(listing) => {
-          setSelectedListing(null);
-          openWhatsAppOrderForListing(listing);
-        }}
-        reviews={reviews}
-      />
-
-      {/* Boost Ad Modal */}
-      <BoostAdModal
-        listing={boostListing}
-        isOpen={Boolean(boostListing)}
-        onClose={() => setBoostListing(null)}
-        onBoostSuccess={handleBoostSuccess}
-      />
-
-      {/* Seller Profile Modal */}
-      <SellerProfileModal
-        seller={selectedSeller}
-        isOpen={Boolean(selectedSeller)}
-        onClose={() => setSelectedSeller(null)}
-        allListings={listings}
-        savedIds={savedIds}
-        onToggleSave={handleToggleSave}
-        onOpenListingDetails={(listing) => {
-          setSelectedSeller(null);
-          handleOpenListing(listing);
-        }}
-        priceAlerts={priceAlerts}
-        onTogglePriceAlert={handleTogglePriceAlert}
-        onOpenChatWithSeller={(listing) => {
-          setSelectedSeller(null);
-          setChatListing(listing);
-        }}
-        onOrderWhatsApp={(listing) => {
-          setSelectedSeller(null);
-          openWhatsAppOrderForListing(listing);
-        }}
-        onOpenBecomeVerified={() => {
-          setSelectedSeller(null);
-          navigateToBecomeVerified();
-        }}
-        reviews={reviews}
-        onReportListing={(listing) => {
-          setSelectedSeller(null);
-          setReportTargetType('listing');
-          setFraudReportingListing(listing);
-        }}
-        onReportSeller={(seller, sampleListing) => {
-          setSelectedSeller(null);
-          setReportTargetType('user');
-          if (sampleListing) {
-            setFraudReportingListing(sampleListing);
-          } else {
-            setFraudReportingListing({
-              id: `seller-report-${seller.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
-              title: `${seller.name} (Seller Profile)`,
-              price: 0,
-              currency: 'GHS',
-              categoryId: 'services',
-              categoryName: 'Seller Account',
-              subcategory: 'Profile',
-              condition: 'Not Applicable',
-              location: seller.location || 'Ghana',
-              region: 'Greater Accra',
-              description: `Seller profile report for ${seller.name}`,
-              images: [],
-              postedAt: 'Active',
-              viewsCount: 0,
-              likesCount: 0,
-              isFeatured: false,
-              isPromoted: false,
-              isNegotiable: false,
-              seller,
-            });
-          }
-        }}
-      />
-
-      {/* In-App Live Messenger Modal */}
-      <ChatModal
-        listing={chatListing}
-        isOpen={Boolean(chatListing)}
-        onClose={() => setChatListing(null)}
-      />
-
-      {/* Post Ad Wizard Modal */}
-      <PostAdModal
-        isOpen={isPostAdOpen}
-        onClose={() => setIsPostAdOpen(false)}
-        onAdCreated={handleAdCreated}
-        currentUser={currentUser}
-        onOpenAuth={handleOpenAuth}
-      />
-
-      {/* Saved Ads / Bookmarks Drawer */}
-      <SavedAdsDrawer
-        isOpen={isSavedOpen}
-        onClose={() => setIsSavedOpen(false)}
-        savedListings={savedListings}
-        onRemoveSaved={(id) => {
-          const updated = toggleSaveListingId(id);
-          setSavedIds(updated);
-        }}
-        onOpenDetails={(item) => handleOpenListing(item)}
-        priceAlerts={priceAlerts}
-        onTogglePriceAlert={handleTogglePriceAlert}
-      />
-
-      {/* Safe Trade Advisory Modal */}
-      <SafetyModal
-        isOpen={isSafetyOpen}
-        onClose={() => setIsSafetyOpen(false)}
-      />
-
-      {/* Member Registration & Sign In Modal */}
-      <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        initialMode={authMode}
-        defaultRole={authDefaultRole}
-        onAuthSuccess={handleAuthSuccess}
-        onOpenLegalPage={openLegalPage}
-      />
-
-      {/* User Account & Profile Modal */}
-      <UserProfileModal
-        user={currentUser}
-        isOpen={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-        onLogout={handleLogout}
-        onOpenPostAd={() => setIsPostAdOpen(true)}
-        allListings={listings}
-        onOpenListing={handleOpenListing}
-        onOpenBoost={(item) => setBoostListing(item)}
-        onProfileUpdated={handleProfileUpdated}
-        onListingUpdated={handleListingUpdated}
-        initialTab={profileInitialTab}
-        onOpenStore={() => {
-          setIsProfileOpen(false);
-          const el = document.getElementById('browse-listings') || document.querySelector('main');
-          if (el) el.scrollIntoView({ behavior: 'smooth' });
-        }}
-        onOpenFoodVendors={() => {
-          setIsProfileOpen(false);
-          const el = document.getElementById('accra-food-vendors');
-          if (el) el.scrollIntoView({ behavior: 'smooth' });
-        }}
-        onOpenCart={() => {
-          setIsProfileOpen(false);
-          setIsCartOpen(true);
-        }}
-        onOpenLegalPage={(page) => {
-          setIsProfileOpen(false);
-          navigateToLegalPage(page);
-        }}
-        onReviewCreated={(rev) => {
-          setReviews((prev) => [rev, ...prev.filter((r) => r.id !== rev.id)]);
-          showToast('Thank you! Your review has been published.');
-        }}
-        onAccountDeleted={(deletedUid) => {
-          setCurrentUser(null);
-          setCurrentVendor(null);
-          setListings((prev) => prev.filter((l) => l.userId !== deletedUid && l.sellerId !== deletedUid));
-          setProducts((prev) => prev.filter((p) => p.sellerId !== deletedUid && p.vendorId !== deletedUid));
-          setIsProfileOpen(false);
-          setIsSellerDashboardOpen(false);
-          setDeletedAccountConfirmed(true);
-          showToast('Your account and associated data have been permanently deleted.');
-        }}
-      />
-
-      {/* AF Seller Dashboard Modal (My Products, Views, Chats, Ghana Card Verification) */}
-      {currentUser && (
-        <SellerDashboardModal
-          isOpen={isSellerDashboardOpen}
-          onClose={() => setIsSellerDashboardOpen(false)}
-          currentUser={currentUser}
-          allListings={listings}
-          onOpenListing={handleOpenListing}
-          onOpenPostAd={() => {
-            setIsSellerDashboardOpen(false);
-            setIsPostAdOpen(true);
-          }}
-          onOpenBoost={(item) => {
-            setIsSellerDashboardOpen(false);
-            setBoostListing(item);
-          }}
-          onOpenVerifiedSubscription={() => {
-            setIsSellerDashboardOpen(false);
-            setIsVerifiedModalOpen(true);
-          }}
-          onListingUpdated={handleListingUpdated}
-          onProfileUpdated={handleProfileUpdated}
-          onToast={showToast}
-          onLogout={handleLogout}
-          onOpenSettings={() => {
-            setIsSellerDashboardOpen(false);
-            handleOpenProfile('settings');
-          }}
+      <Suspense fallback={<div className="h-48 bg-slate-950 animate-pulse mt-16" />}>
+        <Footer
+          onSelectCategory={handleSelectCategory}
+          onOpenSafety={() => navigateToLegalPage('safety')}
+          onOpenLegalPage={navigateToLegalPage}
+          onOpenPostAd={() => setIsPostAdOpen(true)}
+          onOpenAuth={handleOpenAuth}
+          onOpenCourierHub={handleOpenCourierHub}
+          onOpenVerifiedSubscription={navigateToBecomeVerified}
         />
-      )}
+      </Suspense>
 
-      {/* Buyer Fraud & Scam Report Modal */}
-      {fraudReportingListing && (
-        <ReportListingModal
-          isOpen={Boolean(fraudReportingListing)}
-          onClose={() => setFraudReportingListing(null)}
-          listing={fraudReportingListing}
-          initialTarget={reportTargetType}
-          onReportSuccess={(report) => {
-            showToast(`🚨 Report #${report.referenceId} submitted. Trust & Safety team is investigating.`);
-            setFraudReportingListing(null);
-          }}
-        />
-      )}
+      {/* Lazy-Loaded Modals & Drawers (Only fetched on demand when opened) */}
+      <Suspense fallback={<ModalLoadingFallback />}>
+        {selectedListing && (
+          <ListingDetailModal
+            listing={selectedListing}
+            isOpen={Boolean(selectedListing)}
+            onClose={() => setSelectedListing(null)}
+            isSaved={savedIds.includes(selectedListing.id)}
+            onToggleSave={handleToggleSave}
+            onOpenChat={(listing) => {
+              setSelectedListing(null);
+              setChatListing(listing);
+            }}
+            hasPriceAlert={priceAlerts.includes(selectedListing.id)}
+            onTogglePriceAlert={handleTogglePriceAlert}
+            onOpenSellerProfile={(seller) => {
+              setSelectedListing(null);
+              setSelectedSeller(seller);
+            }}
+            onOpenBoost={(listing) => {
+              setBoostListing(listing);
+            }}
+            onShareSuccess={showToast}
+            onOrderCourier={(listing) => {
+              setSelectedListing(null);
+              handleOpenCourierOrder(listing);
+            }}
+            allListings={listings}
+            onSelectListing={handleOpenListing}
+            onAddToCart={(listing) => {
+              handleAddToCartFromListing(listing);
+              setIsCartOpen(true);
+            }}
+            onOrderWhatsApp={(listing) => {
+              setSelectedListing(null);
+              openWhatsAppOrderForListing(listing);
+            }}
+            reviews={reviews}
+          />
+        )}
 
-      {/* OGYA Ghana Door-to-Door Courier Hub Modal */}
-      <CourierHubModal
-        isOpen={isCourierHubOpen}
-        onClose={() => setIsCourierHubOpen(false)}
-        onOpenNewOrder={() => {
-          setIsCourierHubOpen(false);
-          handleOpenCourierOrder(null);
-        }}
-        onOpenTracking={handleOpenCourierTracking}
-        onOpenSafetyGuide={() => {
-          setIsCourierHubOpen(false);
-          setIsSafetyOpen(true);
-        }}
-      />
+        {boostListing && (
+          <BoostAdModal
+            listing={boostListing}
+            isOpen={Boolean(boostListing)}
+            onClose={() => setBoostListing(null)}
+            onBoostSuccess={handleBoostSuccess}
+          />
+        )}
 
-      {/* Door-to-Door Courier Booking Modal with Strict Security Warning Gate */}
-      <CourierOrderModal
-        isOpen={isCourierOrderOpen}
-        onClose={() => {
-          setIsCourierOrderOpen(false);
-          setCourierOrderListing(null);
-        }}
-        listing={courierOrderListing}
-        currentUser={currentUser}
-        onOrderSuccess={handleCourierOrderSuccess}
-      />
+        {selectedSeller && (
+          <SellerProfileModal
+            seller={selectedSeller}
+            isOpen={Boolean(selectedSeller)}
+            onClose={() => setSelectedSeller(null)}
+            allListings={listings}
+            savedIds={savedIds}
+            onToggleSave={handleToggleSave}
+            onOpenListingDetails={(listing) => {
+              setSelectedSeller(null);
+              handleOpenListing(listing);
+            }}
+            priceAlerts={priceAlerts}
+            onTogglePriceAlert={handleTogglePriceAlert}
+            onOpenChatWithSeller={(listing) => {
+              setSelectedSeller(null);
+              setChatListing(listing);
+            }}
+            onOrderWhatsApp={(listing) => {
+              setSelectedSeller(null);
+              openWhatsAppOrderForListing(listing);
+            }}
+            onOpenBecomeVerified={() => {
+              setSelectedSeller(null);
+              navigateToBecomeVerified();
+            }}
+            reviews={reviews}
+            onReportListing={(listing) => {
+              setSelectedSeller(null);
+              setReportTargetType('listing');
+              setFraudReportingListing(listing);
+            }}
+            onReportSeller={(seller, sampleListing) => {
+              setSelectedSeller(null);
+              setReportTargetType('user');
+              if (sampleListing) {
+                setFraudReportingListing(sampleListing);
+              } else {
+                setFraudReportingListing({
+                  id: `seller-report-${seller.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+                  title: `${seller.name} (Seller Profile)`,
+                  price: 0,
+                  currency: 'GHS',
+                  categoryId: 'services',
+                  categoryName: 'Seller Account',
+                  subcategory: 'Profile',
+                  condition: 'Not Applicable',
+                  location: seller.location || 'Ghana',
+                  region: 'Greater Accra',
+                  description: `Seller profile report for ${seller.name}`,
+                  images: [],
+                  postedAt: 'Active',
+                  viewsCount: 0,
+                  likesCount: 0,
+                  isFeatured: false,
+                  isPromoted: false,
+                  isNegotiable: false,
+                  seller,
+                });
+              }
+            }}
+          />
+        )}
 
-      {/* Live Parcel Transit Tracking & Release OTP Modal */}
-      <CourierTrackingModal
-        order={trackedCourierOrder}
-        isOpen={Boolean(trackedCourierOrder)}
-        onClose={() => setTrackedCourierOrder(null)}
-        onOrderUpdated={(updated) => {
-          setTrackedCourierOrder(updated);
-          showToast(`Tracking status updated: ${updated.status.replace(/_/g, ' ')}`);
-        }}
-      />
+        {chatListing && (
+          <ChatModal
+            listing={chatListing}
+            isOpen={Boolean(chatListing)}
+            onClose={() => setChatListing(null)}
+          />
+        )}
 
-      {/* Verified Pro Seller Subscription Modal (100 GHS/month Paystack MoMo/Card) */}
-      <VerifiedSubscriptionModal
-        isOpen={isVerifiedModalOpen}
-        onClose={() => setIsVerifiedModalOpen(false)}
-        currentUser={currentUser}
-        onOpenAuth={() => handleOpenAuth('signin')}
-        onSubscriptionSuccess={handleSubscriptionSuccess}
-      />
+        {isPostAdOpen && (
+          <PostAdModal
+            isOpen={isPostAdOpen}
+            onClose={() => setIsPostAdOpen(false)}
+            onAdCreated={handleAdCreated}
+            currentUser={currentUser}
+            onOpenAuth={handleOpenAuth}
+          />
+        )}
 
-      {/* Product Detail Modal */}
-      <ProductDetailModal
-        product={selectedProduct}
-        isOpen={Boolean(selectedProduct)}
-        onClose={() => setSelectedProduct(null)}
-        onAddToCart={handleAddToCart}
-        onOrderWhatsApp={(product) => {
-          setSelectedProduct(null);
-          openWhatsAppOrderForProduct(product);
-        }}
-        reviews={reviews}
-        onReportProduct={(product) => {
-          setSelectedProduct(null);
-          setReportTargetType('listing');
-          setFraudReportingListing(buildReportListingFromProduct(product));
-        }}
-      />
+        {isSavedOpen && (
+          <SavedAdsDrawer
+            isOpen={isSavedOpen}
+            onClose={() => setIsSavedOpen(false)}
+            savedListings={savedListings}
+            onRemoveSaved={(id) => {
+              const updated = toggleSaveListingId(id);
+              setSavedIds(updated);
+            }}
+            onOpenDetails={(item) => handleOpenListing(item)}
+            priceAlerts={priceAlerts}
+            onTogglePriceAlert={handleTogglePriceAlert}
+          />
+        )}
 
-      {/* Legal Pages Reader Modal (Privacy Policy, Terms of Service, Refund / Escrow Policy, Safe Trading Guide) */}
-      <LegalPagesModal
-        isOpen={isLegalModalOpen}
-        initialPage={legalModalPage}
-        onClose={() => setIsLegalModalOpen(false)}
-      />
+        {isSafetyOpen && (
+          <SafetyModal
+            isOpen={isSafetyOpen}
+            onClose={() => setIsSafetyOpen(false)}
+          />
+        )}
 
-      {/* Account Deleted Confirmation Modal */}
-      {deletedAccountConfirmed && (
-        <div
-          className="fixed inset-0 z-[75] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={() => setDeletedAccountConfirmed(false)}
-        >
+        {isAuthOpen && (
+          <AuthModal
+            isOpen={isAuthOpen}
+            onClose={() => setIsAuthOpen(false)}
+            initialMode={authMode}
+            defaultRole={authDefaultRole}
+            onAuthSuccess={handleAuthSuccess}
+            onOpenLegalPage={openLegalPage}
+          />
+        )}
+
+        {isProfileOpen && (
+          <UserProfileModal
+            user={currentUser}
+            isOpen={isProfileOpen}
+            onClose={() => setIsProfileOpen(false)}
+            onLogout={handleLogout}
+            onOpenPostAd={() => setIsPostAdOpen(true)}
+            allListings={listings}
+            onOpenListing={handleOpenListing}
+            onOpenBoost={(item) => setBoostListing(item)}
+            onProfileUpdated={handleProfileUpdated}
+            onListingUpdated={handleListingUpdated}
+            initialTab={profileInitialTab}
+            onOpenStore={() => {
+              setIsProfileOpen(false);
+              const el = document.getElementById('browse-listings') || document.querySelector('main');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            onOpenFoodVendors={() => {
+              setIsProfileOpen(false);
+              const el = document.getElementById('accra-food-vendors');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            onOpenCart={() => {
+              setIsProfileOpen(false);
+              setIsCartOpen(true);
+            }}
+            onOpenLegalPage={(page) => {
+              setIsProfileOpen(false);
+              navigateToLegalPage(page);
+            }}
+            onReviewCreated={(rev) => {
+              setReviews((prev) => [rev, ...prev.filter((r) => r.id !== rev.id)]);
+              showToast('Thank you! Your review has been published.');
+            }}
+            onAccountDeleted={(deletedUid) => {
+              setCurrentUser(null);
+              setCurrentVendor(null);
+              setListings((prev) => prev.filter((l) => l.userId !== deletedUid && l.sellerId !== deletedUid));
+              setProducts((prev) => prev.filter((p) => p.sellerId !== deletedUid && p.vendorId !== deletedUid));
+              setIsProfileOpen(false);
+              setIsSellerDashboardOpen(false);
+              setDeletedAccountConfirmed(true);
+              showToast('Your account and associated data have been permanently deleted.');
+            }}
+          />
+        )}
+
+        {currentUser && isSellerDashboardOpen && (
+          <SellerDashboardModal
+            isOpen={isSellerDashboardOpen}
+            onClose={() => setIsSellerDashboardOpen(false)}
+            currentUser={currentUser}
+            allListings={listings}
+            onOpenListing={handleOpenListing}
+            onOpenPostAd={() => {
+              setIsSellerDashboardOpen(false);
+              setIsPostAdOpen(true);
+            }}
+            onOpenBoost={(item) => {
+              setIsSellerDashboardOpen(false);
+              setBoostListing(item);
+            }}
+            onOpenVerifiedSubscription={() => {
+              setIsSellerDashboardOpen(false);
+              setIsVerifiedModalOpen(true);
+            }}
+            onListingUpdated={handleListingUpdated}
+            onProfileUpdated={handleProfileUpdated}
+            onToast={showToast}
+            onLogout={handleLogout}
+            onOpenSettings={() => {
+              setIsSellerDashboardOpen(false);
+              handleOpenProfile('settings');
+            }}
+          />
+        )}
+
+        {fraudReportingListing && (
+          <ReportListingModal
+            isOpen={Boolean(fraudReportingListing)}
+            onClose={() => setFraudReportingListing(null)}
+            listing={fraudReportingListing}
+            initialTarget={reportTargetType}
+            onReportSuccess={(report) => {
+              showToast(`🚨 Report #${report.referenceId} submitted. Trust & Safety team is investigating.`);
+              setFraudReportingListing(null);
+            }}
+          />
+        )}
+
+        {isCourierHubOpen && (
+          <CourierHubModal
+            isOpen={isCourierHubOpen}
+            onClose={() => setIsCourierHubOpen(false)}
+            onOpenNewOrder={() => {
+              setIsCourierHubOpen(false);
+              handleOpenCourierOrder(null);
+            }}
+            onOpenTracking={handleOpenCourierTracking}
+            onOpenSafetyGuide={() => {
+              setIsCourierHubOpen(false);
+              setIsSafetyOpen(true);
+            }}
+          />
+        )}
+
+        {isCourierOrderOpen && (
+          <CourierOrderModal
+            isOpen={isCourierOrderOpen}
+            onClose={() => {
+              setIsCourierOrderOpen(false);
+              setCourierOrderListing(null);
+            }}
+            listing={courierOrderListing}
+            currentUser={currentUser}
+            onOrderSuccess={handleCourierOrderSuccess}
+          />
+        )}
+
+        {trackedCourierOrder && (
+          <CourierTrackingModal
+            order={trackedCourierOrder}
+            isOpen={Boolean(trackedCourierOrder)}
+            onClose={() => setTrackedCourierOrder(null)}
+            onOrderUpdated={(updated) => {
+              setTrackedCourierOrder(updated);
+              showToast(`Tracking status updated: ${updated.status.replace(/_/g, ' ')}`);
+            }}
+          />
+        )}
+
+        {isVerifiedModalOpen && (
+          <VerifiedSubscriptionModal
+            isOpen={isVerifiedModalOpen}
+            onClose={() => setIsVerifiedModalOpen(false)}
+            currentUser={currentUser}
+            onOpenAuth={() => handleOpenAuth('signin')}
+            onSubscriptionSuccess={handleSubscriptionSuccess}
+          />
+        )}
+
+        {selectedProduct && (
+          <ProductDetailModal
+            product={selectedProduct}
+            isOpen={Boolean(selectedProduct)}
+            onClose={() => setSelectedProduct(null)}
+            onAddToCart={handleAddToCart}
+            onOrderWhatsApp={(product) => {
+              setSelectedProduct(null);
+              openWhatsAppOrderForProduct(product);
+            }}
+            reviews={reviews}
+            onReportProduct={(product) => {
+              setSelectedProduct(null);
+              setReportTargetType('listing');
+              setFraudReportingListing(buildReportListingFromProduct(product));
+            }}
+          />
+        )}
+
+        {isLegalModalOpen && (
+          <LegalPagesModal
+            isOpen={isLegalModalOpen}
+            initialPage={legalModalPage}
+            onClose={() => setIsLegalModalOpen(false)}
+          />
+        )}
+
+        {deletedAccountConfirmed && (
           <div
-            className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl text-center space-y-4 animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[75] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => setDeletedAccountConfirmed(false)}
           >
-            <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto border border-emerald-200 dark:border-emerald-800">
-              <CheckCircle2 size={26} />
-            </div>
-            <div className="space-y-1.5">
-              <h3 className="text-lg font-black text-slate-950 dark:text-white">
-                Account &amp; Data Permanently Deleted
-              </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                Your OGYA account, profile details, store products, marketplace listings, and local session data have been permanently deleted.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setDeletedAccountConfirmed(false)}
-              className="w-full py-2.5 px-4 bg-slate-900 dark:bg-amber-500 hover:bg-slate-800 dark:hover:bg-amber-400 text-white dark:text-slate-950 font-black text-xs rounded-xl transition-colors cursor-pointer"
+            <div
+              className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl text-center space-y-4 animate-in zoom-in-95 duration-200"
+              onClick={(e) => e.stopPropagation()}
             >
-              Return to Marketplace
-            </button>
+              <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto border border-emerald-200 dark:border-emerald-800">
+                <CheckCircle2 size={26} />
+              </div>
+              <div className="space-y-1.5">
+                <h3 className="text-lg font-black text-slate-950 dark:text-white">
+                  Account &amp; Data Permanently Deleted
+                </h3>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                  Your OGYA account, profile details, store products, marketplace listings, and local session data have been permanently deleted.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeletedAccountConfirmed(false)}
+                className="w-full py-2.5 px-4 bg-slate-900 dark:bg-amber-500 hover:bg-slate-800 dark:hover:bg-amber-400 text-white dark:text-slate-950 font-black text-xs rounded-xl transition-colors cursor-pointer"
+              >
+                Return to Marketplace
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Fire Safety Cart Modal */}
-      <CartModal
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        cart={cart}
-        onUpdateQuantity={handleUpdateCartQuantity}
-        onRemoveItem={handleRemoveFromCart}
-        onClearCart={handleClearCart}
-        onProceedToCheckout={handleOpenCheckout}
-      />
+        {isCartOpen && (
+          <CartModal
+            isOpen={isCartOpen}
+            onClose={() => setIsCartOpen(false)}
+            cart={cart}
+            onUpdateQuantity={handleUpdateCartQuantity}
+            onRemoveItem={handleRemoveFromCart}
+            onClearCart={handleClearCart}
+            onProceedToCheckout={handleOpenCheckout}
+          />
+        )}
 
-      {/* Checkout Modal (MTN MoMo, Telecel Cash, COD) */}
-      <CheckoutModal
-        isOpen={isCheckoutOpen}
-        onClose={() => setIsCheckoutOpen(false)}
-        cart={cart}
-        currentUser={currentUser}
-        onOrderSuccess={handleOrderSuccess}
-        onRequireAuth={() => handleOpenAuth('signin')}
-      />
+        {isCheckoutOpen && (
+          <CheckoutModal
+            isOpen={isCheckoutOpen}
+            onClose={() => setIsCheckoutOpen(false)}
+            cart={cart}
+            currentUser={currentUser}
+            onOrderSuccess={handleOrderSuccess}
+            onRequireAuth={() => handleOpenAuth('signin')}
+          />
+        )}
 
-      {/* My Orders Modal (Customer Orders from Firestore + MoMo Proof + Reviews) */}
-      <MyOrdersModal
-        isOpen={isMyOrdersOpen}
-        onClose={() => setIsMyOrdersOpen(false)}
-        currentUser={currentUser}
-        onOpenStore={handleScrollToMarketplace}
-        onReviewCreated={(rev) => {
-          setReviews((prev) => [rev, ...prev.filter((r) => r.id !== rev.id)]);
-          showToast('Thank you! Your review has been published.');
-        }}
-      />
+        {isMyOrdersOpen && (
+          <MyOrdersModal
+            isOpen={isMyOrdersOpen}
+            onClose={() => setIsMyOrdersOpen(false)}
+            currentUser={currentUser}
+            onOpenStore={handleScrollToMarketplace}
+            onReviewCreated={(rev) => {
+              setReviews((prev) => [rev, ...prev.filter((r) => r.id !== rev.id)]);
+              showToast('Thank you! Your review has been published.');
+            }}
+          />
+        )}
 
-      {/* WhatsApp Direct Order + MoMo Screenshot Proof Modal */}
-      <WhatsAppOrderModal
-        isOpen={Boolean(whatsAppOrderTarget)}
-        onClose={() => setWhatsAppOrderTarget(null)}
-        target={whatsAppOrderTarget}
-        currentUser={currentUser}
-        onOrderCreated={() => {
-          showToast('WhatsApp order saved! Upload MoMo screenshot proof anytime in My Orders.');
-        }}
-        onOpenMyOrders={() => {
-          setWhatsAppOrderTarget(null);
-          if (currentUser && auth.currentUser) {
-            handleOpenProfile('orders');
-          } else {
-            setIsMyOrdersOpen(true);
-          }
-        }}
-      />
+        {whatsAppOrderTarget && (
+          <WhatsAppOrderModal
+            isOpen={Boolean(whatsAppOrderTarget)}
+            onClose={() => setWhatsAppOrderTarget(null)}
+            target={whatsAppOrderTarget}
+            currentUser={currentUser}
+            onOrderCreated={() => {
+              showToast('WhatsApp order saved! Upload MoMo screenshot proof anytime in My Orders.');
+            }}
+            onOpenMyOrders={() => {
+              setWhatsAppOrderTarget(null);
+              if (currentUser && auth.currentUser) {
+                handleOpenProfile('orders');
+              } else {
+                setIsMyOrdersOpen(true);
+              }
+            }}
+          />
+        )}
 
-      {/* Become a Vendor Modal (Firestore 'vendors' + role='vendor') */}
-      <BecomeVendorModal
-        isOpen={isBecomeVendorOpen}
-        onClose={() => setIsBecomeVendorOpen(false)}
-        currentUser={currentUser}
-        onVendorCreated={handleVendorCreated}
-        onOpenAuth={() => handleOpenAuth('signin')}
-      />
+        {isBecomeVendorOpen && (
+          <BecomeVendorModal
+            isOpen={isBecomeVendorOpen}
+            onClose={() => setIsBecomeVendorOpen(false)}
+            currentUser={currentUser}
+            onVendorCreated={handleVendorCreated}
+            onOpenAuth={() => handleOpenAuth('signin')}
+          />
+        )}
 
-      {/* Vendor Dashboard Modal (Add/Edit/Delete Own Products) */}
-      <VendorDashboardModal
-        isOpen={isVendorDashboardOpen}
-        onClose={() => setIsVendorDashboardOpen(false)}
-        currentUser={currentUser}
-        vendor={currentVendor}
-        products={products}
-        onProductUpdated={() => fetchProductsFromFirestore().then(setProducts)}
-        onOpenAuth={() => handleOpenAuth('signin', 'seller')}
-      />
+        {isVendorDashboardOpen && (
+          <VendorDashboardModal
+            isOpen={isVendorDashboardOpen}
+            onClose={() => setIsVendorDashboardOpen(false)}
+            currentUser={currentUser}
+            vendor={currentVendor}
+            products={products}
+            onProductUpdated={() => fetchProductsFromFirestore({ forceRefresh: true }).then(setProducts)}
+            onOpenAuth={() => handleOpenAuth('signin', 'seller')}
+          />
+        )}
 
-      {/* "I WANT THIS" Buyer Request Modal (No login required, saves to Firestore 'wanted_items') */}
-      <IWantThisModal
-        isOpen={isIWantThisOpen}
-        onClose={() => setIsIWantThisOpen(false)}
-        onItemPosted={(item) => {
-          setWantedItems((prev) => [item, ...prev.filter((w) => w.id !== item.id)]);
-          showToast(`🔥 Request for "${item.item}" posted live to Ghana sellers!`);
-        }}
-      />
+        {isIWantThisOpen && (
+          <IWantThisModal
+            isOpen={isIWantThisOpen}
+            onClose={() => setIsIWantThisOpen(false)}
+            onItemPosted={(item) => {
+              setWantedItems((prev) => [item, ...prev.filter((w) => w.id !== item.id)]);
+              showToast(`🔥 Request for "${item.item}" posted live to Ghana sellers!`);
+            }}
+          />
+        )}
+      </Suspense>
 
-      {/* Fixed Mobile Bottom Navigation Bar (Mobile-first Thumb Ergonomics) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 shadow-2xl">
-        <div className="grid grid-cols-5 items-center h-16 max-w-md mx-auto px-2">
-          {/* Tab 1: Home / Marketplace */}
+      {/* Fixed Mobile Bottom Navigation Bar (< 640px): Home, Marketplace, Search, Cart, Profile */}
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 shadow-2xl">
+        <div className="grid grid-cols-5 items-center h-16 max-w-md mx-auto px-1">
+          {/* Tab 1: Home */}
           <button
             type="button"
             onClick={() => {
               handleResetFilters();
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            className="flex flex-col items-center justify-center min-h-[44px] min-w-[44px] text-slate-600 dark:text-slate-400 hover:text-[#00875A] dark:hover:text-emerald-400 transition-colors cursor-pointer"
+            className="flex flex-col items-center justify-center min-h-[44px] min-w-[44px] text-slate-700 dark:text-slate-300 hover:text-[#FF6600] dark:hover:text-orange-400 transition-colors cursor-pointer"
           >
             <Home size={20} />
-            <span className="text-[10px] font-bold mt-1">Market</span>
+            <span className="text-[10px] font-bold mt-1">Home</span>
           </button>
 
-          {/* Tab 2: Food Vendors */}
+          {/* Tab 2: Marketplace */}
           <button
             type="button"
             onClick={() => {
-              const el = document.getElementById('accra-food-vendors');
+              const el = document.getElementById('browse-listings') || document.querySelector('main');
               if (el) el.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="flex flex-col items-center justify-center min-h-[44px] min-w-[44px] text-slate-600 dark:text-slate-400 hover:text-[#00875A] dark:hover:text-emerald-400 transition-colors cursor-pointer"
-          >
-            <span className="text-lg">🍲</span>
-            <span className="text-[10px] font-bold mt-0.5">Food</span>
-          </button>
-
-          {/* Tab 3: Center Elevated Sell Action */}
-          <div className="flex items-center justify-center -mt-5">
-            <button
-              type="button"
-              onClick={() => {
-                if (!currentUser) {
-                  handleOpenAuth('register', 'seller');
-                } else {
-                  setIsPostAdOpen(true);
-                }
-              }}
-              className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#00875A] to-[#FF6600] text-white shadow-xl flex items-center justify-center active:scale-90 transition-transform cursor-pointer border-2 border-white dark:border-slate-900"
-              title="Sell Product on OGYA 🔥"
-              aria-label="Sell Product"
-            >
-              <Plus size={24} strokeWidth={3} />
-            </button>
-          </div>
-
-          {/* Tab 4: Vendor Portal (/vendor) */}
-          <button
-            type="button"
-            onClick={navigateToVendor}
-            className="flex flex-col items-center justify-center min-h-[44px] min-w-[44px] text-slate-600 dark:text-slate-400 hover:text-[#00875A] dark:hover:text-emerald-400 transition-colors cursor-pointer"
+            className="flex flex-col items-center justify-center min-h-[44px] min-w-[44px] text-slate-700 dark:text-slate-300 hover:text-[#FF6600] dark:hover:text-orange-400 transition-colors cursor-pointer"
           >
             <Store size={20} />
-            <span className="text-[10px] font-bold mt-1">Vendors</span>
+            <span className="text-[10px] font-bold mt-1">Marketplace</span>
           </button>
 
-          {/* Tab 5: Cart */}
+          {/* Tab 3: Search */}
+          <button
+            type="button"
+            onClick={() => {
+              const wrapper = document.getElementById('hero-search-wrapper');
+              const input = document.getElementById('hero-search-input') as HTMLInputElement | null;
+              if (wrapper) {
+                wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+              setTimeout(() => {
+                input?.focus();
+              }, 260);
+            }}
+            className="flex flex-col items-center justify-center min-h-[44px] min-w-[44px] text-[#FF6600] hover:text-orange-600 transition-colors cursor-pointer"
+          >
+            <Search size={20} strokeWidth={2.5} />
+            <span className="text-[10px] font-black mt-1">Search</span>
+          </button>
+
+          {/* Tab 4: Cart */}
           <button
             type="button"
             onClick={() => setIsCartOpen(true)}
-            className="relative flex flex-col items-center justify-center min-h-[44px] min-w-[44px] text-slate-600 dark:text-slate-400 hover:text-[#00875A] dark:hover:text-emerald-400 transition-colors cursor-pointer"
+            className="relative flex flex-col items-center justify-center min-h-[44px] min-w-[44px] text-slate-700 dark:text-slate-300 hover:text-[#00875A] dark:hover:text-emerald-400 transition-colors cursor-pointer"
           >
             <ShoppingCart size={20} />
             <span className="text-[10px] font-bold mt-1">Cart</span>
             {cart.length > 0 && (
-              <span className="absolute top-1.5 right-2 min-w-4 h-4 px-1 rounded-full bg-[#FF6600] text-white text-[9px] font-black flex items-center justify-center">
+              <span className="absolute top-1.5 right-2.5 min-w-4 h-4 px-1 rounded-full bg-[#FF6600] text-white text-[9px] font-black flex items-center justify-center">
                 {cart.reduce((sum, it) => sum + it.quantity, 0)}
               </span>
             )}
+          </button>
+
+          {/* Tab 5: Profile */}
+          <button
+            type="button"
+            onClick={() => {
+              if (currentUser) {
+                handleOpenProfile('profile');
+              } else {
+                handleOpenAuth('signin');
+              }
+            }}
+            className="flex flex-col items-center justify-center min-h-[44px] min-w-[44px] text-slate-700 dark:text-slate-300 hover:text-[#00875A] dark:hover:text-emerald-400 transition-colors cursor-pointer"
+          >
+            <User size={20} />
+            <span className="text-[10px] font-bold mt-1">Profile</span>
           </button>
         </div>
       </nav>

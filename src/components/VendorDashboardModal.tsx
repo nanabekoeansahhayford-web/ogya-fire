@@ -26,7 +26,7 @@ import { auth, saveProductToFirestore, deleteProductFromFirestore } from '../uti
 import { uploadImageToCloudinary } from '../utils/imageUpload';
 import { HOME_LOCATIONS } from '../utils/marketplaceHelpers';
 import { UserProfile } from '../types/marketplace';
-import vendorStoreShowcaseImg from '../assets/images/vendor_store_showcase_1793870144741.jpg';
+import vendorStoreShowcaseImg from '../assets/images/vendor_store_showcase_1793870144741.webp';
 
 const MODAL_LOCATIONS = HOME_LOCATIONS.filter((l) => l !== 'All');
 

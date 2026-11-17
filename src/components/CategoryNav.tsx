@@ -18,11 +18,11 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
   const primaryCategories = CATEGORIES.slice(0, 8);
 
   return (
-    <div className="bg-white dark:bg-slate-900 border-b border-slate-200/90 dark:border-slate-800 py-3 shadow-xs sticky top-16 z-30 transition-colors duration-200 backdrop-blur-md bg-white/95 dark:bg-slate-900/95">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-800/80">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-black text-[#FF6600] uppercase tracking-wider flex items-center gap-1.5">
+    <div className="bg-white dark:bg-slate-900 border-b border-slate-200/90 dark:border-slate-800 py-3 shadow-xs relative z-20 transition-colors duration-200">
+      <div className="max-w-[1280px] mx-auto px-3 sm:px-5 lg:px-8">
+        <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-800/80 gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-[clamp(0.68rem,1.8vw,0.75rem)] font-black text-[#FF6600] uppercase tracking-wider flex items-center gap-1.5 truncate">
               <span>🔥</span>
               <span>Shop Everything By Category</span>
             </span>
@@ -30,7 +30,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
           {selectedCategory !== 'all' && (
             <button
               onClick={() => onSelectCategory('all')}
-              className="text-xs font-bold text-[#FF6600] hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 transition-colors cursor-pointer flex items-center gap-1"
+              className="text-xs font-bold text-[#FF6600] hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 transition-colors cursor-pointer flex items-center gap-1 shrink-0 whitespace-nowrap"
             >
               <span>✕</span>
               <span>Show All Items</span>
@@ -38,11 +38,11 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
           )}
         </div>
 
-        {/* Responsive Category Buttons: horizontal scroll with snap on phone, 4-5 per row on tablet, full row on PC */}
-        <div className="flex items-center gap-2 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-1 scrollbar-none no-scrollbar sm:grid sm:grid-cols-4 md:grid-cols-5 lg:flex lg:flex-wrap lg:items-center lg:gap-2 lg:overflow-visible sm:snap-none">
+        {/* Responsive Category Buttons: horizontal touch-swipe scroll on Phone & Tablet (no squeezing), wrapped flex on Desktop (>1024px) */}
+        <div className="flex items-center gap-2 overflow-x-auto snap-x snap-mandatory scroll-smooth touch-pan-x pb-1 no-scrollbar min-[1025px]:flex-wrap min-[1025px]:overflow-visible min-[1025px]:snap-none">
           <button
             onClick={() => onSelectCategory('all')}
-            className={`flex items-center justify-center sm:justify-start gap-2 px-3 sm:px-3.5 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap shrink-0 sm:shrink cursor-pointer snap-start min-h-[40px] ${
+            className={`flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap shrink-0 cursor-pointer snap-start min-h-[40px] ${
               selectedCategory === 'all'
                 ? 'bg-[#FF6600] text-white shadow-md shadow-orange-500/20'
                 : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white border border-slate-200/70 dark:border-slate-700/70'
@@ -69,7 +69,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
               <button
                 key={cat.id}
                 onClick={() => onSelectCategory(cat.id)}
-                className={`flex items-center justify-center sm:justify-start gap-2 px-3 sm:px-3.5 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap shrink-0 sm:shrink cursor-pointer snap-start min-h-[40px] ${
+                className={`flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap shrink-0 cursor-pointer snap-start min-h-[40px] ${
                   isSelected
                     ? 'bg-[#FF6600] text-white shadow-md shadow-orange-500/20'
                     : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white border border-slate-200/70 dark:border-slate-700/70'
@@ -81,7 +81,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
                   size={16}
                   className={isSelected ? 'text-white' : 'text-[#FF6600] dark:text-orange-400'}
                 />
-                <span className="truncate">{cat.name}</span>
+                <span>{cat.name}</span>
                 {count > 0 && (
                   <span
                     className={`text-[11px] tabular-nums font-mono px-1.5 py-0.2 rounded-md ${

@@ -27,11 +27,11 @@ import { uploadImageToCloudinary } from '../utils/imageUpload';
 import { HOME_LOCATIONS } from '../utils/marketplaceHelpers';
 import { CategoryIcon } from './CategoryIcon';
 import { SmartPriceAdvisor } from './SmartPriceAdvisor';
-import heroMarketplaceShowcaseImg from '../assets/images/hero_marketplace_showcase_1792291775965.jpg';
-import spotlightVehiclesAutoImg from '../assets/images/spotlight_vehicles_auto_1792291776565.jpg';
-import spotlightModernPropertyImg from '../assets/images/spotlight_modern_property_1792291776719.jpg';
-import spotlightDevicesTechImg from '../assets/images/spotlight_devices_tech_1792291775880.jpg';
-import ghanaCourierDeliveryImg from '../assets/images/ghana_courier_delivery_1792921463636.jpg';
+import heroMarketplaceShowcaseImg from '../assets/images/hero_marketplace_showcase_1792291775965.webp';
+import spotlightVehiclesAutoImg from '../assets/images/spotlight_vehicles_auto_1792291776565.webp';
+import spotlightModernPropertyImg from '../assets/images/spotlight_modern_property_1792291776719.webp';
+import spotlightDevicesTechImg from '../assets/images/spotlight_devices_tech_1792291775880.webp';
+import ghanaCourierDeliveryImg from '../assets/images/ghana_courier_delivery_1792921463636.webp';
 
 interface PostAdModalProps {
   isOpen: boolean;

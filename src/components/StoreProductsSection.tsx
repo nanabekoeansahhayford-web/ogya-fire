@@ -14,6 +14,8 @@ import {
   isProductSellerVerified,
   getReviewSummary,
 } from '../utils/marketplaceHelpers';
+import { OptimizedImage } from './OptimizedImage';
+import { ProductGridSkeleton } from './LoadingSkeleton';
 
 interface StoreProductsSectionProps {
   products: Product[];
@@ -21,6 +23,10 @@ interface StoreProductsSectionProps {
   selectedLocation?: string;
   searchQuery: string;
   reviews?: Review[];
+  isLoading?: boolean;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
+  onLoadMore?: () => void;
   onSelectProduct: (product: Product) => void;
   onAddToCart: (product: Product) => void;
   onOrderWhatsApp?: (product: Product) => void;
@@ -46,6 +52,10 @@ export const StoreProductsSection: React.FC<StoreProductsSectionProps> = ({
   selectedLocation = 'all',
   searchQuery,
   reviews = [],
+  isLoading = false,
+  hasMore = false,
+  isLoadingMore = false,
+  onLoadMore,
   onSelectProduct,
   onAddToCart,
   onOrderWhatsApp,
@@ -99,6 +109,20 @@ export const StoreProductsSection: React.FC<StoreProductsSectionProps> = ({
     return Array.from(groups.entries());
   }, [cleanProducts]);
 
+  if (isLoading && cleanProducts.length === 0) {
+    return (
+      <section
+        aria-label="Loading Vendor Store Products"
+        className="max-w-[1280px] mx-auto px-3 sm:px-6 lg:px-8 pt-6 pb-2 w-full"
+      >
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 sm:p-6 shadow-xs space-y-4">
+          <div className="h-6 w-56 bg-slate-200 dark:bg-slate-800 rounded-lg animate-pulse" />
+          <ProductGridSkeleton count={8} variant="store" />
+        </div>
+      </section>
+    );
+  }
+
   if (cleanProducts.length === 0) {
     return null;
   }
@@ -106,12 +130,12 @@ export const StoreProductsSection: React.FC<StoreProductsSectionProps> = ({
   return (
     <section
       aria-label="Vendor Store Products Organized by Category"
-      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2"
+      className="max-w-[1280px] mx-auto px-3 sm:px-6 lg:px-8 pt-6 pb-2 w-full"
     >
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-6 shadow-xs space-y-5">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 sm:p-6 shadow-xs space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <div>
-            <h2 className="text-lg sm:text-xl font-black text-slate-950 dark:text-white flex items-center gap-2 flex-wrap">
+          <div className="min-w-0">
+            <h2 className="text-[clamp(1.1rem,2.8vw,1.35rem)] font-black text-slate-950 dark:text-white flex items-center gap-2 flex-wrap">
               <span>🛍️ Verified Store Products</span>
               <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-[#00875A] dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                 {cleanProducts.length} {cleanProducts.length === 1 ? 'Product' : 'Products'}
@@ -158,8 +182,8 @@ export const StoreProductsSection: React.FC<StoreProductsSectionProps> = ({
                 )}
               </div>
 
-              {/* Responsive Product Cards Grid: 2 on phone, 3 on tablet, 4 on PC */}
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
+              {/* Responsive Product Cards Grid: 2 on phone (<640px), 3 on tablet (641-1024px), 4 on PC (>1024px) */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 min-[1025px]:grid-cols-4 gap-2.5 sm:gap-4 min-[1025px]:gap-5">
                 {items.map((product) => {
                   const inStock = product.stock > 0;
                   const isVerified = isProductSellerVerified(product);
@@ -176,14 +200,14 @@ export const StoreProductsSection: React.FC<StoreProductsSectionProps> = ({
                     <div
                       key={product.id}
                       onClick={() => onSelectProduct(product)}
-                      className="group bg-slate-50/70 dark:bg-slate-950/60 hover:bg-white dark:hover:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-amber-500/50 shadow-2xs hover:shadow-md transition-all flex flex-col overflow-hidden cursor-pointer"
+                      className="group min-w-0 bg-slate-50/70 dark:bg-slate-950/60 hover:bg-white dark:hover:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-amber-500/50 shadow-2xs hover:shadow-md transition-all flex flex-col overflow-hidden cursor-pointer"
                     >
                       {/* Product Image */}
                       <div className="relative aspect-[4/3] w-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-                        <img
+                        <OptimizedImage
                           src={product.imageUrl}
                           alt={product.name}
-                          loading="lazy"
+                          wrapperClassName="w-full h-full"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                         <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/80 backdrop-blur-xs text-[10px] font-bold text-white truncate max-w-[75%]">
@@ -297,6 +321,19 @@ export const StoreProductsSection: React.FC<StoreProductsSectionProps> = ({
             </div>
           ))}
         </div>
+
+        {hasMore && onLoadMore && (
+          <div className="pt-2 flex justify-center">
+            <button
+              type="button"
+              onClick={onLoadMore}
+              disabled={isLoadingMore}
+              className="px-6 py-2.5 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white text-xs font-black transition-all cursor-pointer disabled:opacity-60 border border-slate-700"
+            >
+              {isLoadingMore ? 'Loading more products...' : 'Load More Store Products'}
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );

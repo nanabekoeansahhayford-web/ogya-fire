@@ -76,7 +76,7 @@ import {
 import { uploadImageToCloudinary } from '../utils/imageUpload';
 import { HOME_LOCATIONS } from '../utils/marketplaceHelpers';
 import { generateOrderStatusWhatsAppUrl } from '../utils/whatsapp';
-import vendorStoreShowcaseImg from '../assets/images/vendor_store_showcase_1793870144741.jpg';
+import vendorStoreShowcaseImg from '../assets/images/vendor_store_showcase_1793870144741.webp';
 
 interface VendorDashboardPageProps {
   currentUser: UserProfile | null;
@@ -517,10 +517,10 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] dark:bg-[#0b0f19] text-slate-900 dark:text-slate-100 font-sans pb-16">
+    <div className="min-h-screen bg-[#F8F9FA] dark:bg-[#0b0f19] text-slate-900 dark:text-slate-100 font-sans pb-16 overflow-x-hidden">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-950 dark:bg-slate-900 text-white text-xs sm:text-sm font-semibold px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 animate-in slide-in-from-bottom-3 duration-200 border border-slate-800 dark:border-slate-700">
+        <div className="fixed bottom-6 right-4 left-4 sm:left-auto sm:right-6 z-50 bg-slate-950 dark:bg-slate-900 text-white text-xs sm:text-sm font-semibold px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 animate-in slide-in-from-bottom-3 duration-200 border border-slate-800 dark:border-slate-700">
           <CheckCircle2 size={16} className="text-amber-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
@@ -528,12 +528,12 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
 
       {/* Top Navigation Header */}
       <header className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
+        <div className="max-w-[1280px] mx-auto px-3 sm:px-5 lg:px-8 py-3 sm:py-3.5 flex items-center justify-between gap-2 sm:gap-4 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <button
               type="button"
               onClick={onNavigateHome}
-              className="p-2 -ml-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1.5 cursor-pointer text-xs font-bold"
+              className="p-2 -ml-1 sm:-ml-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1.5 cursor-pointer text-xs font-bold shrink-0"
               aria-label="Back to Marketplace"
               title="Return to OGYA Marketplace"
             >
@@ -541,27 +541,27 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
               <span className="hidden sm:inline">Back to Marketplace</span>
             </button>
 
-            <div className="h-5 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block" />
+            <div className="h-5 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block shrink-0" />
 
             {/* Logo / Brand */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               <span className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center shadow-sm shrink-0 bg-[#FF6B00]">
                 <img
-                  src="/assets/aistudio/OGYA_SPECIAL_11_d4fab9c1.jpeg"
+                  src="/assets/aistudio/OGYA_SPECIAL_11_d4fab9c1.webp"
                   alt="OGYA (FIRE) Logo"
                   className="w-full h-full object-cover scale-[1.06]"
                 />
               </span>
-              <div>
-                <div className="flex items-center gap-1.5 leading-tight">
-                  <span className="font-black text-base tracking-tight text-slate-950 dark:text-white">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 leading-tight flex-wrap">
+                  <span className="font-black text-sm sm:text-base tracking-tight text-slate-950 dark:text-white whitespace-nowrap">
                     OGYA <span className="text-[#FF6600]">(FIRE)</span>
                   </span>
-                  <span className="text-[10px] font-black uppercase text-amber-600 bg-amber-500/10 dark:bg-amber-500/20 px-1.5 py-0.5 rounded">
+                  <span className="hidden sm:inline text-[10px] font-black uppercase text-amber-600 bg-amber-500/10 dark:bg-amber-500/20 px-1.5 py-0.5 rounded">
                     Vendor Portal
                   </span>
                 </div>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium hidden md:inline">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium hidden min-[1025px]:inline">
                   General Marketplace · Food, Phones, Laptops, Cars & Accessories
                 </span>
               </div>
@@ -569,13 +569,13 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
           </div>
 
           {/* Current Authenticated Seller Identity */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 shrink-0">
             {currentUser && auth.currentUser ? (
-              <div className="text-right">
-                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
-                  Verified Seller UID
+              <div className="text-right min-w-0">
+                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
+                  Verified Seller
                 </span>
-                <span className="text-xs font-black text-slate-900 dark:text-white truncate max-w-[200px] block">
+                <span className="text-xs font-black text-slate-900 dark:text-white truncate max-w-[110px] sm:max-w-[200px] block">
                   {vendorInfo.name}
                 </span>
               </div>
@@ -583,7 +583,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
               <button
                 type="button"
                 onClick={() => onOpenAuth('signin', 'seller')}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-red-600 text-white text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm"
+                className="px-3 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-red-600 text-white text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm"
               >
                 <LogIn size={14} />
                 <span>Seller Sign In</span>
@@ -628,12 +628,12 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
         </main>
       ) : (
       /* Main Vendor Dashboard Body */
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 space-y-6">
+      <main className="max-w-[1280px] mx-auto px-3 sm:px-5 lg:px-8 pt-5 sm:pt-8 space-y-6">
         {/* Vendor Profile Header Card */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 bg-white dark:bg-slate-900 p-6 sm:p-7 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm">
-          <div className="flex items-center gap-4 sm:gap-5 min-w-0">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-6 bg-white dark:bg-slate-900 p-4 sm:p-7 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm min-w-0">
+          <div className="flex items-center gap-3.5 sm:gap-5 min-w-0 w-full md:w-auto">
             {/* Vendor Logo */}
-            <div className="relative w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden ring-4 ring-[#00875A]/25 bg-slate-100 dark:bg-slate-800 shadow-md shrink-0">
+            <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden ring-4 ring-[#00875A]/25 bg-slate-100 dark:bg-slate-800 shadow-md shrink-0">
               <img
                 src={vendorInfo.logoUrl}
                 alt={vendorInfo.name}
@@ -642,9 +642,9 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
               <span className="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-[#00875A] ring-2 ring-white" title="Store Online & Active" />
             </div>
 
-            <div className="space-y-1 min-w-0">
+            <div className="space-y-1 min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight truncate">
+                <h1 className="text-[clamp(1.1rem,3vw,1.5rem)] font-black text-slate-900 dark:text-white tracking-tight break-words">
                   {vendorInfo.name}
                 </h1>
                 {/* Verified Badge or Upgrade CTA */}
@@ -713,89 +713,89 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
 
         {/* =================== BIG METRICS STATS CARDS =================== */}
         {/* Total Sales ₵, Total Orders, Active Products, Avg Order Value ₵ */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 min-[1025px]:grid-cols-4 gap-2.5 sm:gap-4">
           {/* Card 1: Total Sales in ₵ */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between min-w-0">
+            <div className="flex items-center justify-between gap-1.5">
+              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
                 Total Sales
               </span>
-              <div className="w-10 h-10 rounded-2xl bg-[#e6f7f0] dark:bg-emerald-950/60 text-[#00875A] dark:text-emerald-400 flex items-center justify-center font-black text-lg">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-[#e6f7f0] dark:bg-emerald-950/60 text-[#00875A] dark:text-emerald-400 flex items-center justify-center font-black text-sm sm:text-lg shrink-0">
                 ₵
               </div>
             </div>
-            <div className="mt-4">
-              <div className="flex items-baseline gap-1" data-testid="total-sales-ghs">
-                <span className="text-lg font-black text-[#00875A] dark:text-emerald-400">₵</span>
-                <span className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white tabular-nums tracking-tight">
+            <div className="mt-3 sm:mt-4 min-w-0">
+              <div className="flex items-baseline gap-0.5 sm:gap-1 flex-wrap" data-testid="total-sales-ghs">
+                <span className="text-sm sm:text-lg font-black text-[#00875A] dark:text-emerald-400">₵</span>
+                <span className="text-[clamp(1.05rem,3.6vw,1.875rem)] font-black text-slate-950 dark:text-white tabular-nums tracking-tight">
                   {(totalSalesGHS > 0 ? totalSalesGHS : 38450).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
-              <span className="text-[11px] text-[#00875A] dark:text-emerald-400 font-bold flex items-center gap-1 mt-1">
-                <TrendingUp size={12} />
-                <span>+18.4% vs last week · Live MoMo & COD</span>
+              <span className="text-[10px] sm:text-[11px] text-[#00875A] dark:text-emerald-400 font-bold flex items-center gap-1 mt-1">
+                <TrendingUp size={12} className="shrink-0" />
+                <span className="truncate">+18.4% vs last week</span>
               </span>
             </div>
           </div>
 
           {/* Card 2: Total Orders */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between min-w-0">
+            <div className="flex items-center justify-between gap-1.5">
+              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
                 Total Orders
               </span>
-              <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-[#FF6600] flex items-center justify-center">
-                <Package size={18} />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-[#FF6600] flex items-center justify-center shrink-0">
+                <Package size={16} />
               </div>
             </div>
-            <div className="mt-4">
-              <span className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white tabular-nums block" data-testid="total-orders-count">
+            <div className="mt-3 sm:mt-4 min-w-0">
+              <span className="text-[clamp(1.1rem,3.6vw,1.875rem)] font-black text-slate-950 dark:text-white tabular-nums block" data-testid="total-orders-count">
                 {totalOrdersCount > 0 ? totalOrdersCount : 54}
               </span>
-              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1 block">
+              <span className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1 block truncate">
                 {pendingOrdersCount || 3} pending · {shippedOrdersCount || 12} shipped
               </span>
             </div>
           </div>
 
           {/* Card 3: Active Products */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between min-w-0">
+            <div className="flex items-center justify-between gap-1.5">
+              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
                 Active Products
               </span>
-              <div className="w-10 h-10 rounded-2xl bg-[#fff2e6] dark:bg-orange-950/50 text-[#FF6600] flex items-center justify-center">
-                <Store size={18} />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-[#fff2e6] dark:bg-orange-950/50 text-[#FF6600] flex items-center justify-center shrink-0">
+                <Store size={16} />
               </div>
             </div>
-            <div className="mt-4">
-              <span className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white tabular-nums block" data-testid="vendor-products-count">
+            <div className="mt-3 sm:mt-4 min-w-0">
+              <span className="text-[clamp(1.1rem,3.6vw,1.875rem)] font-black text-slate-950 dark:text-white tabular-nums block" data-testid="vendor-products-count">
                 {vendorProducts.length > 0 ? vendorProducts.length : 18}
               </span>
-              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1 block">
+              <span className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1 block truncate">
                 Live inventory in Firestore
               </span>
             </div>
           </div>
 
           {/* Card 4: Avg Order Value ₵ */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col justify-between min-w-0">
+            <div className="flex items-center justify-between gap-1.5">
+              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
                 Avg Order Value
               </span>
-              <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm sm:text-base shrink-0">
                 ₵
               </div>
             </div>
-            <div className="mt-4">
-              <div className="flex items-baseline gap-1">
-                <span className="text-lg font-black text-blue-600 dark:text-blue-400">₵</span>
-                <span className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white tabular-nums tracking-tight">
+            <div className="mt-3 sm:mt-4 min-w-0">
+              <div className="flex items-baseline gap-0.5 sm:gap-1 flex-wrap">
+                <span className="text-sm sm:text-lg font-black text-blue-600 dark:text-blue-400">₵</span>
+                <span className="text-[clamp(1.05rem,3.6vw,1.875rem)] font-black text-slate-950 dark:text-white tabular-nums tracking-tight">
                   {Math.round((totalSalesGHS > 0 ? totalSalesGHS : 38450) / (totalOrdersCount > 0 ? totalOrdersCount : 54)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
-              <span className="text-[11px] text-blue-600 dark:text-blue-400 font-bold mt-1 block">
+              <span className="text-[10px] sm:text-[11px] text-blue-600 dark:text-blue-400 font-bold mt-1 block truncate">
                 Door courier verified
               </span>
             </div>
@@ -803,7 +803,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
         </div>
 
         {/* =================== SALES TREND CHARTS =================== */}
-        <div className="p-6 sm:p-7 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
+        <div className="p-4 sm:p-7 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xs min-w-0 overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
               <div className="flex items-center gap-2">
@@ -930,7 +930,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
         </div>
 
         {/* Tab Navigation: Orders vs Products vs Add Product vs Admin Dashboard */}
-        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-px overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-px overflow-x-auto touch-pan-x no-scrollbar">
           <button
             type="button"
             onClick={() => setActiveTab('orders')}
@@ -1106,7 +1106,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
                   return (
                     <div
                       key={order.id}
-                      className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-5 transition-all hover:border-slate-300 dark:hover:border-slate-700"
+                      className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col min-[1025px]:flex-row min-[1025px]:items-center justify-between gap-4 sm:gap-5 transition-all hover:border-slate-300 dark:hover:border-slate-700 min-w-0"
                       data-testid={`order-row-${order.id}`}
                     >
                       {/* Left: Buyer & Order Info */}
@@ -1146,20 +1146,20 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
                         <div>
                           <div className="flex items-center gap-2">
                             <User size={13} className="text-slate-400 shrink-0" />
-                            <span className="text-sm font-black text-slate-900 dark:text-white" data-testid="order-buyer-name">
+                            <span className="text-sm font-black text-slate-900 dark:text-white break-words" data-testid="order-buyer-name">
                               Buyer: {buyerName}
                             </span>
                           </div>
-                          <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 font-medium" data-testid="order-product-names">
+                          <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 font-medium break-words" data-testid="order-product-names">
                             <strong className="text-[#FF6600]">Product:</strong> {productNames || 'OGYA Product'}
                           </p>
                         </div>
 
                         {/* Delivery address & phone */}
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
-                          <span className="flex items-center gap-1 truncate max-w-sm">
-                            <MapPin size={12} className="shrink-0 text-slate-400" />
-                            <span>{order.deliveryAddress}</span>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400 min-w-0">
+                          <span className="flex items-start gap-1 min-w-0 max-w-full break-words">
+                            <MapPin size={12} className="shrink-0 text-slate-400 mt-0.5" />
+                            <span className="break-words">{order.deliveryAddress}</span>
                           </span>
                           <span className="flex items-center gap-1 font-mono">
                             <Phone size={12} className="shrink-0 text-slate-400" />
@@ -1185,13 +1185,13 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
                       </div>
 
                       {/* Right: Amount & One-tap Order Status Progression */}
-                      <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between gap-3 shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100 dark:border-slate-800">
+                      <div className="flex flex-col sm:flex-row min-[1025px]:flex-col items-stretch sm:items-center min-[1025px]:items-end justify-between gap-3 shrink-0 pt-3 min-[1025px]:pt-0 border-t min-[1025px]:border-t-0 border-slate-100 dark:border-slate-800">
                         {/* Amount */}
-                        <div className="text-left lg:text-right">
+                        <div className="text-left min-[1025px]:text-right">
                           <span className="text-[10px] uppercase font-bold text-slate-400 block">
                             Order Amount
                           </span>
-                          <div className="flex items-baseline gap-1 lg:justify-end" data-testid="order-amount">
+                          <div className="flex items-baseline gap-1 min-[1025px]:justify-end" data-testid="order-amount">
                             <span className="text-xs font-black text-[#00875A] dark:text-emerald-400">₵</span>
                             <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white tabular-nums">
                               {order.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -1201,7 +1201,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
                         </div>
 
                         {/* One-tap progression + WhatsApp buyer notify */}
-                        <div className="flex items-center gap-2 flex-wrap justify-end">
+                        <div className="flex items-center gap-2 flex-wrap justify-start sm:justify-end">
                           {nextStepAction ? (
                             <button
                               type="button"
@@ -1285,11 +1285,11 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="vendor-products-grid">
+              <div className="grid grid-cols-1 sm:grid-cols-2 min-[1025px]:grid-cols-3 gap-3 sm:gap-4" data-testid="vendor-products-grid">
                 {vendorProducts.map((p) => (
                   <div
                     key={p.id}
-                    className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between gap-3 group"
+                    className="min-w-0 p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between gap-3 group"
                   >
                     <div className="flex gap-3.5">
                       <img
@@ -1360,7 +1360,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
 
         {/* =================== TAB 3: ADD NEW PRODUCT =================== */}
         {activeTab === 'add_product' && (
-          <div className="max-w-2xl bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-6">
+          <div className="max-w-2xl bg-white dark:bg-slate-900 p-4 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-6 min-w-0">
             <div>
               <h3 className="text-lg font-black text-slate-900 dark:text-white">
                 Add New Product
@@ -1630,7 +1630,7 @@ export const VendorDashboardPage: React.FC<VendorDashboardPageProps> = ({
         {/* =================== TAB 4: ADMIN DASHBOARD & TEST DATA CLEANUP =================== */}
         {activeTab === 'admin' && (
           <div className="space-y-5">
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-5">
+            <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-5 min-w-0">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
                 <div>
                   <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">

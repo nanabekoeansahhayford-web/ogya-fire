@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import {
   X,
   Heart,
@@ -39,7 +39,9 @@ import { Listing, SellerInfo } from '../types/marketplace';
 import { Review } from '../types/store';
 import { formatPrice, getListingReport, AdReportRecord, getStoredListings } from '../utils/storage';
 import { CategoryIcon } from './CategoryIcon';
-import { PriceTrendChart } from './PriceTrendChart';
+const PriceTrendChart = lazy(() =>
+  import('./PriceTrendChart').then((m) => ({ default: m.PriceTrendChart }))
+);
 import { getSellerReputation } from '../utils/reputation';
 import { ReputationBadge } from './ReputationBadge';
 import { ReportListingModal } from './ReportListingModal';
@@ -450,20 +452,20 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Top Header */}
-        <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950/90 shrink-0">
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 truncate mr-3">
-            <span className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+        <div className="px-3 sm:px-5 py-3 sm:py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-950/90 shrink-0 min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 truncate min-w-0 flex-1 mr-1 sm:mr-3">
+            <span className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200 shrink-0">
               <CategoryIcon categoryId={listing.categoryId} size={15} />
-              {listing.categoryName}
+              <span className="truncate max-w-[95px] sm:max-w-none">{listing.categoryName}</span>
             </span>
-            <span aria-hidden="true" className="text-slate-300 dark:text-slate-600">/</span>
-            <span className="text-slate-600 dark:text-slate-400 truncate">{listing.subcategory}</span>
+            <span aria-hidden="true" className="text-slate-300 dark:text-slate-600 hidden sm:inline">/</span>
+            <span className="text-slate-600 dark:text-slate-400 truncate hidden sm:inline">{listing.subcategory}</span>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <button
               onClick={() => setIsReportOpen(true)}
-              className={`px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer text-xs flex items-center gap-1.5 font-bold ${
+              className={`px-2 sm:px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer text-xs flex items-center gap-1 sm:gap-1.5 font-bold ${
                 currentReport
                   ? 'bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/60'
                   : 'text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50/50 dark:hover:bg-red-950/30 border border-transparent hover:border-red-200 dark:hover:border-red-900/50'
@@ -472,7 +474,8 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
               aria-label="Report User or Listing"
             >
               <Flag size={14} className={currentReport ? 'fill-current text-red-600 dark:text-red-400' : 'text-red-500'} />
-              <span>{currentReport ? 'Reported' : 'Report Listing / User'}</span>
+              <span className="hidden sm:inline">{currentReport ? 'Reported' : 'Report Listing / User'}</span>
+              <span className="sm:hidden">{currentReport ? 'Reported' : 'Report'}</span>
             </button>
 
             <button
@@ -529,7 +532,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
         </div>
 
         {/* Scrollable Modal Body */}
-        <div className="overflow-y-auto p-5 sm:p-6 lg:p-8 flex-1 space-y-5">
+        <div className="overflow-y-auto overflow-x-hidden p-3.5 sm:p-6 min-[1025px]:p-8 flex-1 space-y-5">
           {/* Item Sold Notice Banner */}
           {isSold && (
             <div className="bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/80 text-red-900 dark:text-red-200 text-xs px-4 py-3 rounded-xl flex items-center justify-between gap-3 shadow-2xs animate-in fade-in">
@@ -586,9 +589,9 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
               </button>
             </div>
           )}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="grid grid-cols-1 min-[1025px]:grid-cols-12 gap-5 sm:gap-8">
             {/* Left 7 Columns: Visual Gallery + Detailed Specs */}
-            <div className="lg:col-span-7 space-y-6">
+            <div className="min-[1025px]:col-span-7 min-w-0 space-y-6">
               {/* Main Photo Gallery Carousel */}
               <div className="space-y-3">
                 <div
@@ -737,6 +740,8 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                         <img
                           src={img}
                           alt={`Thumbnail ${idx + 1}`}
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"
                         />
@@ -938,12 +943,12 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
             </div>
 
             {/* Right 5 Columns: Contiguous Purchase / Contact Module */}
-            <div className="lg:col-span-5 space-y-6">
+            <div className="min-[1025px]:col-span-5 min-w-0 space-y-6">
               {/* Price & Location Header */}
-              <div className="bg-slate-50 dark:bg-slate-950/70 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
-                <div className="flex items-baseline justify-between mb-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-2xl sm:text-3xl font-black tabular-nums ${isSold ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-950 dark:text-white'}`}>
+              <div className="bg-slate-50 dark:bg-slate-950/70 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+                <div className="flex items-baseline justify-between flex-wrap gap-2 mb-1">
+                  <div className="flex items-center gap-2 flex-wrap min-w-0">
+                    <span className={`text-[clamp(1.35rem,4vw,1.875rem)] font-black tabular-nums ${isSold ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-950 dark:text-white'}`}>
                       {formatPrice(listing.price, listing.currency)}
                     </span>
                     {listing.originalPrice && listing.originalPrice > listing.price && !isSold && (
@@ -1104,8 +1109,10 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                 />
               )}
 
-              {/* Price Trend Line Chart (Recharts) */}
-              <PriceTrendChart listing={listing} />
+              {/* Price Trend Line Chart (Recharts - lazy loaded) */}
+              <Suspense fallback={<div className="h-44 rounded-2xl bg-slate-200 dark:bg-slate-800 animate-pulse" />}>
+                <PriceTrendChart listing={listing} />
+              </Suspense>
 
               {/* Seller Profile Box */}
               <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">

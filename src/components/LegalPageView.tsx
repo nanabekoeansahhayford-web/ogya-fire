@@ -25,14 +25,14 @@ export const LegalPageView: React.FC<LegalPageViewProps> = ({
   onNavigateHome,
 }) => {
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8F9FA] dark:bg-[#0b0f19] text-slate-900 dark:text-slate-100">
+    <div className="min-h-screen flex flex-col bg-[#F8F9FA] dark:bg-[#0b0f19] text-slate-900 dark:text-slate-100 overflow-x-hidden">
       {/* Top Bar */}
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+        <div className="max-w-[1280px] mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-3 min-w-0">
           <button
             type="button"
             onClick={onNavigateHome}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 transition-colors cursor-pointer shrink-0"
           >
             <ArrowLeft size={16} />
             <span>Back to Marketplace</span>
@@ -41,23 +41,23 @@ export const LegalPageView: React.FC<LegalPageViewProps> = ({
           <button
             type="button"
             onClick={onNavigateHome}
-            className="flex items-center gap-2 cursor-pointer"
+            className="flex items-center gap-2 cursor-pointer min-w-0"
           >
             <span className="w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center shadow-sm shrink-0 bg-[#FF6B00]">
               <img
-                src="/assets/aistudio/OGYA_SPECIAL_11_d4fab9c1.jpeg"
+                src="/assets/aistudio/OGYA_SPECIAL_11_d4fab9c1.webp"
                 alt="OGYA (FIRE) Logo"
                 className="w-full h-full object-cover scale-[1.06]"
               />
             </span>
-            <span className="text-base sm:text-lg font-black tracking-tight text-slate-950 dark:text-white">
+            <span className="text-sm sm:text-lg font-black tracking-tight text-slate-950 dark:text-white truncate">
               OGYA <span className="text-[#FF6600] text-xs font-black uppercase">(FIRE)</span>
             </span>
           </button>
         </div>
 
         {/* Legal Navigation Tabs */}
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-3 flex items-center gap-2 overflow-x-auto">
+        <div className="max-w-[1280px] mx-auto px-3 sm:px-6 lg:px-8 pb-3 flex items-center gap-2 overflow-x-auto touch-pan-x no-scrollbar">
           {PAGE_LINKS.map((item) => {
             const Icon = item.icon;
             const active = page === item.id;

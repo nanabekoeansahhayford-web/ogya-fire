@@ -2,6 +2,7 @@ import React from 'react';
 import { Clock, Trash2, Heart, MapPin, Eye, ExternalLink, ChevronRight, Sparkles, Flag } from 'lucide-react';
 import { Listing } from '../types/marketplace';
 import { formatPrice } from '../utils/storage';
+import { OptimizedImage } from './OptimizedImage';
 
 interface RecentlyViewedProps {
   items: Listing[];
@@ -71,11 +72,12 @@ export const RecentlyViewed: React.FC<RecentlyViewedProps> = ({
               className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/70 border border-transparent hover:border-slate-200 dark:hover:border-slate-700/60 transition-all cursor-pointer group"
             >
               {listing.images && listing.images[0] ? (
-                <img
+                <OptimizedImage
                   src={listing.images[0]}
                   alt={listing.title}
                   referrerPolicy="no-referrer"
-                  className="w-11 h-11 rounded-lg object-cover shrink-0 border border-slate-200 dark:border-slate-700"
+                  wrapperClassName="w-11 h-11 rounded-lg shrink-0 border border-slate-200 dark:border-slate-700"
+                  className="w-full h-full object-cover"
                 />
               ) : (
                 <div className="w-11 h-11 rounded-lg bg-slate-200 dark:bg-slate-800 shrink-0 flex items-center justify-center text-xs font-bold text-slate-500">
@@ -110,7 +112,7 @@ export const RecentlyViewed: React.FC<RecentlyViewedProps> = ({
             <span className="p-1.5 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400">
               <Clock size={18} />
             </span>
-            <h3 className="text-lg sm:text-xl font-black text-slate-950 dark:text-white tracking-tight flex items-center gap-2">
+            <h3 className="text-[clamp(1.05rem,2.6vw,1.25rem)] font-black text-slate-950 dark:text-white tracking-tight flex items-center gap-2 flex-wrap">
               <span>Recently Viewed Items</span>
               <span className="text-xs font-bold bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-transparent dark:border-amber-900/50 px-2 py-0.5 rounded-full tabular-nums">
                 {items.length} of 5
@@ -133,22 +135,23 @@ export const RecentlyViewed: React.FC<RecentlyViewedProps> = ({
       </div>
 
       {/* Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 min-[1025px]:grid-cols-5 gap-2.5 sm:gap-4">
         {items.map((listing) => {
           const isSaved = savedIds.includes(listing.id);
           return (
             <div
               key={listing.id}
               onClick={() => onOpenDetails(listing)}
-              className="group bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-500 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col overflow-hidden cursor-pointer relative"
+              className="min-w-0 group bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-500 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col overflow-hidden cursor-pointer relative"
             >
               {/* Thumbnail Container */}
               <div className="relative aspect-[4/3] bg-slate-900 overflow-hidden">
                 {listing.images && listing.images[0] ? (
-                  <img
+                  <OptimizedImage
                     src={listing.images[0]}
                     alt={listing.title}
                     referrerPolicy="no-referrer"
+                    wrapperClassName="w-full h-full"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 ) : (
@@ -203,13 +206,13 @@ export const RecentlyViewed: React.FC<RecentlyViewedProps> = ({
               </div>
 
               {/* Card Content */}
-              <div className="p-3.5 flex flex-col flex-1 justify-between gap-2">
-                <div>
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mb-1">
-                    <span className="font-semibold text-amber-700 dark:text-amber-400 truncate">
+              <div className="p-2.5 sm:p-3.5 flex flex-col flex-1 justify-between gap-2 min-w-0">
+                <div className="min-w-0">
+                  <div className="flex items-center justify-between gap-1 text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mb-1">
+                    <span className="font-semibold text-amber-700 dark:text-amber-400 truncate min-w-0">
                       {listing.subcategory}
                     </span>
-                    <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300">
+                    <span className="shrink-0 text-[9px] sm:text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300">
                       {listing.condition}
                     </span>
                   </div>
@@ -219,9 +222,9 @@ export const RecentlyViewed: React.FC<RecentlyViewedProps> = ({
                   </h4>
                 </div>
 
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className={`text-sm font-black tabular-nums ${listing.status === 'sold' || listing.isSold ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-950 dark:text-white'}`}>
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-1 min-w-0">
+                  <div className="flex items-center gap-1 flex-wrap min-w-0">
+                    <span className={`text-xs sm:text-sm font-black tabular-nums ${listing.status === 'sold' || listing.isSold ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-950 dark:text-white'}`}>
                       {formatPrice(listing.price, listing.currency)}
                     </span>
                     {(listing.status === 'sold' || listing.isSold) && (
@@ -231,9 +234,9 @@ export const RecentlyViewed: React.FC<RecentlyViewedProps> = ({
                     )}
                   </div>
 
-                  <div className="flex items-center gap-1 text-[11px] text-slate-400 dark:text-slate-500">
-                    <MapPin size={11} className="shrink-0" />
-                    <span className="truncate max-w-[90px]">{listing.location.split(',')[0]}</span>
+                  <div className="flex items-center gap-0.5 text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 shrink-0 max-w-[75px]">
+                    <MapPin size={10} className="shrink-0" />
+                    <span className="truncate">{listing.location.split(',')[0]}</span>
                   </div>
                 </div>
               </div>

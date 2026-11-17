@@ -32,16 +32,18 @@ export const Footer: React.FC<FooterProps> = ({
   };
 
   return (
-    <footer className="bg-slate-950 text-slate-400 text-xs border-t border-slate-900 mt-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-24 md:pb-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 lg:gap-10 pb-12 border-b border-slate-800">
+    <footer className="bg-slate-950 text-slate-400 text-xs border-t border-slate-900 mt-16 sm:mt-20">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-24 sm:pb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 min-[1025px]:grid-cols-6 gap-8 min-[1025px]:gap-10 pb-12 border-b border-slate-800">
           {/* Brand Col */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="sm:col-span-2 min-[1025px]:col-span-2 space-y-4">
             <div className="flex items-center gap-2">
               <span className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center shadow-sm shrink-0 bg-[#FF6B00]">
                 <img
-                  src="/assets/aistudio/OGYA_SPECIAL_11_d4fab9c1.jpeg"
+                  src="/assets/aistudio/OGYA_SPECIAL_11_d4fab9c1.webp"
                   alt="OGYA (FIRE) Logo"
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover scale-[1.06]"
                 />
               </span>

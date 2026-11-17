@@ -59,27 +59,27 @@ export const CartModal: React.FC<CartModalProps> = ({
         aria-label="Shopping Cart"
       >
         {/* Header */}
-        <div className="shrink-0 p-4 sm:p-5 bg-gradient-to-r from-[#00875A] via-emerald-600 to-[#FF6600] text-white flex items-center justify-between shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-inner">
-              <ShoppingCart size={20} className="text-white" />
+        <div className="shrink-0 p-3.5 sm:p-5 bg-gradient-to-r from-[#00875A] via-emerald-600 to-[#FF6600] text-white flex items-center justify-between gap-2 shadow-sm min-w-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-inner shrink-0">
+              <ShoppingCart size={18} className="text-white" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-black tracking-tight leading-tight">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-base sm:text-lg font-black tracking-tight leading-tight">
                   OGYA Cart
                 </h3>
-                <span className="px-2 py-0.5 rounded-full bg-white/25 text-[11px] font-black uppercase tracking-wider">
+                <span className="px-2 py-0.5 rounded-full bg-white/25 text-[10px] sm:text-[11px] font-black uppercase tracking-wider shrink-0">
                   {totalItemCount} {totalItemCount === 1 ? 'item' : 'items'}
                 </span>
               </div>
-              <p className="text-[11px] text-white/90">
-                Verified Accra Food Vendors & Marketplace Items
+              <p className="text-[11px] text-white/90 truncate">
+                Verified Accra Food Vendors &amp; Marketplace Items
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {cart.length > 0 && (
               <button
                 type="button"
@@ -129,10 +129,10 @@ export const CartModal: React.FC<CartModalProps> = ({
             cart.map((item) => (
               <div
                 key={item.id}
-                className="p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-xs flex items-center gap-3.5 transition-all"
+                className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-xs flex items-center gap-2.5 sm:gap-3.5 transition-all min-w-0"
               >
                 {/* Thumbnail */}
-                <div className="w-16 h-16 rounded-xl bg-slate-100 dark:bg-slate-700/60 overflow-hidden shrink-0 border border-slate-200/60 dark:border-slate-700">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-slate-100 dark:bg-slate-700/60 overflow-hidden shrink-0 border border-slate-200/60 dark:border-slate-700">
                   <img
                     src={item.imageUrl}
                     alt={item.name}
@@ -213,7 +213,7 @@ export const CartModal: React.FC<CartModalProps> = ({
             </div>
 
             {/* Total Display in GHS with ₵ */}
-            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-baseline justify-between">
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-baseline justify-between flex-wrap gap-2">
               <div>
                 <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white block">
                   Total in GHS
@@ -221,7 +221,7 @@ export const CartModal: React.FC<CartModalProps> = ({
                 <span className="text-[10px] text-slate-400">Ghana Cedis</span>
               </div>
               <div className="text-right">
-                <span className="text-2xl sm:text-3xl font-black text-[#00875A] dark:text-emerald-400 tabular-nums">
+                <span className="text-[clamp(1.35rem,4vw,1.875rem)] font-black text-[#00875A] dark:text-emerald-400 tabular-nums">
                   ₵ {total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>

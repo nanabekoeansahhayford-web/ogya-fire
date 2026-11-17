@@ -55,11 +55,11 @@ import { Order, CartItem, OrderStatus, Review, normalizeOrderStatus } from '../t
 import { getLocalPlacedOrders, addToCart, updateLocalOrder } from '../utils/cartStorage';
 import type { LegalPageId } from './LegalPagesModal';
 import { OrderPipelineAndReview } from './OrderPipelineAndReview';
-import mamaEfuaImg from '../assets/images/food_mama_efua_jollof_1793886043512.jpg';
-import accraGrillImg from '../assets/images/food_accra_grill_tilapia_1793886043887.jpg';
-import auntieMuniImg from '../assets/images/food_auntie_muni_waakye_1793886045717.jpg';
-import freshJuiceImg from '../assets/images/food_fresh_juice_bar_1793886046929.jpg';
-import heroMarketplaceShowcaseImg from '../assets/images/hero_marketplace_showcase_1792291775965.jpg';
+import mamaEfuaImg from '../assets/images/food_mama_efua_jollof_1793886043512.webp';
+import accraGrillImg from '../assets/images/food_accra_grill_tilapia_1793886043887.webp';
+import auntieMuniImg from '../assets/images/food_auntie_muni_waakye_1793886045717.webp';
+import freshJuiceImg from '../assets/images/food_fresh_juice_bar_1793886046929.webp';
+import heroMarketplaceShowcaseImg from '../assets/images/hero_marketplace_showcase_1792291775965.webp';
 
 // Pre-seeded demo orders representing authentic Ghanaian food and safety equipment
 const DEMO_PAST_ORDERS: Order[] = [

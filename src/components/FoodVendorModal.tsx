@@ -49,6 +49,8 @@ export const FoodVendorModal: React.FC<FoodVendorModalProps> = ({
           <img
             src={vendor.imageUrl}
             alt={vendor.name}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />

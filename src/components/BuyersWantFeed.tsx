@@ -36,15 +36,15 @@ export const BuyersWantFeed: React.FC<BuyersWantFeedProps> = ({
 
   return (
     <section className="bg-slate-50 dark:bg-slate-900/60 border-y border-slate-200 dark:border-slate-800/80 py-10 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-[1280px] mx-auto px-3 sm:px-5 lg:px-8">
         {/* Header & Big Orange Action Button */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div>
+          <div className="min-w-0">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-950/70 text-orange-700 dark:text-orange-300 text-xs font-black uppercase tracking-wider mb-2">
               <Sparkles size={14} className="text-orange-500 animate-pulse" />
               <span>Direct Buyer Requests</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+            <h2 className="text-[clamp(1.25rem,3.4vw,1.875rem)] font-black text-slate-900 dark:text-white tracking-tight leading-tight">
               Buyers Want <span className="text-orange-600 dark:text-orange-500">— Live Buyer Demands</span>
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-2xl font-medium">
@@ -77,12 +77,12 @@ export const BuyersWantFeed: React.FC<BuyersWantFeedProps> = ({
             />
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          <div className="flex items-center gap-1.5 overflow-x-auto touch-pan-x pb-1 sm:pb-0 no-scrollbar">
             {['all', 'Accra', 'Kumasi', 'Tema', 'Takoradi'].map((city) => (
               <button
                 key={city}
                 onClick={() => setSelectedCity(city)}
-                className={`text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap transition-colors cursor-pointer ${
+                className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap transition-colors cursor-pointer ${
                   selectedCity === city
                     ? 'bg-orange-500 text-white shadow-xs'
                     : 'bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -115,11 +115,11 @@ export const BuyersWantFeed: React.FC<BuyersWantFeedProps> = ({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 min-[1025px]:grid-cols-3 gap-4 sm:gap-5">
             {filteredItems.map((item) => (
               <div
                 key={item.id}
-                className="bg-white dark:bg-slate-800/90 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-700/70 hover:border-orange-500/50 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
+                className="min-w-0 bg-white dark:bg-slate-800/90 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-700/70 hover:border-orange-500/50 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
               >
                 <div>
                   {/* Top Status & Timestamp */}
@@ -154,12 +154,12 @@ export const BuyersWantFeed: React.FC<BuyersWantFeedProps> = ({
                 </div>
 
                 {/* Bottom Price & "I Have This" Action Button */}
-                <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between gap-3">
-                  <div>
+                <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between flex-wrap gap-2.5">
+                  <div className="min-w-0">
                     <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                       Buyer's Budget
                     </span>
-                    <span className="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
+                    <span className="text-[clamp(1.05rem,2.6vw,1.25rem)] font-black text-emerald-600 dark:text-emerald-400 tracking-tight tabular-nums">
                       GH₵ {item.budget.toLocaleString()}
                     </span>
                   </div>
@@ -169,7 +169,7 @@ export const BuyersWantFeed: React.FC<BuyersWantFeedProps> = ({
                     href={getWhatsAppLink(item)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-black uppercase tracking-wider shadow-sm shadow-emerald-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                    className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-black uppercase tracking-wider shadow-sm shadow-emerald-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
                   >
                     <MessageCircle size={15} />
                     <span>I Have This</span>

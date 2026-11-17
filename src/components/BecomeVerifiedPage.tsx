@@ -120,10 +120,10 @@ export const BecomeVerifiedPage: React.FC<BecomeVerifiedPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white pb-16">
+    <div className="min-h-screen bg-slate-950 text-white pb-16 overflow-x-hidden">
       {/* Top Bar */}
       <div className="border-b border-slate-800 bg-slate-950/95 sticky top-0 z-30">
-        <div className="max-w-4xl mx-auto px-4 py-3.5 flex items-center justify-between gap-3">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3.5 flex items-center justify-between flex-wrap gap-2 sm:gap-3">
           <button
             type="button"
             onClick={onNavigateHome}
@@ -133,22 +133,22 @@ export const BecomeVerifiedPage: React.FC<BecomeVerifiedPageProps> = ({
             <span>Back to Marketplace</span>
           </button>
 
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-black">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] sm:text-xs font-black">
             ✅ VERIFIED SELLER PROGRAM
           </span>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 py-6 sm:py-8 space-y-6">
         {/* Hero Banner */}
-        <div className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-950 to-orange-950/70 border border-orange-500/40 p-6 sm:p-8 shadow-2xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-            <div className="space-y-2.5">
+        <div className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-950 to-orange-950/70 border border-orange-500/40 p-5 sm:p-8 shadow-2xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 sm:gap-6">
+            <div className="space-y-2.5 min-w-0">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500/40 text-amber-300 text-xs font-black uppercase tracking-wider">
                 <Sparkles size={13} />
                 <span>Priority Placement + Buyer Trust</span>
               </span>
-              <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white">
+              <h1 className="text-[clamp(1.35rem,4vw,2.25rem)] font-black tracking-tight text-white leading-tight">
                 Become Verified - <span className="text-amber-400">GH₵50</span>
               </h1>
               <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed">
@@ -158,7 +158,7 @@ export const BecomeVerifiedPage: React.FC<BecomeVerifiedPageProps> = ({
               </p>
             </div>
 
-            <div className="bg-slate-900 border border-amber-500/50 rounded-2xl p-4 text-center shrink-0 min-w-[160px]">
+            <div className="bg-slate-900 border border-amber-500/50 rounded-2xl p-4 text-center shrink-0 w-full sm:w-auto sm:min-w-[160px]">
               <span className="text-[11px] uppercase font-bold text-slate-400 block">Verification Fee</span>
               <span className="text-3xl font-black text-amber-400 block mt-0.5">GH₵50</span>
               <span className="text-[11px] text-emerald-400 font-bold block mt-1">Instant MoMo Proof</span>
@@ -218,19 +218,19 @@ export const BecomeVerifiedPage: React.FC<BecomeVerifiedPageProps> = ({
               </div>
 
               <div className="p-4 rounded-xl bg-slate-950 border border-amber-500/40 space-y-2 text-xs">
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center flex-wrap gap-1.5">
                   <span className="text-slate-400">MTN MoMo Number:</span>
                   <span className="font-mono font-black text-amber-400 text-sm">054 976 9720</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center flex-wrap gap-1.5">
                   <span className="text-slate-400">Merchant Name:</span>
                   <span className="font-black text-white">OGYA (FIRE) Ghana Marketplace</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center flex-wrap gap-1.5">
                   <span className="text-slate-400">Amount:</span>
                   <span className="font-black text-emerald-400">GH₵ 50.00</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center flex-wrap gap-1.5">
                   <span className="text-slate-400">Reference:</span>
                   <span className="font-mono font-bold text-white">OGYA VERIFIED</span>
                 </div>
@@ -274,7 +274,7 @@ export const BecomeVerifiedPage: React.FC<BecomeVerifiedPageProps> = ({
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-400 mb-1">MoMo / Phone</label>
                     <input

@@ -21,8 +21,8 @@ export const SplashScreen: React.FC = () => {
       // ignore storage errors
     }
 
-    const fadeTimer = setTimeout(() => setFading(true), 550);
-    const hideTimer = setTimeout(() => setVisible(false), 850);
+    const fadeTimer = setTimeout(() => setFading(true), 280);
+    const hideTimer = setTimeout(() => setVisible(false), 500);
     return () => {
       clearTimeout(fadeTimer);
       clearTimeout(hideTimer);
@@ -33,7 +33,7 @@ export const SplashScreen: React.FC = () => {
 
   return (
     <div
-      className={`fixed inset-0 z-[100] bg-[#0b0f19] flex flex-col items-center justify-center p-6 transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[100] bg-[#0b0f19] flex flex-col items-center justify-center p-6 transition-opacity duration-200 ${
         fading ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
       aria-label="OGYA (FIRE) Splash Screen"
@@ -41,7 +41,7 @@ export const SplashScreen: React.FC = () => {
       <div className="flex flex-col items-center text-center space-y-4">
         <div className="w-20 h-20 rounded-3xl overflow-hidden flex items-center justify-center shadow-2xl shadow-orange-600/40 border border-white/25 bg-[#FF6B00]">
           <img
-            src="/assets/aistudio/OGYA_SPECIAL_11_d4fab9c1.jpeg"
+            src="/assets/aistudio/OGYA_SPECIAL_11_d4fab9c1.webp"
             alt="OGYA (FIRE) App Icon"
             className="w-full h-full object-cover scale-[1.06]"
           />

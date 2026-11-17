@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FOOD_VENDORS, FoodVendor, FoodMenuItem } from '../data/foodVendors';
 import { FoodVendorModal } from './FoodVendorModal';
+import { OptimizedImage } from './OptimizedImage';
 import {
   Star,
   Clock,
@@ -67,28 +68,28 @@ export const FoodVendorsSection: React.FC<FoodVendorsSectionProps> = ({
   };
 
   return (
-    <section id="accra-food-vendors" className="w-full bg-[#FAFBFC] dark:bg-[#0c121e] py-10 border-b border-slate-200/80 dark:border-slate-800/80">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="accra-food-vendors" className="w-full bg-[#FAFBFC] dark:bg-[#0c121e] py-8 sm:py-10 border-b border-slate-200/80 dark:border-slate-800/80">
+      <div className="max-w-[1280px] mx-auto px-3 sm:px-6 lg:px-8">
         {/* Section Header with Jumia/Bolt Food Style */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00875A]/10 text-[#00875A] dark:bg-[#00875A]/20 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">
-              <Flame size={14} className="text-[#FF6600]" />
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 sm:mb-8">
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00875A]/10 text-[#00875A] dark:bg-[#00875A]/20 dark:text-emerald-400 text-[11px] sm:text-xs font-bold uppercase tracking-wider mb-2 flex-wrap">
+              <Flame size={14} className="text-[#FF6600] shrink-0" />
               <span>Accra Food Express & Local Kitchens</span>
               <span className="w-1.5 h-1.5 rounded-full bg-[#00875A]" />
               <span>Fast 15-35 Min Delivery</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-950 dark:text-white tracking-tight">
+            <h2 className="text-[clamp(1.25rem,3.4vw,1.875rem)] font-extrabold text-slate-950 dark:text-white tracking-tight">
               Featured Food Vendors in Accra 🇬🇭
             </h2>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-2xl">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-2xl">
               Authentic Ghanaian hot dishes, fresh juices, pizzas, and grills from top neighborhood spots. Flat ₵10 courier delivery right to your door.
             </p>
           </div>
 
           {/* Neighborhood Quick Filter */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full scrollbar-none">
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 mr-1 hidden sm:inline-flex items-center gap-1">
+          <div className="flex items-center gap-1.5 overflow-x-auto touch-pan-x pb-1 max-w-full no-scrollbar">
+            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 mr-1 hidden sm:inline-flex items-center gap-1 shrink-0">
               <Filter size={12} /> Area:
             </span>
             {neighborhoods.map((loc) => {
@@ -97,7 +98,7 @@ export const FoodVendorsSection: React.FC<FoodVendorsSectionProps> = ({
                 <button
                   key={loc}
                   onClick={() => setSelectedNeighborhood(loc)}
-                  className={`text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap transition-all cursor-pointer ${
+                  className={`text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap shrink-0 transition-all cursor-pointer ${
                     active
                       ? 'bg-[#00875A] text-white shadow-xs'
                       : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
@@ -118,7 +119,7 @@ export const FoodVendorsSection: React.FC<FoodVendorsSectionProps> = ({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 min-[1025px]:grid-cols-3 gap-4 sm:gap-6">
           {filteredVendors.map((vendor) => (
             <div
               key={vendor.id}
@@ -129,11 +130,11 @@ export const FoodVendorsSection: React.FC<FoodVendorsSectionProps> = ({
                 className="relative h-48 sm:h-52 w-full overflow-hidden bg-slate-900 cursor-pointer"
                 onClick={() => setSelectedVendorForModal(vendor)}
               >
-                <img
+                <OptimizedImage
                   src={vendor.imageUrl}
                   alt={vendor.name}
+                  wrapperClassName="w-full h-full"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 

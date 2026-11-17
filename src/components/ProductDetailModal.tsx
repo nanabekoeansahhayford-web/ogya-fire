@@ -79,14 +79,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-4 sm:my-8 animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-2xl max-h-[94dvh] sm:max-h-[90vh] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-y-auto overflow-x-hidden my-auto animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-2.5 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors cursor-pointer"
+          className="absolute top-3.5 right-3.5 z-10 p-2.5 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors cursor-pointer"
           aria-label="Close"
         >
           <X size={18} />
@@ -94,10 +94,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2">
           {/* Product Image */}
-          <div className="relative aspect-square md:aspect-auto bg-slate-100 dark:bg-slate-800">
+          <div className="relative aspect-[4/3] md:aspect-auto bg-slate-100 dark:bg-slate-800 min-w-0">
             <img
               src={product.imageUrl}
               alt={product.name}
+              decoding="async"
               className="w-full h-full object-cover"
             />
             <div className="absolute bottom-3 left-3 flex flex-wrap gap-1.5">
@@ -113,7 +114,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           </div>
 
           {/* Details & Purchase Column */}
-          <div className="p-5 sm:p-6 flex flex-col justify-between">
+          <div className="p-4 sm:p-6 flex flex-col justify-between min-w-0">
             <div className="space-y-3">
               {/* Vendor & Stock Status */}
               <div className="flex items-center justify-between gap-2 text-xs flex-wrap">
@@ -138,12 +139,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
 
               {/* Location + Rating row */}
-              <div className="flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
-                <span className="flex items-center gap-1 font-semibold">
-                  <MapPin size={13} className="text-[#FF6600]" />
-                  <span>{displayLocation}</span>
+              <div className="flex items-center justify-between flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400">
+                <span className="flex items-center gap-1 font-semibold min-w-0">
+                  <MapPin size={13} className="text-[#FF6600] shrink-0" />
+                  <span className="truncate">{displayLocation}</span>
                 </span>
-                <span className="flex items-center gap-1 font-bold text-slate-800 dark:text-amber-300">
+                <span className="flex items-center gap-1 font-bold text-slate-800 dark:text-amber-300 shrink-0">
                   <Star size={13} className="fill-amber-400 text-amber-400" />
                   <span>{reviewSummary.avgRating > 0 ? reviewSummary.avgRating.toFixed(1) : 'New'}</span>
                   <span className="text-slate-400 font-normal">
@@ -153,21 +154,21 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
 
               {/* Title */}
-              <h3 className="text-lg font-black text-slate-900 dark:text-white leading-snug">
+              <h3 className="text-[clamp(1.05rem,2.8vw,1.25rem)] font-black text-slate-900 dark:text-white leading-snug break-words">
                 {product.name}
               </h3>
 
               {/* Price */}
-              <div className="p-3 bg-orange-500/10 dark:bg-orange-950/30 border border-orange-500/25 rounded-2xl flex items-baseline justify-between">
-                <div>
+              <div className="p-3 bg-orange-500/10 dark:bg-orange-950/30 border border-orange-500/25 rounded-2xl flex items-baseline justify-between flex-wrap gap-2">
+                <div className="min-w-0">
                   <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                     Price in Ghana Cedis
                   </span>
-                  <span className="text-2xl font-black text-[#FF6600] dark:text-amber-400">
+                  <span className="text-[clamp(1.25rem,3.5vw,1.5rem)] font-black text-[#FF6600] dark:text-amber-400 tabular-nums">
                     GH₵ {product.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
-                <div className="text-right text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                <div className="text-left sm:text-right text-[11px] font-bold text-slate-500 dark:text-slate-400">
                   <span>Fast Delivery</span>
                   <div className="text-emerald-600 dark:text-emerald-400">MTN MoMo Accepted</div>
                 </div>

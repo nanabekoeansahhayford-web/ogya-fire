@@ -8,8 +8,9 @@ import {
   removeRecentSearch,
   clearRecentSearches,
 } from '../utils/storage';
-import heroAccraFastDeliveryImg from '../assets/images/hero_accra_fast_delivery_1793870145564.jpg';
-import heroMarketplaceShowcaseImg from '../assets/images/hero_marketplace_showcase_1792291775965.jpg';
+import heroAccraFastDeliveryImg from '../assets/images/hero_accra_fast_delivery_1793870145564.webp';
+import heroMarketplaceShowcaseImg from '../assets/images/hero_marketplace_showcase_1792291775965.webp';
+import { OptimizedImage } from './OptimizedImage';
 
 interface HeroBannerProps {
   searchQuery: string;
@@ -230,12 +231,14 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
 
   return (
     <div className="relative bg-slate-950 text-white overflow-hidden border-b border-slate-800">
-      {/* Background imagery with subtle overlay scrim */}
+      {/* Background imagery with subtle overlay scrim (lazy-loaded secondary hero image) */}
       <div className="absolute inset-0 z-0">
         {!heroBgError && (
           <img
             src={heroAccraFastDeliveryImg}
             alt="Shop Local in Accra - Fast Delivery on OGYA"
+            loading="lazy"
+            decoding="async"
             onError={() => setHeroBgError(true)}
             className="w-full h-full object-cover opacity-35 object-center"
             referrerPolicy="no-referrer"
@@ -244,29 +247,32 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/85 to-slate-900/60" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
-        {/* Mobile stacked, Tablet 50/50 split, Desktop 12-col split with full-width search bar row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 md:gap-x-8 lg:gap-x-12 lg:gap-y-6 items-center">
+      <div className="relative z-10 max-w-[1280px] mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-10 md:py-12 min-[1025px]:py-16">
+        {/* Phone (<640px): 1-col vertical stack (Text top -> Image full width below -> Stacked Search bar) */}
+        {/* Tablet (641px-1024px): 2-col hero with smaller text + full-width search bar below */}
+        {/* Desktop (>1024px): 12-col split + full-width single-row search bar */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 min-[1025px]:grid-cols-12 gap-y-4 sm:gap-x-6 sm:gap-y-5 min-[1025px]:gap-x-12 min-[1025px]:gap-y-6 items-center">
           {/* Headline & Subtitle */}
-          <div className="w-full md:col-start-1 md:row-start-1 lg:col-span-6 lg:col-start-1 lg:row-start-1">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[11px] sm:text-xs font-black uppercase tracking-wider mb-3 backdrop-blur-md">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>🇬🇭 GHANA VENDOR MARKETPLACE · FAST COURIER</span>
+          <div className="w-full min-w-0 order-1 sm:order-none sm:col-start-1 sm:row-start-1 min-[1025px]:col-span-6 min-[1025px]:col-start-1 min-[1025px]:row-start-1">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[10px] sm:text-[11px] min-[1025px]:text-xs font-black uppercase tracking-wider mb-2.5 backdrop-blur-md max-w-full">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <span className="truncate">🇬🇭 GHANA VENDOR MARKETPLACE · FAST COURIER</span>
             </div>
 
-            <h1 className="text-[clamp(1.75rem,5.5vw,3rem)] font-black tracking-tight text-white mb-2 sm:mb-3 leading-tight text-balance">
+            <h1 className="text-[clamp(1.45rem,5.4vw,2.15rem)] sm:text-[clamp(1.35rem,2.8vw,2rem)] min-[1025px]:text-[clamp(2.25rem,3.4vw,3rem)] font-black tracking-tight text-white mb-2 sm:mb-2.5 leading-tight text-balance">
               Shop Local in Accra - Fast Delivery
             </h1>
 
-            <p className="text-slate-300 text-xs sm:text-sm md:text-base mb-5 sm:mb-6 lg:mb-0 leading-relaxed">
+            <p className="text-slate-300 text-xs sm:text-[13px] min-[1025px]:text-base leading-relaxed">
               Direct from verified Ghanaian merchants in Osu, East Legon, Spintex, and Makola. Authentic goods with doorstep courier dispatch and Mobile Money protection.
             </p>
           </div>
 
-          {/* Unified search bar wrapper - Mobile & Tablet untouched; Desktop lg: full row */}
+          {/* Unified search bar wrapper: order-3 on phone (after image), spans 2 cols on tablet, 12 cols on desktop */}
           <div
+            id="hero-search-wrapper"
             ref={searchContainerRef}
-            className="relative w-full md:col-start-1 md:row-start-2 lg:col-span-12 lg:col-start-1 lg:row-start-2"
+            className="relative w-full min-w-0 order-3 sm:order-none sm:col-span-2 sm:col-start-1 sm:row-start-2 min-[1025px]:col-span-12 min-[1025px]:col-start-1 min-[1025px]:row-start-2"
           >
             {/* Real-time Voice Search Listening / Status Banner */}
             {isListening && (
@@ -286,7 +292,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             )}
 
             <div
-              className={`bg-[#0B1221] p-2 sm:p-2.5 rounded-[16px] shadow-xl flex flex-col md:flex-row lg:flex lg:flex-row lg:flex-nowrap items-stretch md:items-center lg:items-center gap-2 text-white border-2 transition-all ${
+              className={`bg-[#0B1221] p-2.5 sm:p-2.5 rounded-[16px] shadow-xl flex flex-col min-[1025px]:flex-row min-[1025px]:flex-nowrap items-stretch min-[1025px]:items-center gap-2 text-white border-2 transition-all w-full ${
                 isListening
                   ? 'border-red-500 ring-2 ring-red-500/40 shadow-2xl'
                   : isFocused
@@ -294,10 +300,11 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                   : 'border-[#F59E0B]'
               }`}
             >
-              {/* Search query input wrapper */}
-              <div className="flex-1 min-w-0 shrink flex items-center gap-2 px-3 py-2.5 bg-[#111A2E] md:bg-transparent rounded-xl min-h-[44px]">
+              {/* 1. Search query input wrapper (full width on top for Phone/Tablet; flex-1 inline on Desktop) */}
+              <div className="w-full min-[1025px]:flex-1 min-w-0 shrink flex items-center gap-2 px-3 py-2.5 bg-[#111A2E] min-[1025px]:bg-transparent rounded-xl min-h-[44px]">
                 <Search className="w-5 h-5 text-slate-400 shrink-0" />
                 <input
+                  id="hero-search-input"
                   ref={inputRef}
                   type="text"
                   placeholder={
@@ -351,65 +358,68 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                 </button>
               </div>
 
-              {/* Category selection (fixed 200px, flex-shrink: 0 on desktop lg:) */}
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-[#111A2E] md:bg-transparent rounded-xl border-t md:border-t-0 md:border-l border-slate-700/80 min-h-[44px] lg:w-[200px] lg:shrink-0">
-                <Layers className="w-4 h-4 text-slate-400 shrink-0" />
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => onCategoryChange(e.target.value as CategoryId | 'all')}
-                  aria-label="Filter by Category"
-                  className="w-full md:w-auto lg:w-full min-w-0 bg-transparent text-xs font-semibold text-slate-200 focus:outline-none cursor-pointer md:max-w-[140px] lg:max-w-none truncate"
-                >
-                  <option value="all" className="bg-[#0B1221] text-white">
-                    All 17 Categories
-                  </option>
-                  {CATEGORIES.map((c) => (
-                    <option key={c.id} value={c.id} className="bg-[#0B1221] text-white">
-                      {c.name}
+              {/* 2. Category + Region dropdowns: 2-col row below input on Phone & Tablet; inline fixed slots on Desktop */}
+              <div className="grid grid-cols-2 gap-2 w-full min-[1025px]:contents">
+                {/* Category selection */}
+                <div className="min-w-0 w-full flex items-center gap-1.5 px-2.5 sm:px-3 py-2.5 bg-[#111A2E] min-[1025px]:bg-transparent rounded-xl min-[1025px]:rounded-none min-[1025px]:border-l border-slate-700/80 min-h-[44px] min-[1025px]:w-[200px] min-[1025px]:shrink-0">
+                  <Layers className="w-4 h-4 text-slate-400 shrink-0" />
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => onCategoryChange(e.target.value as CategoryId | 'all')}
+                    aria-label="Filter by Category"
+                    className="w-full min-w-0 bg-transparent text-xs font-semibold text-slate-200 focus:outline-none cursor-pointer truncate"
+                  >
+                    <option value="all" className="bg-[#0B1221] text-white">
+                      All Categories
                     </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Region selection (fixed 170px, flex-shrink: 0 on desktop lg:) */}
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-[#111A2E] md:bg-transparent rounded-xl border-t md:border-t-0 md:border-l border-slate-700/80 min-h-[44px] lg:w-[170px] lg:shrink-0">
-                <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-                <select
-                  value={selectedRegion === 'all' ? 'All Regions' : selectedRegion}
-                  onChange={(e) => {
-                    onRegionChange(e.target.value);
-                    setTimeout(() => {
-                      const el = document.getElementById('browse-listings') || document.querySelector('main');
-                      if (el) el.scrollIntoView({ behavior: 'smooth' });
-                    }, 60);
-                  }}
-                  aria-label="Filter by Region"
-                  className="w-full md:w-auto lg:w-full min-w-0 bg-transparent text-xs font-semibold text-slate-200 focus:outline-none cursor-pointer md:max-w-[130px] lg:max-w-none truncate"
-                >
-                  <option value="All Regions" className="bg-[#0B1221] text-white">
-                    All Regions
-                  </option>
-                  {selectedRegion &&
-                    selectedRegion !== 'All Regions' &&
-                    selectedRegion !== 'all' &&
-                    !REGIONS.includes(selectedRegion) && (
-                      <option value={selectedRegion} className="bg-[#0B1221] text-white">
-                        {selectedRegion}
+                    {CATEGORIES.map((c) => (
+                      <option key={c.id} value={c.id} className="bg-[#0B1221] text-white">
+                        {c.name}
                       </option>
-                    )}
-                  {REGIONS.map((r) => (
-                    <option key={r} value={r} className="bg-[#0B1221] text-white">
-                      {r}
+                    ))}
+                  </select>
+                </div>
+
+                {/* Region selection */}
+                <div className="min-w-0 w-full flex items-center gap-1.5 px-2.5 sm:px-3 py-2.5 bg-[#111A2E] min-[1025px]:bg-transparent rounded-xl min-[1025px]:rounded-none min-[1025px]:border-l border-slate-700/80 min-h-[44px] min-[1025px]:w-[170px] min-[1025px]:shrink-0">
+                  <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                  <select
+                    value={selectedRegion === 'all' ? 'All Regions' : selectedRegion}
+                    onChange={(e) => {
+                      onRegionChange(e.target.value);
+                      setTimeout(() => {
+                        const el = document.getElementById('browse-listings') || document.querySelector('main');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }, 60);
+                    }}
+                    aria-label="Filter by Region"
+                    className="w-full min-w-0 bg-transparent text-xs font-semibold text-slate-200 focus:outline-none cursor-pointer truncate"
+                  >
+                    <option value="All Regions" className="bg-[#0B1221] text-white">
+                      All Regions
                     </option>
-                  ))}
-                </select>
+                    {selectedRegion &&
+                      selectedRegion !== 'All Regions' &&
+                      selectedRegion !== 'all' &&
+                      !REGIONS.includes(selectedRegion) && (
+                        <option value={selectedRegion} className="bg-[#0B1221] text-white">
+                          {selectedRegion}
+                        </option>
+                      )}
+                    {REGIONS.map((r) => (
+                      <option key={r} value={r} className="bg-[#0B1221] text-white">
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              {/* Submit / Filter action — Orange #F59E0B with black bold text */}
+              {/* 3. Submit / Filter action — Full width below dropdowns on Phone/Tablet, auto width on Desktop */}
               <button
                 type="button"
                 onClick={() => handleExecuteSearch()}
-                className="w-full md:w-auto lg:w-auto px-6 py-3.5 bg-[#F59E0B] hover:bg-[#fbbf24] active:bg-[#d97706] text-slate-950 font-black text-sm rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 lg:shrink-0 cursor-pointer shadow-md hover:shadow-lg min-h-[44px] relative z-20 whitespace-nowrap"
+                className="w-full min-[1025px]:w-auto px-6 py-3 bg-[#F59E0B] hover:bg-[#fbbf24] active:bg-[#d97706] text-slate-950 font-black text-sm rounded-xl flex items-center justify-center gap-2 transition-all shrink-0 cursor-pointer shadow-md hover:shadow-lg min-h-[44px] relative z-20 whitespace-nowrap"
               >
                 <span>Search</span>
                 <ArrowRight size={16} strokeWidth={2.5} />
@@ -417,7 +427,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             </div>
 
             {/* Card directly below search bar: Recent Searches + Popular Suggestions */}
-            <div className="mt-3 bg-[#0F172A]/95 backdrop-blur-md text-white rounded-2xl border border-slate-700/80 shadow-xl p-4">
+            <div className="mt-3 bg-[#0F172A]/95 backdrop-blur-md text-white rounded-2xl border border-slate-700/80 shadow-xl p-3.5 sm:p-4">
               {recentSearches.length > 0 ? (
                 <div>
                   <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-800 text-xs">
@@ -442,12 +452,12 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                     {recentSearches.map((tag) => (
                       <div
                         key={tag}
-                        className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/90 hover:bg-slate-800 text-slate-200 hover:text-[#F59E0B] border border-slate-700 hover:border-[#F59E0B]/50 transition-all shadow-xs group"
+                        className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/90 hover:bg-slate-800 text-slate-200 hover:text-[#F59E0B] border border-slate-700 hover:border-[#F59E0B]/50 transition-all shadow-xs group max-w-full"
                       >
                         <button
                           type="button"
                           onClick={() => handleSelectTag(tag)}
-                          className="flex items-center gap-1.5 text-left truncate max-w-[220px] cursor-pointer"
+                          className="flex items-center gap-1.5 text-left truncate max-w-[180px] sm:max-w-[220px] cursor-pointer"
                           title={`Search for "${tag}"`}
                         >
                           <Clock size={11} className="text-slate-400 group-hover:text-[#F59E0B] shrink-0" />
@@ -499,31 +509,34 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             </div>
           </div>
 
-          {/* Right Column (50% on tablet/desktop): Hero Visual Card */}
-          <div className="hidden md:flex flex-col items-center justify-center relative md:col-start-2 md:row-start-1 md:row-span-2 lg:col-span-6 lg:col-start-7 lg:row-start-1 lg:row-span-1">
+          {/* Right Column (Full width below text on Phone; Col 2 on Tablet; Col 7-12 on Desktop): Hero Visual Card */}
+          <div className="flex flex-col items-center justify-center relative w-full min-w-0 order-2 sm:order-none sm:col-start-2 sm:row-start-1 min-[1025px]:col-span-6 min-[1025px]:col-start-7 min-[1025px]:row-start-1 min-[1025px]:row-span-1">
             <div className="w-full relative rounded-2xl overflow-hidden border border-slate-700/60 shadow-2xl bg-gradient-to-br from-slate-900 to-slate-950 group">
               {!heroCardError ? (
-                <img
+                <OptimizedImage
                   src={heroMarketplaceShowcaseImg}
                   alt="OGYA (FIRE) Marketplace Ghana"
+                  eager
+                  priority
                   onError={() => setHeroCardError(true)}
                   referrerPolicy="no-referrer"
-                  className="w-full h-64 lg:h-72 object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                  wrapperClassName="w-full h-48 sm:h-52 md:h-60 min-[1025px]:h-72"
+                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                 />
               ) : (
-                <div className="w-full h-64 lg:h-72 bg-gradient-to-br from-slate-900 via-[#111A2E] to-slate-950 flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-full h-48 sm:h-52 md:h-60 min-[1025px]:h-72 bg-gradient-to-br from-slate-900 via-[#111A2E] to-slate-950 flex flex-col items-center justify-center p-6 text-center">
                   <Store className="w-12 h-12 text-[#F59E0B] mb-2" />
                   <p className="text-sm font-black text-white">OGYA (FIRE) Ghana Marketplace</p>
                   <p className="text-xs text-slate-400 mt-1">Verified Vendors Across All 16 Regions</p>
                 </div>
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/35 to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-2 text-xs">
-                <div className="flex items-center gap-2 bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span className="font-bold text-white">Live in Accra, Kumasi &amp; Tema</span>
+              <div className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-xs">
+                <div className="flex items-center gap-2 bg-slate-950/85 backdrop-blur-md px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl border border-slate-700 min-w-0">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
+                  <span className="font-bold text-white truncate">Live in Accra, Kumasi &amp; Tema</span>
                 </div>
-                <div className="flex items-center gap-1.5 bg-orange-600/95 text-white px-2.5 py-1.5 rounded-lg font-black text-[11px] shadow-md">
+                <div className="flex items-center gap-1 bg-orange-600/95 text-white px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg font-black text-[10px] sm:text-[11px] shadow-md shrink-0">
                   <span>⚡ 100% MoMo Secured</span>
                 </div>
               </div>
@@ -534,12 +547,12 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
       {/* Big Orange "I WANT THIS - Post What You Want" Action Card */}
       {onOpenIWantThis && (
         <div className="mt-5 p-3 sm:p-4 rounded-2xl bg-gradient-to-r from-orange-600/90 via-amber-600/90 to-orange-500/90 border border-orange-400/40 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-white">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <span className="text-2xl p-2 rounded-xl bg-white/20 shrink-0">
               🔥
             </span>
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-black uppercase tracking-wider bg-white/30 px-2 py-0.5 rounded text-white">
                   BUYERS DIRECT
                 </span>
@@ -565,8 +578,8 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
       {/* End-to-End Door-to-Door Courier Access Strip */}
       {onOpenCourierHub && (
         <div className="mt-4 pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 text-slate-300 font-medium">
-            <span className="bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded font-black text-[10px] uppercase tracking-wide border border-amber-500/30">
+          <div className="flex items-center gap-2 text-slate-300 font-medium min-w-0">
+            <span className="bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded font-black text-[10px] uppercase tracking-wide border border-amber-500/30 shrink-0">
               NEW
             </span>
             <span>

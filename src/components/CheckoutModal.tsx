@@ -248,7 +248,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         aria-label="Checkout"
       >
         {/* Header Bar */}
-        <div className="shrink-0 p-5 sm:p-6 bg-gradient-to-r from-red-600 via-orange-600 to-amber-600 text-white relative shadow-sm">
+        <div className="shrink-0 p-4 sm:p-6 pr-12 bg-gradient-to-r from-red-600 via-orange-600 to-amber-600 text-white relative shadow-sm">
           <button
             type="button"
             onClick={onClose}
@@ -263,7 +263,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <span>OGYA SECURE CHECKOUT</span>
           </div>
 
-          <h3 className="text-xl sm:text-2xl font-black tracking-tight leading-tight">
+          <h3 className="text-[clamp(1.15rem,3.4vw,1.5rem)] font-black tracking-tight leading-tight">
             {step === 'momo_popup'
               ? `Pay ${total} GHS to OGYA`
               : step === 'awaiting_approval'
@@ -288,7 +288,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 min-h-0 space-y-4">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 min-h-0 space-y-4">
           {error && (
             <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 text-rose-800 dark:text-rose-300 text-xs flex items-start gap-2.5">
               <AlertCircle size={16} className="text-rose-600 shrink-0 mt-0.5" />
@@ -428,36 +428,36 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
 
               {/* Receipt Box */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-left text-xs space-y-2.5">
-                <div className="flex justify-between items-center">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-left text-xs space-y-2.5 min-w-0">
+                <div className="flex justify-between items-center flex-wrap gap-2">
                   <span className="text-slate-500 dark:text-slate-400">Payment Status:</span>
                   <span className="font-mono font-bold px-2 py-0.5 rounded-md uppercase text-[11px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300" data-testid="receipt-payment-status">
                     Paid
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center flex-wrap gap-2">
                   <span className="text-slate-500 dark:text-slate-400">Order ID:</span>
-                  <span className="font-mono font-bold text-slate-900 dark:text-white">
+                  <span className="font-mono font-bold text-slate-900 dark:text-white break-all">
                     {placedOrder?.id}
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center flex-wrap gap-2">
                   <span className="text-slate-500 dark:text-slate-400">Payment Method:</span>
                   <span className="font-bold text-slate-900 dark:text-white">
                     {placedOrder?.paymentMethod} ({placedOrder?.momoNumber})
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center flex-wrap gap-2">
                   <span className="text-slate-500 dark:text-slate-400">Delivery Address:</span>
-                  <span className="font-semibold text-slate-900 dark:text-white truncate max-w-[220px]">
+                  <span className="font-semibold text-slate-900 dark:text-white break-words text-right min-w-0 max-w-full">
                     {placedOrder?.deliveryAddress}
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center pt-2.5 border-t border-slate-200 dark:border-slate-700">
+                <div className="flex justify-between items-center flex-wrap gap-2 pt-2.5 border-t border-slate-200 dark:border-slate-700">
                   <span className="font-black text-slate-900 dark:text-white text-sm">
                     Amount Paid:
                   </span>
@@ -504,29 +504,29 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
 
               {/* Receipt Box */}
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-left text-xs space-y-2.5">
-                <div className="flex justify-between items-center">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-left text-xs space-y-2.5 min-w-0">
+                <div className="flex justify-between items-center flex-wrap gap-2">
                   <span className="text-slate-500 dark:text-slate-400">Payment Status:</span>
                   <span className="font-mono font-bold px-2 py-0.5 rounded-md uppercase text-[11px] bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300">
                     Pay on Delivery (pending)
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center flex-wrap gap-2">
                   <span className="text-slate-500 dark:text-slate-400">Order ID:</span>
-                  <span className="font-mono font-bold text-slate-900 dark:text-white">
+                  <span className="font-mono font-bold text-slate-900 dark:text-white break-all">
                     {placedOrder?.id}
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center flex-wrap gap-2">
                   <span className="text-slate-500 dark:text-slate-400">Delivery Address:</span>
-                  <span className="font-semibold text-slate-900 dark:text-white truncate max-w-[220px]">
+                  <span className="font-semibold text-slate-900 dark:text-white break-words text-right min-w-0 max-w-full">
                     {placedOrder?.deliveryAddress}
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center pt-2.5 border-t border-slate-200 dark:border-slate-700">
+                <div className="flex justify-between items-center flex-wrap gap-2 pt-2.5 border-t border-slate-200 dark:border-slate-700">
                   <span className="font-black text-slate-900 dark:text-white text-sm">
                     Amount to Pay Courier:
                   </span>
@@ -648,13 +648,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   {/* Option 1: MTN MoMo */}
                   <label
                     htmlFor="payment_mtn_momo"
-                    className={`flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${
+                    className={`flex items-center justify-between flex-wrap gap-2 p-3 sm:p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${
                       paymentMethod === 'MTN MoMo'
                         ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-950/30 text-amber-950 dark:text-amber-200 shadow-xs'
                         : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                       <input
                         type="radio"
                         id="payment_mtn_momo"
@@ -662,13 +662,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         value="MTN MoMo"
                         checked={paymentMethod === 'MTN MoMo'}
                         onChange={() => setPaymentMethod('MTN MoMo')}
-                        className="w-4 h-4 text-amber-600 focus:ring-amber-500 border-slate-300 cursor-pointer"
+                        className="w-4 h-4 text-amber-600 focus:ring-amber-500 border-slate-300 cursor-pointer shrink-0"
                       />
-                      <div className="flex items-center gap-2">
-                        <span className="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 font-black text-[10px] flex items-center justify-center">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 font-black text-[10px] flex items-center justify-center shrink-0">
                           MTN
                         </span>
-                        <div>
+                        <div className="min-w-0">
                           <span className="text-xs font-black block">MTN MoMo</span>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400">
                             Instant prompt on *170#
@@ -676,7 +676,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         </div>
                       </div>
                     </div>
-                    <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400">
+                    <span className="text-[10px] sm:text-[11px] font-bold text-amber-700 dark:text-amber-400 shrink-0">
                       Mobile Money
                     </span>
                   </label>
@@ -684,13 +684,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   {/* Option 2: Telecel Cash */}
                   <label
                     htmlFor="payment_telecel_cash"
-                    className={`flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${
+                    className={`flex items-center justify-between flex-wrap gap-2 p-3 sm:p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${
                       paymentMethod === 'Telecel Cash'
                         ? 'border-red-500 bg-red-50/70 dark:bg-red-950/30 text-red-950 dark:text-red-200 shadow-xs'
                         : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                       <input
                         type="radio"
                         id="payment_telecel_cash"
@@ -698,13 +698,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         value="Telecel Cash"
                         checked={paymentMethod === 'Telecel Cash'}
                         onChange={() => setPaymentMethod('Telecel Cash')}
-                        className="w-4 h-4 text-red-600 focus:ring-red-500 border-slate-300 cursor-pointer"
+                        className="w-4 h-4 text-red-600 focus:ring-red-500 border-slate-300 cursor-pointer shrink-0"
                       />
-                      <div className="flex items-center gap-2">
-                        <span className="w-7 h-7 rounded-lg bg-red-600 text-white font-black text-[10px] flex items-center justify-center">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-7 h-7 rounded-lg bg-red-600 text-white font-black text-[10px] flex items-center justify-center shrink-0">
                           TC
                         </span>
-                        <div>
+                        <div className="min-w-0">
                           <span className="text-xs font-black block">Telecel Cash</span>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400">
                             Instant prompt on *110#
@@ -712,7 +712,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         </div>
                       </div>
                     </div>
-                    <span className="text-[11px] font-bold text-red-700 dark:text-red-400">
+                    <span className="text-[10px] sm:text-[11px] font-bold text-red-700 dark:text-red-400 shrink-0">
                       Mobile Money
                     </span>
                   </label>
@@ -720,13 +720,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   {/* Option 3: Cash on Delivery */}
                   <label
                     htmlFor="payment_cod"
-                    className={`flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${
+                    className={`flex items-center justify-between flex-wrap gap-2 p-3 sm:p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${
                       paymentMethod === 'Cash on Delivery'
                         ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30 text-emerald-950 dark:text-emerald-200 shadow-xs'
                         : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                       <input
                         type="radio"
                         id="payment_cod"
@@ -734,13 +734,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         value="Cash on Delivery"
                         checked={paymentMethod === 'Cash on Delivery'}
                         onChange={() => setPaymentMethod('Cash on Delivery')}
-                        className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer"
+                        className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer shrink-0"
                       />
-                      <div className="flex items-center gap-2">
-                        <span className="w-7 h-7 rounded-lg bg-emerald-600 text-white font-black text-[10px] flex items-center justify-center">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-7 h-7 rounded-lg bg-emerald-600 text-white font-black text-[10px] flex items-center justify-center shrink-0">
                           <Banknote size={14} />
                         </span>
-                        <div>
+                        <div className="min-w-0">
                           <span className="text-xs font-black block">Cash on Delivery</span>
                           <span className="text-[10px] text-slate-500 dark:text-slate-400">
                             Pay courier upon inspection
@@ -748,7 +748,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         </div>
                       </div>
                     </div>
-                    <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+                    <span className="text-[10px] sm:text-[11px] font-bold text-emerald-700 dark:text-emerald-400 shrink-0">
                       Pay on Delivery
                     </span>
                   </label>
@@ -784,14 +784,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               )}
 
               {/* Order Items & Total Summary */}
-              <div className="p-3.5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                <div>
+              <div className="p-3.5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between flex-wrap gap-2">
+                <div className="min-w-0">
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                     Total in GHS ({cart.length} {cart.length === 1 ? 'item' : 'items'}):
                   </span>
                   <div className="text-[10px] text-slate-400">Includes GNFS certified inspection</div>
                 </div>
-                <span className="text-lg font-black text-red-600 dark:text-red-400 tabular-nums">
+                <span className="text-lg font-black text-red-600 dark:text-red-400 tabular-nums shrink-0">
                   GHS {total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
