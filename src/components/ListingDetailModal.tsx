@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { lazyWithRetry } from '../utils/lazyRetry';
 import {
   X,
   Heart,
@@ -39,7 +40,7 @@ import { Listing, SellerInfo } from '../types/marketplace';
 import { Review } from '../types/store';
 import { formatPrice, getListingReport, AdReportRecord, getStoredListings } from '../utils/storage';
 import { CategoryIcon } from './CategoryIcon';
-const PriceTrendChart = lazy(() =>
+const PriceTrendChart = lazyWithRetry(() =>
   import('./PriceTrendChart').then((m) => ({ default: m.PriceTrendChart }))
 );
 import { getSellerReputation } from '../utils/reputation';

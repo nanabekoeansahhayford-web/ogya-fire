@@ -9,8 +9,7 @@ import {
   clearRecentSearches,
 } from '../utils/storage';
 import heroAccraFastDeliveryImg from '../assets/images/hero_accra_fast_delivery_1793870145564.webp';
-import heroMarketplaceShowcaseImg from '../assets/images/hero_marketplace_showcase_1792291775965.webp';
-import { OptimizedImage } from './OptimizedImage';
+import heroAccraRiderImg from '../assets/images/hero_accra_rider_1794956077922.webp';
 
 interface HeroBannerProps {
   searchQuery: string;
@@ -254,17 +253,17 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 min-[1025px]:grid-cols-12 gap-y-4 sm:gap-x-6 sm:gap-y-5 min-[1025px]:gap-x-12 min-[1025px]:gap-y-6 items-center">
           {/* Headline & Subtitle */}
           <div className="w-full min-w-0 order-1 sm:order-none sm:col-start-1 sm:row-start-1 min-[1025px]:col-span-6 min-[1025px]:col-start-1 min-[1025px]:row-start-1">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[10px] sm:text-[11px] min-[1025px]:text-xs font-black uppercase tracking-wider mb-2.5 backdrop-blur-md max-w-full">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[10px] sm:text-[11px] min-[1025px]:text-xs font-black uppercase tracking-wider mb-3 backdrop-blur-md max-w-full">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-              <span className="truncate">🇬🇭 GHANA VENDOR MARKETPLACE · FAST COURIER</span>
+              <span className="whitespace-normal leading-snug">🇬🇭 GHANA VENDOR MARKETPLACE · FAST COURIER</span>
             </div>
 
-            <h1 className="text-[clamp(1.45rem,5.4vw,2.15rem)] sm:text-[clamp(1.35rem,2.8vw,2rem)] min-[1025px]:text-[clamp(2.25rem,3.4vw,3rem)] font-black tracking-tight text-white mb-2 sm:mb-2.5 leading-tight text-balance">
+            <h1 className="text-[clamp(1.5rem,5.4vw,2.2rem)] sm:text-[clamp(1.45rem,2.7vw,2.15rem)] min-[1025px]:text-[clamp(2.25rem,3.2vw,3rem)] font-black tracking-tight text-white mb-2.5 sm:mb-3 leading-[1.15] whitespace-normal break-words">
               Shop Local in Accra - Fast Delivery
             </h1>
 
-            <p className="text-slate-300 text-xs sm:text-[13px] min-[1025px]:text-base leading-relaxed">
-              Direct from verified Ghanaian merchants in Osu, East Legon, Spintex, and Makola. Authentic goods with doorstep courier dispatch and Mobile Money protection.
+            <p className="text-slate-200 text-[13px] sm:text-sm min-[1025px]:text-base leading-relaxed whitespace-normal break-words max-w-xl">
+              Direct from verified Ghanaian merchants in Osu, East Legon, Spintex, and Makola. Authentic goods, fast MoMo secured delivery.
             </p>
           </div>
 
@@ -509,34 +508,34 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             </div>
           </div>
 
-          {/* Right Column (Full width below text on Phone; Col 2 on Tablet; Col 7-12 on Desktop): Hero Visual Card */}
+          {/* Right Column (Full width below text on Phone; Col 2 on Tablet; Col 7-12 on Desktop): Bright Accra Hero Photo */}
           <div className="flex flex-col items-center justify-center relative w-full min-w-0 order-2 sm:order-none sm:col-start-2 sm:row-start-1 min-[1025px]:col-span-6 min-[1025px]:col-start-7 min-[1025px]:row-start-1 min-[1025px]:row-span-1">
-            <div className="w-full relative rounded-2xl overflow-hidden border border-slate-700/60 shadow-2xl bg-gradient-to-br from-slate-900 to-slate-950 group">
+            <div className="w-full relative rounded-2xl overflow-hidden border-2 border-amber-400/40 shadow-2xl bg-amber-50 group aspect-[16/9]">
               {!heroCardError ? (
-                <OptimizedImage
-                  src={heroMarketplaceShowcaseImg}
-                  alt="OGYA (FIRE) Marketplace Ghana"
-                  eager
-                  priority
+                <img
+                  src={heroAccraRiderImg}
+                  alt="Ghana delivery rider on motorbike in vibrant Makola Market Accra with MTN Mobile Money"
+                  loading="eager"
+                  decoding="sync"
+                  fetchPriority="high"
                   onError={() => setHeroCardError(true)}
                   referrerPolicy="no-referrer"
-                  wrapperClassName="w-full h-48 sm:h-52 md:h-60 min-[1025px]:h-72"
-                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover object-center brightness-105 contrast-[1.03] group-hover:scale-[1.03] transition-transform duration-500"
                 />
               ) : (
-                <div className="w-full h-48 sm:h-52 md:h-60 min-[1025px]:h-72 bg-gradient-to-br from-slate-900 via-[#111A2E] to-slate-950 flex flex-col items-center justify-center p-6 text-center">
-                  <Store className="w-12 h-12 text-[#F59E0B] mb-2" />
+                <div className="w-full h-full bg-gradient-to-br from-amber-500 via-orange-500 to-emerald-600 flex flex-col items-center justify-center p-6 text-center">
+                  <Store className="w-12 h-12 text-white mb-2" />
                   <p className="text-sm font-black text-white">OGYA (FIRE) Ghana Marketplace</p>
-                  <p className="text-xs text-slate-400 mt-1">Verified Vendors Across All 16 Regions</p>
+                  <p className="text-xs text-white/90 mt-1">Verified Vendors Across All 16 Regions</p>
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/35 to-transparent" />
-              <div className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-xs">
-                <div className="flex items-center gap-2 bg-slate-950/85 backdrop-blur-md px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl border border-slate-700 min-w-0">
+              {/* Bottom corner status badges (no dark scrim over the photo so the scene stays bright & clear) */}
+              <div className="absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 text-[10px] sm:text-xs pointer-events-none">
+                <div className="flex items-center gap-1.5 bg-slate-950/85 backdrop-blur-md px-2.5 py-1 rounded-xl border border-white/20 min-w-0 shadow-lg">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
-                  <span className="font-bold text-white truncate">Live in Accra, Kumasi &amp; Tema</span>
+                  <span className="font-bold text-white whitespace-nowrap">Live in Accra, Kumasi &amp; Tema</span>
                 </div>
-                <div className="flex items-center gap-1 bg-orange-600/95 text-white px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg font-black text-[10px] sm:text-[11px] shadow-md shrink-0">
+                <div className="flex items-center gap-1 bg-[#FF6600] text-white px-2.5 py-1 rounded-lg font-black text-[10px] sm:text-[11px] shadow-lg shrink-0 border border-white/25">
                   <span>⚡ 100% MoMo Secured</span>
                 </div>
               </div>

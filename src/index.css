@@ -56,3 +56,19 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* === OGYA FULL-WIDTH FIX - DO NOT REMOVE === */
+html, body, #root {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow-x: hidden;
+}
+.max-w-7xl, .max-w-6xl, .max-w-5xl, .max-w-\[1400px\], .max-w-\[1200px\], .max-w-\[1280px\], .container {
+  max-width: none !important;
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+

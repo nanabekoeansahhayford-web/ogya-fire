@@ -12,7 +12,7 @@ function preloadFirstHeroImagePlugin(): Plugin {
       handler(html, ctx) {
         if (!ctx?.bundle) return html;
         const firstHeroAsset = Object.keys(ctx.bundle).find((fileName) =>
-          /assets\/hero_marketplace_showcase_.*\.webp$/.test(fileName)
+          /assets\/hero_accra_rider_.*\.webp$/.test(fileName)
         );
         if (!firstHeroAsset) return html;
         const href = firstHeroAsset.startsWith('/') ? firstHeroAsset : `/${firstHeroAsset}`;

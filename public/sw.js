@@ -1,5 +1,5 @@
-const CACHE_NAME = 'ogya-fire-v5';
-const IMAGE_CACHE_NAME = 'ogya-images-v5';
+const CACHE_NAME = 'ogya-fire-v6';
+const IMAGE_CACHE_NAME = 'ogya-images-v6';
 const ACTIVE_CACHES = new Set([CACHE_NAME, IMAGE_CACHE_NAME]);
 
 const CORE_ASSETS = [
@@ -28,6 +28,16 @@ function isImageRequest(req, url) {
   return false;
 }
 
+function isViteDevModuleRequest(url) {
+  return (
+    url.pathname.startsWith('/src/') ||
+    url.pathname.startsWith('/@') ||
+    url.pathname.startsWith('/node_modules/') ||
+    url.searchParams.has('t') ||
+    url.searchParams.has('v')
+  );
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS)).catch(() => undefined)
@@ -54,8 +64,9 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(req.url);
 
-  // Never intercept API routes or Firebase Auth / Firestore / Google Identity traffic
+  // Never intercept API routes, Vite dev modules, or Firebase Auth / Firestore / Google Identity traffic
   if (url.pathname.startsWith('/api/')) return;
+  if (url.origin === self.location.origin && isViteDevModuleRequest(url)) return;
   if (
     url.hostname.includes('googleapis.com') ||
     url.hostname.includes('firebaseio.com') ||
@@ -65,7 +76,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 1. CacheFirst for images (local WebP assets, Cloudinary, Unsplash) so repeat visits load instantly
+  // 1. CacheFirst for images (local WebP assets, Cloudinary, Unsplash)
   if (isImageRequest(req, url)) {
     event.respondWith(
       caches.open(IMAGE_CACHE_NAME).then(async (cache) => {
@@ -99,12 +110,12 @@ self.addEventListener('fetch', (event) => {
           }
           return res;
         })
-        .catch(async () => (await caches.match(req)) || (await caches.match('/')))
+        .catch(async () => (await caches.match(req)) || (await caches.match('/')) || Response.error())
     );
     return;
   }
 
-  // 3. StaleWhileRevalidate for hashed JS chunks, CSS bundles, and manifest
+  // 3. StaleWhileRevalidate for hashed production JS/CSS chunks and manifest
   event.respondWith(
     caches.open(CACHE_NAME).then(async (cache) => {
       const cached = await cache.match(req);
@@ -115,7 +126,7 @@ self.addEventListener('fetch', (event) => {
           }
           return res;
         })
-        .catch(() => cached);
+        .catch(() => cached || Response.error());
 
       return cached || networkPromise;
     })

@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
+import { lazyWithRetry, ChunkErrorBoundary } from './utils/lazyRetry';
 import { Header } from './components/Header';
 import { CategoryNav } from './components/CategoryNav';
 import { HeroBanner } from './components/HeroBanner';
@@ -59,113 +60,118 @@ import {
   HOME_LOCATIONS,
   matchesLocationFilter,
   isListingSellerVerified,
+  filterAndSortListings,
+  countActiveFilters,
 } from './utils/marketplaceHelpers';
 import type { LegalPageId } from './components/LegalPagesModal';
 import type { WhatsAppOrderTarget } from './components/WhatsAppOrderModal';
 import { SlidersHorizontal, CheckCircle2, ShieldCheck, Plus, AlertCircle, Award, Home, Store, ShoppingCart, MapPin, Search, User } from 'lucide-react';
 
 // Lazy-loaded standalone route pages
-const VendorDashboardPage = lazy(() =>
+const VendorDashboardPage = lazyWithRetry(() =>
   import('./components/VendorDashboardPage').then((m) => ({ default: m.VendorDashboardPage }))
 );
-const BecomeVerifiedPage = lazy(() =>
+const BecomeVerifiedPage = lazyWithRetry(() =>
   import('./components/BecomeVerifiedPage').then((m) => ({ default: m.BecomeVerifiedPage }))
 );
-const LegalPageView = lazy(() =>
+const LegalPageView = lazyWithRetry(() =>
   import('./components/LegalPageView').then((m) => ({ default: m.LegalPageView }))
 );
 
 // Lazy-loaded below-the-fold sections & layout chrome
-const BuyersWantFeed = lazy(() =>
+const BuyersWantFeed = lazyWithRetry(() =>
   import('./components/BuyersWantFeed').then((m) => ({ default: m.BuyersWantFeed }))
 );
-const FoodVendorsSection = lazy(() =>
+const FoodVendorsSection = lazyWithRetry(() =>
   import('./components/FoodVendorsSection').then((m) => ({ default: m.FoodVendorsSection }))
 );
-const StoreProductsSection = lazy(() =>
+const StoreProductsSection = lazyWithRetry(() =>
   import('./components/StoreProductsSection').then((m) => ({ default: m.StoreProductsSection }))
 );
-const FilterSidebar = lazy(() =>
+const FilterSidebar = lazyWithRetry(() =>
   import('./components/FilterSidebar').then((m) => ({ default: m.FilterSidebar }))
 );
-const RecentlyViewed = lazy(() =>
+const MobileFilterModal = lazyWithRetry(() =>
+  import('./components/MobileFilterModal').then((m) => ({ default: m.MobileFilterModal }))
+);
+const RecentlyViewed = lazyWithRetry(() =>
   import('./components/RecentlyViewed').then((m) => ({ default: m.RecentlyViewed }))
 );
-const Footer = lazy(() =>
+const Footer = lazyWithRetry(() =>
   import('./components/Footer').then((m) => ({ default: m.Footer }))
 );
 
 // Lazy-loaded modals & drawers (fetched on demand when opened)
-const ListingDetailModal = lazy(() =>
+const ListingDetailModal = lazyWithRetry(() =>
   import('./components/ListingDetailModal').then((m) => ({ default: m.ListingDetailModal }))
 );
-const SellerProfileModal = lazy(() =>
+const SellerProfileModal = lazyWithRetry(() =>
   import('./components/SellerProfileModal').then((m) => ({ default: m.SellerProfileModal }))
 );
-const ChatModal = lazy(() =>
+const ChatModal = lazyWithRetry(() =>
   import('./components/ChatModal').then((m) => ({ default: m.ChatModal }))
 );
-const PostAdModal = lazy(() =>
+const PostAdModal = lazyWithRetry(() =>
   import('./components/PostAdModal').then((m) => ({ default: m.PostAdModal }))
 );
-const SavedAdsDrawer = lazy(() =>
+const SavedAdsDrawer = lazyWithRetry(() =>
   import('./components/SavedAdsDrawer').then((m) => ({ default: m.SavedAdsDrawer }))
 );
-const SafetyModal = lazy(() =>
+const SafetyModal = lazyWithRetry(() =>
   import('./components/SafetyModal').then((m) => ({ default: m.SafetyModal }))
 );
-const BoostAdModal = lazy(() =>
+const BoostAdModal = lazyWithRetry(() =>
   import('./components/BoostAdModal').then((m) => ({ default: m.BoostAdModal }))
 );
-const AuthModal = lazy(() =>
+const AuthModal = lazyWithRetry(() =>
   import('./components/AuthModal').then((m) => ({ default: m.AuthModal }))
 );
-const UserProfileModal = lazy(() =>
+const UserProfileModal = lazyWithRetry(() =>
   import('./components/UserProfileModal').then((m) => ({ default: m.UserProfileModal }))
 );
-const SellerDashboardModal = lazy(() =>
+const SellerDashboardModal = lazyWithRetry(() =>
   import('./components/SellerDashboardModal').then((m) => ({ default: m.SellerDashboardModal }))
 );
-const ReportListingModal = lazy(() =>
+const ReportListingModal = lazyWithRetry(() =>
   import('./components/ReportListingModal').then((m) => ({ default: m.ReportListingModal }))
 );
-const CourierHubModal = lazy(() =>
+const CourierHubModal = lazyWithRetry(() =>
   import('./components/CourierHubModal').then((m) => ({ default: m.CourierHubModal }))
 );
-const CourierOrderModal = lazy(() =>
+const CourierOrderModal = lazyWithRetry(() =>
   import('./components/CourierOrderModal').then((m) => ({ default: m.CourierOrderModal }))
 );
-const CourierTrackingModal = lazy(() =>
+const CourierTrackingModal = lazyWithRetry(() =>
   import('./components/CourierTrackingModal').then((m) => ({ default: m.CourierTrackingModal }))
 );
-const VerifiedSubscriptionModal = lazy(() =>
+const VerifiedSubscriptionModal = lazyWithRetry(() =>
   import('./components/VerifiedSubscriptionModal').then((m) => ({ default: m.VerifiedSubscriptionModal }))
 );
-const ProductDetailModal = lazy(() =>
+const ProductDetailModal = lazyWithRetry(() =>
   import('./components/ProductDetailModal').then((m) => ({ default: m.ProductDetailModal }))
 );
-const CartModal = lazy(() =>
+const CartModal = lazyWithRetry(() =>
   import('./components/CartModal').then((m) => ({ default: m.CartModal }))
 );
-const CheckoutModal = lazy(() =>
+const CheckoutModal = lazyWithRetry(() =>
   import('./components/CheckoutModal').then((m) => ({ default: m.CheckoutModal }))
 );
-const MyOrdersModal = lazy(() =>
+const MyOrdersModal = lazyWithRetry(() =>
   import('./components/MyOrdersModal').then((m) => ({ default: m.MyOrdersModal }))
 );
-const BecomeVendorModal = lazy(() =>
+const BecomeVendorModal = lazyWithRetry(() =>
   import('./components/BecomeVendorModal').then((m) => ({ default: m.BecomeVendorModal }))
 );
-const VendorDashboardModal = lazy(() =>
+const VendorDashboardModal = lazyWithRetry(() =>
   import('./components/VendorDashboardModal').then((m) => ({ default: m.VendorDashboardModal }))
 );
-const IWantThisModal = lazy(() =>
+const IWantThisModal = lazyWithRetry(() =>
   import('./components/IWantThisModal').then((m) => ({ default: m.IWantThisModal }))
 );
-const LegalPagesModal = lazy(() =>
+const LegalPagesModal = lazyWithRetry(() =>
   import('./components/LegalPagesModal').then((m) => ({ default: m.LegalPagesModal }))
 );
-const WhatsAppOrderModal = lazy(() =>
+const WhatsAppOrderModal = lazyWithRetry(() =>
   import('./components/WhatsAppOrderModal').then((m) => ({ default: m.WhatsAppOrderModal }))
 );
 
@@ -1000,120 +1006,12 @@ export default function App() {
   }, [listings, products]);
 
   // Filtered listings
-  const filteredListings = useMemo(() => {
-    return listings
-      .filter((item) => {
-        // Search query
-        if (filters.searchQuery.trim()) {
-          const q = filters.searchQuery.toLowerCase();
-          const matchTitle = item.title.toLowerCase().includes(q);
-          const matchDesc = item.description.toLowerCase().includes(q);
-          const matchCategory = item.categoryName.toLowerCase().includes(q);
-          const matchSubcategory = item.subcategory.toLowerCase().includes(q);
-          const matchLocation = item.location.toLowerCase().includes(q);
-          const matchSeller = item.seller.name.toLowerCase().includes(q);
-          const matchCV = item.cvDetails
-            ? item.cvDetails.candidateName.toLowerCase().includes(q) ||
-              item.cvDetails.skills.some((s) => s.toLowerCase().includes(q))
-            : false;
-          const matchJob = item.jobDetails
-            ? item.jobDetails.companyName.toLowerCase().includes(q) ||
-              item.jobDetails.requirements.some((r) => r.toLowerCase().includes(q))
-            : false;
+  const filteredListings = useMemo(
+    () => filterAndSortListings(listings, filters),
+    [listings, filters]
+  );
 
-          if (!matchTitle && !matchDesc && !matchCategory && !matchSubcategory && !matchLocation && !matchSeller && !matchCV && !matchJob) {
-            return false;
-          }
-        }
-
-        // Category
-        if (filters.category !== 'all') {
-          if (filters.category === 'laptops') {
-            const isLaptop =
-              item.categoryId === 'laptops' ||
-              item.subcategory.toLowerCase().includes('laptop') ||
-              item.title.toLowerCase().includes('laptop') ||
-              item.title.toLowerCase().includes('macbook');
-            if (!isLaptop) return false;
-          } else if (filters.category === 'accessories') {
-            const isAcc =
-              item.categoryId === 'accessories' ||
-              item.subcategory.toLowerCase().includes('accessor') ||
-              item.subcategory.toLowerCase().includes('auto parts') ||
-              item.title.toLowerCase().includes('earbuds') ||
-              item.title.toLowerCase().includes('charger') ||
-              item.title.toLowerCase().includes('headphone') ||
-              item.title.toLowerCase().includes('phone case');
-            if (!isAcc) return false;
-          } else if (item.categoryId !== filters.category) {
-            return false;
-          }
-        }
-
-        // Subcategory
-        if (filters.subcategory && filters.subcategory !== 'all' && item.subcategory !== filters.subcategory) {
-          return false;
-        }
-
-        // Location filter across Ghana (All, Accra, Amasaman, Madina, Kasoa, Kumasi, Tema, Legon & 16 regions)
-        if (!matchesLocationFilter(item.location, item.region, filters.region)) {
-          return false;
-        }
-
-        // Price range
-        if (filters.minPrice && !isNaN(Number(filters.minPrice))) {
-          if (item.price < Number(filters.minPrice)) return false;
-        }
-        if (filters.maxPrice && !isNaN(Number(filters.maxPrice))) {
-          if (item.price > Number(filters.maxPrice)) return false;
-        }
-
-        // Condition
-        if (filters.condition !== 'all' && item.condition !== filters.condition) {
-          return false;
-        }
-
-        // Only verified (Supports Ghana Card verified or GH₵50 subscribed verified)
-        if (filters.onlyVerified && !isListingSellerVerified(item)) {
-          return false;
-        }
-
-        // Reputation Badge Filter
-        if (filters.badgeFilter && filters.badgeFilter !== 'all') {
-          const itemBadges = computeSellerBadges(item.seller);
-          if (!itemBadges.includes(filters.badgeFilter)) {
-            return false;
-          }
-        }
-
-        return true;
-      })
-      .sort((a, b) => {
-        // 1. Pinned promoted listings always rank first
-        if (a.isPromoted && !b.isPromoted) return -1;
-        if (!a.isPromoted && b.isPromoted) return 1;
-
-        // 2. Verified sellers always rank before unverified sellers
-        const aVerified = isListingSellerVerified(a) ? 1 : 0;
-        const bVerified = isListingSellerVerified(b) ? 1 : 0;
-        if (aVerified !== bVerified) return bVerified - aVerified;
-
-        if (filters.sortBy === 'top-rated') {
-          return b.seller.rating - a.seller.rating || b.seller.reviewCount - a.seller.reviewCount;
-        }
-        if (filters.sortBy === 'price-low') {
-          return a.price - b.price;
-        }
-        if (filters.sortBy === 'price-high') {
-          return b.price - a.price;
-        }
-        if (filters.sortBy === 'popular') {
-          return b.viewsCount - a.viewsCount;
-        }
-        // default: newest
-        return b.id.localeCompare(a.id);
-      });
-  }, [listings, filters]);
+  const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
 
   // Saved listings list
   const savedListings = useMemo(() => {
@@ -1369,23 +1267,27 @@ export default function App() {
       </div>
 
       {/* "Buyers Want" Feed on Homepage (Live Buyer Demands & WhatsApp Connections) */}
-      <Suspense fallback={<SectionSkeleton titleWidth="w-48" cardCount={4} />}>
-        <BuyersWantFeed
-          wantedItems={wantedItems}
-          onOpenIWantThis={() => setIsIWantThisOpen(true)}
-        />
-      </Suspense>
+      <ChunkErrorBoundary>
+        <Suspense fallback={<SectionSkeleton titleWidth="w-48" cardCount={4} />}>
+          <BuyersWantFeed
+            wantedItems={wantedItems}
+            onOpenIWantThis={() => setIsIWantThisOpen(true)}
+          />
+        </Suspense>
+      </ChunkErrorBoundary>
 
       {/* Featured Food Vendors in Accra (shown on All & Food tabs) */}
       {(filters.category === 'all' || filters.category === 'food') && (
-        <Suspense fallback={<SectionSkeleton titleWidth="w-64" cardCount={3} />}>
-          <FoodVendorsSection
-            onAddToCart={handleAddFoodToCart}
-            cartItemCount={getCartItemCount(cart)}
-            getItemQuantityInCart={getItemQuantityInCart}
-            searchQuery={filters.searchQuery}
-          />
-        </Suspense>
+        <ChunkErrorBoundary>
+          <Suspense fallback={<SectionSkeleton titleWidth="w-64" cardCount={3} />}>
+            <FoodVendorsSection
+              onAddToCart={handleAddFoodToCart}
+              cartItemCount={getCartItemCount(cart)}
+              getItemQuantityInCart={getItemQuantityInCart}
+              searchQuery={filters.searchQuery}
+            />
+          </Suspense>
+        </ChunkErrorBoundary>
       )}
 
       {/* Home Location Filter Bar (All, Accra, Amasaman, Madina, Kasoa, Kumasi, Tema, Legon) */}
@@ -1426,31 +1328,33 @@ export default function App() {
       </section>
 
       {/* General Marketplace Store Products Organized by Category (Food, Phones, Laptops, Cars, Accessories, Fashion, Home Items, Electronics) */}
-      <Suspense fallback={<SectionSkeleton titleWidth="w-60" cardCount={8} />}>
-        <StoreProductsSection
-          products={products}
-          selectedCategory={filters.category}
-          selectedLocation={filters.region}
-          searchQuery={filters.searchQuery}
-          reviews={reviews}
-          isLoading={isLoadingProducts}
-          hasMore={hasMoreRemoteProducts}
-          isLoadingMore={isLoadingMoreProducts}
-          onLoadMore={handleLoadMoreProducts}
-          onSelectProduct={(p) => setSelectedProduct(p)}
-          onAddToCart={(p) => handleAddToCart(p, 1)}
-          onOrderWhatsApp={(p) => openWhatsAppOrderForProduct(p)}
-          onSelectCategory={handleSelectCategory}
-          onReportProduct={(product) => {
-            setReportTargetType('listing');
-            setFraudReportingListing(buildReportListingFromProduct(product));
-          }}
-        />
-      </Suspense>
+      <ChunkErrorBoundary>
+        <Suspense fallback={<SectionSkeleton titleWidth="w-60" cardCount={8} />}>
+          <StoreProductsSection
+            products={products}
+            selectedCategory={filters.category}
+            selectedLocation={filters.region}
+            searchQuery={filters.searchQuery}
+            reviews={reviews}
+            isLoading={isLoadingProducts}
+            hasMore={hasMoreRemoteProducts}
+            isLoadingMore={isLoadingMoreProducts}
+            onLoadMore={handleLoadMoreProducts}
+            onSelectProduct={(p) => setSelectedProduct(p)}
+            onAddToCart={(p) => handleAddToCart(p, 1)}
+            onOrderWhatsApp={(p) => openWhatsAppOrderForProduct(p)}
+            onSelectCategory={handleSelectCategory}
+            onReportProduct={(product) => {
+              setReportTargetType('listing');
+              setFraudReportingListing(buildReportListingFromProduct(product));
+            }}
+          />
+        </Suspense>
+      </ChunkErrorBoundary>
 
       {/* Main Content Area: Sidebar Filters + Listings Grid */}
       <main id="browse-listings" className="max-w-[1280px] mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 flex-1 w-full min-w-0 scroll-mt-20">
-        {/* Mobile & Tablet Filter Toggle & Quick Recent Badge (<= 1024px) */}
+        {/* Mobile & Tablet Filter Trigger Bar & Quick Recent Badge (<= 1024px) */}
         <div className="min-[1025px]:hidden mb-4 flex items-center justify-between gap-2 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-xs font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
@@ -1466,61 +1370,62 @@ export default function App() {
             )}
           </div>
           <button
-            onClick={() => setShowMobileFilter(!showMobileFilter)}
-            className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer border border-slate-200 dark:border-slate-700 shrink-0 whitespace-nowrap"
+            type="button"
+            onClick={() => setShowMobileFilter(true)}
+            className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-3.5 py-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer border border-slate-200 dark:border-slate-700 shrink-0 whitespace-nowrap min-h-[38px]"
           >
-            <SlidersHorizontal size={14} />
-            <span>{showMobileFilter ? 'Hide Filters' : 'Filter & Sort'}</span>
+            <SlidersHorizontal size={14} className="text-[#FF6600]" />
+            <span>Filter &amp; Sort</span>
+            {activeFilterCount > 0 && (
+              <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-[#FF6600] text-white text-[10px] font-black flex items-center justify-center tabular-nums">
+                {activeFilterCount}
+              </span>
+            )}
           </button>
         </div>
 
-        {/* Mobile & Tablet Filter Drawer / Collapsible Box */}
+        {/* Full-Screen Mobile & Tablet Filter Modal (<= 1024px) */}
         {showMobileFilter && (
-          <div className="min-[1025px]:hidden mb-6 space-y-4">
-            <Suspense fallback={<div className="h-64 rounded-2xl bg-slate-200 dark:bg-slate-800 animate-pulse" />}>
-              <FilterSidebar
+          <ChunkErrorBoundary>
+            <Suspense fallback={<ModalLoadingFallback />}>
+              <MobileFilterModal
+                isOpen={showMobileFilter}
+                onClose={() => setShowMobileFilter(false)}
                 filters={filters}
-                onFilterChange={handleFilterUpdate}
+                allListings={listings}
+                onApplyFilters={(nextFilters) => {
+                  handleFilterUpdate(nextFilters);
+                }}
                 onResetFilters={handleResetFilters}
-                totalResults={filteredListings.length}
               />
-
-              {recentlyViewed.length > 0 && (
-                <RecentlyViewed
-                  items={recentlyViewed}
-                  onOpenDetails={handleOpenListing}
-                  onToggleSave={handleToggleSave}
-                  savedIds={savedIds}
-                  onClear={handleClearRecentlyViewed}
-                  variant="sidebar"
-                />
-              )}
             </Suspense>
-          </div>
+          </ChunkErrorBoundary>
         )}
 
         <div className="grid grid-cols-1 min-[1025px]:grid-cols-4 gap-6 min-[1025px]:gap-8 items-start">
           {/* Desktop Left Sidebar: Filters & Session Recently Viewed Widget (> 1024px) */}
           <aside className="hidden min-[1025px]:block min-[1025px]:col-span-1 sticky top-20 space-y-6">
-            <Suspense fallback={<div className="h-96 rounded-2xl bg-slate-200 dark:bg-slate-800 animate-pulse" />}>
-              <FilterSidebar
-                filters={filters}
-                onFilterChange={handleFilterUpdate}
-                onResetFilters={handleResetFilters}
-                totalResults={filteredListings.length}
-              />
-
-              {recentlyViewed.length > 0 && (
-                <RecentlyViewed
-                  items={recentlyViewed}
-                  onOpenDetails={handleOpenListing}
-                  onToggleSave={handleToggleSave}
-                  savedIds={savedIds}
-                  onClear={handleClearRecentlyViewed}
-                  variant="sidebar"
+            <ChunkErrorBoundary>
+              <Suspense fallback={<div className="h-96 rounded-2xl bg-slate-200 dark:bg-slate-800 animate-pulse" />}>
+                <FilterSidebar
+                  filters={filters}
+                  onFilterChange={handleFilterUpdate}
+                  onResetFilters={handleResetFilters}
+                  totalResults={filteredListings.length}
                 />
-              )}
-            </Suspense>
+
+                {recentlyViewed.length > 0 && (
+                  <RecentlyViewed
+                    items={recentlyViewed}
+                    onOpenDetails={handleOpenListing}
+                    onToggleSave={handleToggleSave}
+                    savedIds={savedIds}
+                    onClear={handleClearRecentlyViewed}
+                    variant="sidebar"
+                  />
+                )}
+              </Suspense>
+            </ChunkErrorBoundary>
           </aside>
 
           {/* Right 3 Columns on Desktop, Full Width on Phone/Tablet */}
@@ -1806,37 +1711,42 @@ export default function App() {
         </div>
 
         {/* Recently Viewed Section Below Main Feed */}
-        <Suspense fallback={<div className="h-32 rounded-2xl bg-slate-200 dark:bg-slate-800 animate-pulse mt-8" />}>
-          <RecentlyViewed
-            items={recentlyViewed}
-            onOpenDetails={handleOpenListing}
-            onToggleSave={handleToggleSave}
-            savedIds={savedIds}
-            onClear={handleClearRecentlyViewed}
-            variant="feed"
-            onReportListing={(item) => {
-              setReportTargetType('listing');
-              setFraudReportingListing(item);
-            }}
-          />
-        </Suspense>
+        <ChunkErrorBoundary>
+          <Suspense fallback={<div className="h-32 rounded-2xl bg-slate-200 dark:bg-slate-800 animate-pulse mt-8" />}>
+            <RecentlyViewed
+              items={recentlyViewed}
+              onOpenDetails={handleOpenListing}
+              onToggleSave={handleToggleSave}
+              savedIds={savedIds}
+              onClear={handleClearRecentlyViewed}
+              variant="feed"
+              onReportListing={(item) => {
+                setReportTargetType('listing');
+                setFraudReportingListing(item);
+              }}
+            />
+          </Suspense>
+        </ChunkErrorBoundary>
       </main>
 
       {/* Footer */}
-      <Suspense fallback={<div className="h-48 bg-slate-950 animate-pulse mt-16" />}>
-        <Footer
-          onSelectCategory={handleSelectCategory}
-          onOpenSafety={() => navigateToLegalPage('safety')}
-          onOpenLegalPage={navigateToLegalPage}
-          onOpenPostAd={() => setIsPostAdOpen(true)}
-          onOpenAuth={handleOpenAuth}
-          onOpenCourierHub={handleOpenCourierHub}
-          onOpenVerifiedSubscription={navigateToBecomeVerified}
-        />
-      </Suspense>
+      <ChunkErrorBoundary>
+        <Suspense fallback={<div className="h-48 bg-slate-950 animate-pulse mt-16" />}>
+          <Footer
+            onSelectCategory={handleSelectCategory}
+            onOpenSafety={() => navigateToLegalPage('safety')}
+            onOpenLegalPage={navigateToLegalPage}
+            onOpenPostAd={() => setIsPostAdOpen(true)}
+            onOpenAuth={handleOpenAuth}
+            onOpenCourierHub={handleOpenCourierHub}
+            onOpenVerifiedSubscription={navigateToBecomeVerified}
+          />
+        </Suspense>
+      </ChunkErrorBoundary>
 
       {/* Lazy-Loaded Modals & Drawers (Only fetched on demand when opened) */}
-      <Suspense fallback={<ModalLoadingFallback />}>
+      <ChunkErrorBoundary>
+        <Suspense fallback={<ModalLoadingFallback />}>
         {selectedListing && (
           <ListingDetailModal
             listing={selectedListing}
@@ -2289,6 +2199,7 @@ export default function App() {
           />
         )}
       </Suspense>
+    </ChunkErrorBoundary>
 
       {/* Fixed Mobile Bottom Navigation Bar (< 640px): Home, Marketplace, Search, Cart, Profile */}
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 shadow-2xl">
