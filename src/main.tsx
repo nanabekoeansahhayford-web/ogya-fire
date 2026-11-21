@@ -5,7 +5,10 @@ import { ChunkErrorBoundary } from './utils/lazyRetry';
 
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    if (import.meta.env.PROD) {
+    const isNativeCapacitor = Boolean(
+      (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.()
+    );
+    if (import.meta.env.PROD && !isNativeCapacitor) {
       navigator.serviceWorker.register('/sw.js').catch(() => {
         // ignore service worker registration errors in unsupported sandboxes
       });

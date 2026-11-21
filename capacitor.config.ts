@@ -1,0 +1,28 @@
+import type { CapacitorConfig } from '@capacitor/cli';
+
+const config: CapacitorConfig = {
+  appId: 'com.ogyafire.app',
+  appName: 'OGYA FIRE',
+  webDir: 'dist',
+  server: {
+    androidScheme: 'https',
+  },
+  android: {
+    backgroundColor: '#000000',
+  },
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 2200,
+      launchAutoHide: true,
+      launchFadeOutDuration: 450,
+      backgroundColor: '#000000',
+      androidSplashResourceName: 'splash',
+      androidScaleType: 'CENTER_INSIDE',
+      showSpinner: false,
+      splashFullScreen: true,
+      splashImmersive: true,
+    },
+  },
+};
+
+export default config;

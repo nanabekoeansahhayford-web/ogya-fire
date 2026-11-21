@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">OGYA FIRE</string>
+    <string name="title_activity_main">OGYA FIRE</string>
+    <string name="package_name">com.ogyafire.app</string>
+    <string name="custom_url_scheme">com.ogyafire.app</string>
+</resources>

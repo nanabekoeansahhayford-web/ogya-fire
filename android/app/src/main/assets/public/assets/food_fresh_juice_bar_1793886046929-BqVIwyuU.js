@@ -1,0 +1,1 @@
+var e=`/assets/food_mama_efua_jollof_1793886043512-D68Z9mUo.webp`,t=`/assets/food_accra_grill_tilapia_1793886043887-Ut9W2ePL.webp`,n=`/assets/food_auntie_muni_waakye_1793886045717-CNqPeXwJ.webp`,r=`/assets/food_fresh_juice_bar_1793886046929-CYfF17CZ.webp`;export{e as i,n,t as r,r as t};

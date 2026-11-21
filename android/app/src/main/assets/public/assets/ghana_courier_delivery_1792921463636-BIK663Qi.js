@@ -1,0 +1,1 @@
+var e=`/assets/ghana_courier_delivery_1792921463636-D2kin8sk.webp`;export{e as t};
